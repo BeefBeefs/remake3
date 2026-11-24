@@ -463,7 +463,7 @@ export class Game {
       this.say(`You need ${this.missing(def).join(', ')} to use the ${def.name}`);
     } else if (this.inventory.equip(index)) {
       this.say(`You equip the ${def.name}`);
-    } else if (!this.inventory.canUse(def) && def.kind !== 'scroll' && def.kind !== 'book' && def.kind !== 'key' && def.kind !== 'quest') {
+    } else if (!this.inventory.canUse(def) && def.kind !== 'book' && def.kind !== 'key' && def.kind !== 'quest') {
       this.say(`${def.name} is not for a ${CLASSES[this.classId].name}`);
     } else this.say(def.name);
     this.refreshHeroStats();
