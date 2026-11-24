@@ -138,7 +138,8 @@ async function boot() {
     Atlas.load(BASE, `p16/scenary/${ts}/pack2.json`),
     Atlas.load(BASE, `p16/scenary/${ts}/pack3.json`),
   ]);
-  const world = new World(map, tiles, [packCell, pack1, pack2, pack3]);
+  const orient = await fetch(`${BASE}data/tile_orient.json`).then((r) => (r.ok ? r.json() : {})).catch(() => ({})) as Record<string, Record<string, string>>;
+  const world = new World(map, tiles, [packCell, pack1, pack2, pack3], orient[ts.toLowerCase()] ?? {});
   scene.add(world.group);
 
   const animData = (await (await fetch(`${BASE}data/anims.json`)).json()) as AnimData;

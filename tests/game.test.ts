@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { frameId } from '../src/game/anims.ts';
 import { Game, type GameData, type GameOptions, xpForLevel } from '../src/game/game.ts';
-import { World, isSlabFrame, slabFlip, wallRect, WALL_BLOCKER } from '../src/game/world.ts';
+import { World, isSlabFrame, slabFlip, tileFlip, wallRect, WALL_BLOCKER } from '../src/game/world.ts';
 import type { Atlas } from '../src/assets/atlas.ts';
 import type { GameMap } from '../src/formats/map.ts';
 import { Mesh } from 'three';
@@ -1327,4 +1327,12 @@ test('the Especial items act as their item texts say', () => {
   inv.equipped.amulet = 83; g.hero.hp = 100; g.hero.stats.hp = 500;
   (g as any).heroHitMonster(m, false);
   assert.ok(g.hero.hp > 100);
+});
+
+test('ground tile orientation: mirror bits, a table that only names real transition tiles', () => {
+  assert.deepEqual(['x', 'y', 'xy', undefined, 'z'].map(tileFlip), [1, 2, 3, 0, 0]);
+  const t = JSON.parse(readFileSync(new URL('../public/assets/data/tile_orient.json', import.meta.url), 'utf8')) as { outside: Record<string, string> };
+  const ids = Object.keys(t.outside).map(Number);
+  assert.ok(ids.length >= 10 && ids.every((i) => i >= 156 && i <= 191), 'only the dirt/grass transition tiles are turned');
+  assert.ok(Object.values(t.outside).every((o) => ['x', 'y', 'xy'].includes(o)));
 });

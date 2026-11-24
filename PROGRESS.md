@@ -503,3 +503,10 @@ Read the use-item routine for type-512 items in `Nightstone.exe` (all 18 cases).
   the game's own item texts: Death Sabre +50 % vs undead, Sword of Light destroys 1 armour per hit, Double Edge shield costs
   a striking monster 1 life, Dragon shield +1 damage, Absorption +20 % damage, Vengeance returns 15 % of damage taken, Blood
   heals 20 % of damage dealt. Rounding is a guess. 154 tests.
+- **Hero anchor and ground tile orientation (from the user's phone video).** The video showed the hero jumping sideways when it
+  changed direction. The P16 hotspot of an actor frame is subtracted from its position (not added): measured on all Barbarian frames
+  the feet stay within 4–7 px of one point that way, against 40 px with the old bounding-box rule. `ActorSprite` now places
+  `topLeft = foot − hotspot`, and `tools/fix_feet.py` recomputed `foot` for the 60 actors from the sprite pixels (test: the
+  idle bottoms of all 8 directions agree). The dirt/grass border tiles (VTiles 156–191) were also oriented wrongly: `tools/tile_orient.py`
+  fits mirrors from the campaign maps' neighbours (cross-checked on two halves of the maps) and `data/tile_orient.json` lists 18 tiles drawn
+  mirrored in the game and the editor. 156 tests.

@@ -9,14 +9,16 @@ export class QuadBatch {
   private n = 0;
   constructor(private readonly atlas: Atlas) {}
 
-  /** Adds frame `id` with its bottom-left corner at world (x0, y0), size w*h, depth z (`flip` mirrors it horizontally). */
-  add(id: number, x0: number, y0: number, w: number, h: number, z: number, flip = false): void {
+  /** Adds frame `id` with its bottom-left corner at world (x0, y0), size w*h, depth z (`flip`: true or 1 mirrors it left-right, 2 top-bottom, 3 both). */
+  add(id: number, x0: number, y0: number, w: number, h: number, z: number, flip: boolean | number = 0): void {
     const [x, y, fw, fh] = this.atlas.rect(id);
     const [aw, ah] = this.atlas.json.size;
-    const u0 = x / aw, u1 = (x + fw) / aw, v0 = 1 - (y + fh) / ah, v1 = 1 - y / ah;
+    let u0 = x / aw, u1 = (x + fw) / aw, v0 = 1 - (y + fh) / ah, v1 = 1 - y / ah;
+    const f = flip === true ? 1 : flip === false ? 0 : flip;
+    if (f & 1) [u0, u1] = [u1, u0];
+    if (f & 2) [v0, v1] = [v1, v0];
     this.pos.push(x0, y0, z, x0 + w, y0, z, x0, y0 + h, z, x0 + w, y0 + h, z);
-    if (flip) this.uv.push(u1, v0, u0, v0, u1, v1, u0, v1);
-    else this.uv.push(u0, v0, u1, v0, u0, v1, u1, v1);
+    this.uv.push(u0, v0, u1, v0, u0, v1, u1, v1);
     const b = this.n * 4;
     this.idx.push(b, b + 1, b + 2, b + 2, b + 1, b + 3);
     this.n++;

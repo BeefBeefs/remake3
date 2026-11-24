@@ -53,3 +53,17 @@ test('every monster now has a full layout: Morir for 4 directions, all INI anima
   assert.ok(data.actors['8']!.anims.Aburrido, 'orcs fidget');
   assert.equal(Object.values(data.actors).filter((a) => a.partial).length, 0);
 });
+
+test('an actor stays on its feet point whichever way it faces (the hotspot is subtracted)', () => {
+  const hero = data.actors['100']!;
+  const frames = (JSON.parse(readFileSync(new URL(`../public/assets/p16/actors/${hero.pack.toLowerCase()}.json`, import.meta.url), 'utf8')) as { frames: Record<string, number[]> }).frames;
+  const idle = hero.anims.Respirar!;
+  const bottoms: number[] = [];
+  for (let i = idle.start; i < idle.start + 8 * idle.frames; i++) {
+    const [, , , h, , hy] = frames[String(i)]!;
+    bottoms.push(hero.foot[1]! - hy! + h!); // screen offset (down) of the bitmap's bottom edge from the actor's position
+  }
+  const mean = bottoms.reduce((a, b) => a + b, 0) / bottoms.length;
+  const spread = Math.sqrt(bottoms.reduce((a, b) => a + (b - mean) ** 2, 0) / bottoms.length);
+  assert.ok(Math.abs(mean) < 6 && spread < 8, `mean ${mean} spread ${spread}`);
+});

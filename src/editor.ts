@@ -1,7 +1,7 @@
 import { MAPS, applyCampaignNames, findMap } from './game/maplist.ts';
 import { gunzip, parseMap, MAP_DIM, MAX_ROUTE, WATER_TILE, type GameMap, type Marker, START_IDS } from './formats/map.ts';
 import { blankMapBody, gzip, writeMapBody } from './formats/mapwriter.ts';
-import { isSlabFrame, HOTSPOT_X, HOTSPOT_Y } from './game/world.ts';
+import { isSlabFrame, tileFlip, HOTSPOT_X, HOTSPOT_Y } from './game/world.ts';
 import type { AtlasJson } from './assets/atlas.ts';
 import { applyBrush, blankCommand, clearRoute, COMMANDS, deleteScript, newScript, type Brush, type Tool } from './editorlogic.ts';
 
@@ -30,6 +30,7 @@ let body: Uint8Array = blankMapBody('Outside', 340);
 let mapName = 'new_map';
 let mapId = '';
 let tiles: Sheet | undefined;
+let orient: Record<string, string> = {};
 let packs: (Sheet | undefined)[] = [];
 let tool: Tool = 'ground';
 const brush: Brush = { size: 1, tile: 340, pack: 1, frame: 0, actor: 1, start: 100, script: undefined };
@@ -53,6 +54,7 @@ function doUndo(): void {
 // --- loading ---------------------------------------------------------------------------------------------------
 async function loadTileset(ts: string): Promise<void> {
   const k = ts.toLowerCase();
+  orient = ((await fetch(`${BASE}data/tile_orient.json`).then((r) => (r.ok ? r.json() : {})).catch(() => ({}))) as Record<string, Record<string, string>>)[k] ?? {};
   [tiles, ...packs] = await Promise.all([
     sheet(`atlas/scenary/${k}/vtiles.json`),
     sheet(`p16/scenary/${k}/packcell.json`).catch(() => undefined),
@@ -117,7 +119,11 @@ function draw(): void {
       const x = sx(cx, cy), y = sy(cx, cy);
       if (t === WATER_TILE) { ctx.fillStyle = '#1c3446'; ctx.beginPath(); ctx.moveTo(x - 32, y); ctx.lineTo(x, y - 16); ctx.lineTo(x + 32, y); ctx.lineTo(x, y + 16); ctx.fill(); continue; }
       const f = frame(tiles, t);
-      if (f && tiles) ctx.drawImage(tiles.img, f[0], f[1], f[2], f[3], x - 32, y - 16, 64, 32);
+      if (f && tiles) {
+        const fl = tileFlip(orient[t]);
+        if (fl) { ctx.save(); ctx.translate(x, y); ctx.scale(fl & 1 ? -1 : 1, fl & 2 ? -1 : 1); ctx.drawImage(tiles.img, f[0], f[1], f[2], f[3], -32, -16, 64, 32); ctx.restore(); }
+        else ctx.drawImage(tiles.img, f[0], f[1], f[2], f[3], x - 32, y - 16, 64, 32);
+      }
     }
   }
   // scenery, back to front (painter's order along the diagonals)

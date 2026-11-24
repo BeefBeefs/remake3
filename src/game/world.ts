@@ -15,6 +15,11 @@ import { QuadBatch } from './batch.ts';
 export const HOTSPOT_X = 128;
 export const HOTSPOT_Y = 16;
 
+/** Mirror bits of a ground tile's orientation entry: 1 left-right, 2 top-bottom. */
+export function tileFlip(o: string | undefined): number {
+  return o === 'x' ? 1 : o === 'y' ? 2 : o === 'xy' ? 3 : 0;
+}
+
 export const CHUNK = 16;
 /** Chunks loaded around the player (Chebyshev). 3 covers a widescreen view plus the tallest scenery. */
 const LOAD_RADIUS = 3;
@@ -68,6 +73,8 @@ export class World {
     readonly map: GameMap,
     private readonly tiles: Atlas,
     private readonly packs: Atlas[],
+    /** ground tiles whose picture must be mirrored (`tools/tile_orient.py`): id -> 'x' | 'y' | 'xy' */
+    private readonly orient: Record<string, string> = {},
   ) {
     this.dim = map.dim;
     this.walls = map.tileset.toLowerCase() === 'outside';
@@ -203,7 +210,7 @@ export class World {
           water.push(p.x - 32, p.y, -999, p.x, p.y + 16, -999, p.x + 32, p.y, -999, p.x, p.y - 16, -999);
         } else if (t && this.tiles.has(t)) {
           // tiles are 64x31 but the grid steps by 16 px: stretch to 32 to close the seams
-          ground.add(t, p.x - 32, p.y - 16, 64, 32, -1000);
+          ground.add(t, p.x - 32, p.y - 16, 64, 32, -1000, tileFlip(this.orient[t]));
         }
         const o = this.stand(this.map.objects[i]!, cx, cy);
         if (o) {

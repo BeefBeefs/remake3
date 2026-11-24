@@ -94,10 +94,14 @@ F81F n        skip n transparent pixels            (0xF81F is the colour key)
 n  px×n       n RGB565 pixels   (n < 0xF81F, n >= 1)
 ```
 
-**Hotspots.** `(hx, hy)` is the offset of the bitmap's top-left corner from the engine's reference point. For actors
-the feet are at x≈−128, y≈−17 (Barbarian median −127.75/−17; Sorceress −128.5/−7; Amazon −131/−15). Anchoring a
-sprite at a cell centre (or an actor's feet) gives `topLeft = anchor + (hx + 128, hy + 16)` in screen px, which lines
-up the Lost Forrest camp (barrels, fires, tents, flags) and the walk cycle correctly (`docs/preview-milestone1.png`).
+**Hotspots.** For **actors** the hotspot is *subtracted*: a frame is drawn with its bitmap's top-left corner at
+`position − (hx − foot.x, hy − foot.y)` (screen px, y down). Measured over the Barbarian's frames, `hx − (legs centre inside the
+bitmap)` and `hy − (bottom row)` stay within a few pixels of one constant for every direction, attack and walk frame
+(std 7 / 4 px), while the old rule `hx + w/2` moved the body by up to 40 px when the hero turned or swung its sword
+(the video the user sent showed exactly that). `foot` is the median of those two numbers over the idle and walk frames
+(`tools/fix_feet.py`, written into `anims.json`; −160 / −147 for the Barbarian). Same result for every monster pack tested.
+**Scenery** keeps the older rule: the topLeft of a scenery sprite at a cell is `anchor + (hx + 128, hy + 16)`, which lines up the
+Lost Forrest camp (barrels, fires, tents, flags) (`docs/preview-milestone1.png`).
 **Wall slices do not follow it.** Cliff / hedge / palisade / cave / dungeon walls are strips ≤ 34 px wide and 70–230 px
 tall, one per cell along a run (Lost Forrest: a rectilinear border of 417 cells, 1 cell thick, ids Pack2 600–625; an
 empty frame #599 fills gaps). Their hotspots put them 6–7 cells (≈ 100 px up and 200 px left) away from their own cell
@@ -151,7 +155,17 @@ infernal demon forms out of flame) and `Aburrido` (orc fidget). `build_anims.py`
 8-direction search finds nothing, so the 36 earlier layouts are unchanged. No actor is `partial` any more.
 
 **Feet anchor.** Hotspot origins differ per pack (hero bottoms ≈ −12, goblins ≈ −52, troll ≈ +24), so each actor's
-`foot` point = median bottom-centre of its idle frames (`anims.json`). Scenery uses the fixed (128, 16) rule above.
+`foot` point = median over the idle / walk frames of `(hx − legs centre, hy − bottom row)` (`tools/fix_feet.py`, `anims.json`). Scenery uses the fixed (128, 16) rule above.
+
+### Ground tile orientation (inferred) — `tools/tile_orient.py`
+The map's terrain record holds only the tile id (Lost Forrest and 7 other maps have nothing else; in 11 maps the upper half of
+the u32 carries a 0x10 flag on ~1–10 % of cells of ordinary ids — meaning unknown, probably a blocking flag). The 36 Outside dirt→grass
+transition tiles (VTiles 156–191, laid out by the maps as four 3×3 sets: `id = base + 3·i + (2 − j)`, i along cx, j against cy) looked
+wrong drawn as stored (long slanted teeth along the patch borders). Taking each tile as stored or mirrored x / y / both and matching its edges
+(dirt vs grass along 8 segments per edge) with the tiles next to it in the 19 Outside maps lowers the mismatch from 0.338 to 0.241; fitting
+two disjoint halves of the maps gives the same orientation for 31–34 of the 36 tiles. The 18 tiles that gain clearly are listed in
+`public/assets/data/tile_orient.json` and drawn mirrored by the game and the editor (`World`, `QuadBatch.add(flip)`). The
+borders are still a little jagged, so the stored mapping may not be the whole story; Cave and Dungeon tiles are not corrected.
 
 ### Tile surfaces (inferred) and `System/*.CDt`
 No per-tile property table (surface, collision) was found. `System/{Outside,Cave,Dungeon}.CDt` are **not** compressed and
