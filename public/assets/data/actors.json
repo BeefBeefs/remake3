@@ -1,0 +1,4371 @@
+{
+ "1": {
+  "title": "GOBLIN",
+  "General": {
+   "Tipo_IA": 1,
+   "Raza": 1,
+   "Vel_Ataque": [
+    25,
+    70
+   ],
+   "Rnd_Bloqueo": 4.0,
+   "Centrado": [
+    162,
+    123
+   ],
+   "Altura": 30,
+   "SangreFX": 0
+  },
+  "HDP": {
+   "Vida": 12,
+   "Fuerza": [
+    2,
+    6
+   ],
+   "Armadura": 0,
+   "Aturdirse": 2,
+   "Pts_Experiencia": [
+    18,
+    30
+   ],
+   "Velocidad": 1.0
+  },
+  "IA": {
+   "Oido": 3,
+   "Radio_Busqueda": 5
+  },
+  "Animaciones": {
+   "Andar": [
+    6,
+    8
+   ],
+   "Respirar": [
+    7,
+    8
+   ],
+   "Atacar": [
+    3,
+    8
+   ],
+   "Cubrir": [
+    1,
+    2
+   ],
+   "Recibir": [
+    7,
+    3
+   ],
+   "Morir": [
+    5,
+    10
+   ],
+   "Recibir2": [
+    8,
+    3
+   ],
+   "Alarma": [
+    5,
+    13
+   ]
+  },
+  "Items": {
+   "IDItem": [
+    2,
+    16,
+    18,
+    40,
+    104,
+    105,
+    106,
+    107,
+    108,
+    109
+   ],
+   "PItem": [
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    3,
+    2,
+    3,
+    1
+   ]
+  },
+  "Sonidos": {
+   "SndBase": 200,
+   "Carne": 1
+  }
+ },
+ "2": {
+  "title": "GOBLIN RATA",
+  "General": {
+   "Tipo_IA": 1,
+   "Raza": 1,
+   "Vel_Ataque": [
+    20,
+    60
+   ],
+   "Rnd_Bloqueo": 3.0,
+   "Centrado": [
+    162,
+    123
+   ],
+   "Altura": 30,
+   "SangreFX": 0
+  },
+  "HDP": {
+   "Vida": 10,
+   "Fuerza": [
+    1,
+    4
+   ],
+   "Armadura": 0,
+   "Aturdirse": 2,
+   "Pts_Experiencia": [
+    20,
+    28
+   ],
+   "Velocidad": 1.1
+  },
+  "IA": {
+   "Oido": 3,
+   "Radio_Busqueda": 5
+  },
+  "Animaciones": {
+   "Andar": [
+    7,
+    8
+   ],
+   "Respirar": [
+    7,
+    8
+   ],
+   "Atacar": [
+    3,
+    8
+   ],
+   "Cubrir": [
+    1,
+    2
+   ],
+   "Recibir": [
+    7,
+    3
+   ],
+   "Morir": [
+    4,
+    10
+   ],
+   "Recibir2": [
+    8,
+    3
+   ],
+   "Extra": [
+    0,
+    0
+   ],
+   "Atacar2": [
+    0,
+    0
+   ],
+   "Alarma": [
+    5,
+    14
+   ],
+   "Vigilar": [
+    0,
+    0
+   ]
+  },
+  "Items": {
+   "IDItem": [
+    2,
+    16,
+    18,
+    40,
+    104,
+    105,
+    106,
+    107,
+    108,
+    109
+   ],
+   "PItem": [
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    3,
+    2,
+    3,
+    1
+   ]
+  },
+  "Sonidos": {
+   "SndBase": 200,
+   "Carne": 1
+  }
+ },
+ "3": {
+  "title": "GOBLIN INFERNAL",
+  "General": {
+   "Tipo_IA": 1,
+   "Raza": 1,
+   "Vel_Ataque": [
+    25,
+    56
+   ],
+   "Rnd_Bloqueo": 15.0,
+   "Centrado": [
+    162,
+    123
+   ],
+   "Altura": 30,
+   "SangreFX": 0
+  },
+  "HDP": {
+   "Vida": 19,
+   "Fuerza": [
+    3,
+    7
+   ],
+   "Armadura": 1,
+   "Aturdirse": 3,
+   "Pts_Experiencia": [
+    59,
+    71
+   ],
+   "Velocidad": 1.07
+  },
+  "IA": {
+   "Oido": 3,
+   "Radio_Busqueda": 5
+  },
+  "Animaciones": {
+   "Andar": [
+    7,
+    8
+   ],
+   "Respirar": [
+    7,
+    8
+   ],
+   "Atacar": [
+    3,
+    8
+   ],
+   "Cubrir": [
+    1,
+    2
+   ],
+   "Recibir": [
+    7,
+    3
+   ],
+   "Morir": [
+    5,
+    10
+   ],
+   "Recibir2": [
+    8,
+    3
+   ],
+   "Alarma": [
+    5,
+    9
+   ]
+  },
+  "Items": {
+   "IDItem": [
+    3,
+    16,
+    41,
+    68,
+    87,
+    89,
+    104,
+    105,
+    106,
+    107,
+    108,
+    109
+   ],
+   "PItem": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    3,
+    2,
+    3,
+    1
+   ]
+  },
+  "Sonidos": {
+   "SndBase": 200,
+   "Carne": 1
+  }
+ },
+ "4": {
+  "title": "GOBLIN MAESTRO",
+  "General": {
+   "Tipo_IA": 1,
+   "Raza": 1,
+   "Vel_Ataque": [
+    28,
+    46
+   ],
+   "Rnd_Bloqueo": 20.0,
+   "Centrado": [
+    162,
+    123
+   ],
+   "Altura": 30,
+   "SangreFX": 3
+  },
+  "HDP": {
+   "Vida": 24,
+   "Fuerza": [
+    8,
+    12
+   ],
+   "Armadura": 2,
+   "Aturdirse": 7,
+   "Pts_Experiencia": [
+    175,
+    250
+   ],
+   "Velocidad": 1.1
+  },
+  "IA": {
+   "Oido": 4,
+   "Radio_Busqueda": 5
+  },
+  "Animaciones": {
+   "Andar": [
+    7,
+    8
+   ],
+   "Respirar": [
+    7,
+    8
+   ],
+   "Atacar": [
+    3,
+    8
+   ],
+   "Cubrir": [
+    1,
+    2
+   ],
+   "Recibir": [
+    7,
+    3
+   ],
+   "Morir": [
+    5,
+    10
+   ],
+   "Recibir2": [
+    8,
+    3
+   ],
+   "Extra": [
+    0,
+    0
+   ],
+   "Atacar2": [
+    0,
+    0
+   ],
+   "Alarma": [
+    5,
+    12
+   ],
+   "Vigilar": [
+    0,
+    0
+   ]
+  },
+  "Items": {
+   "IDItem": [
+    9,
+    21,
+    18,
+    45,
+    104,
+    105,
+    106,
+    107,
+    108,
+    109
+   ],
+   "PItem": [
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    3,
+    2,
+    3,
+    1
+   ]
+  },
+  "Sonidos": {
+   "SndBase": 200,
+   "Carne": 1
+  }
+ },
+ "5": {
+  "title": "ORCO COMÚN",
+  "General": {
+   "Tipo_IA": 1,
+   "Raza": 2,
+   "Vel_Ataque": [
+    21,
+    48
+   ],
+   "Rnd_Bloqueo": 7.0,
+   "Centrado": [
+    162,
+    123
+   ],
+   "Altura": 30
+  },
+  "HDP": {
+   "Vida": 24,
+   "Fuerza": [
+    4,
+    6
+   ],
+   "Armadura": 2,
+   "Aturdirse": 3,
+   "Pts_Experiencia": [
+    70,
+    80
+   ],
+   "Velocidad": 1.04
+  },
+  "IA": {
+   "Oido": 2,
+   "Radio_Busqueda": 5
+  },
+  "Animaciones": {
+   "Andar": [
+    6,
+    8
+   ],
+   "Respirar": [
+    7,
+    8
+   ],
+   "Atacar": [
+    4,
+    8
+   ],
+   "Cubrir": [
+    1,
+    2
+   ],
+   "Recibir": [
+    7,
+    3
+   ],
+   "Morir": [
+    6,
+    10
+   ],
+   "Recibir2": [
+    8,
+    3
+   ]
+  },
+  "Items": {
+   "IDItem": [
+    16,
+    18,
+    40,
+    41,
+    66,
+    68,
+    86,
+    88,
+    104,
+    105,
+    106,
+    107,
+    108,
+    109
+   ],
+   "PItem": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    3,
+    2,
+    3,
+    1
+   ]
+  },
+  "Sonidos": {
+   "SndBase": 205,
+   "Carne": 0
+  }
+ },
+ "6": {
+  "title": "ORCO APLASTAHUESOS",
+  "General": {
+   "Tipo_IA": 1,
+   "Raza": 2,
+   "Vel_Ataque": [
+    24,
+    56
+   ],
+   "Rnd_Bloqueo": 8.0,
+   "Centrado": [
+    162,
+    123
+   ],
+   "Altura": 30
+  },
+  "HDP": {
+   "Vida": 25,
+   "Fuerza": [
+    4,
+    8
+   ],
+   "Armadura": 1,
+   "Aturdirse": 3,
+   "Pts_Experiencia": [
+    72,
+    99
+   ],
+   "Velocidad": 1.05
+  },
+  "IA": {
+   "Oido": 3,
+   "Radio_Busqueda": 5
+  },
+  "Animaciones": {
+   "Andar": [
+    6,
+    8
+   ],
+   "Respirar": [
+    7,
+    8
+   ],
+   "Atacar": [
+    3,
+    8
+   ],
+   "Cubrir": [
+    1,
+    2
+   ],
+   "Recibir": [
+    7,
+    3
+   ],
+   "Morir": [
+    6,
+    10
+   ],
+   "Recibir2": [
+    8,
+    3
+   ]
+  },
+  "Items": {
+   "IDItem": [
+    8,
+    20,
+    42,
+    43,
+    69,
+    78,
+    90,
+    91,
+    94,
+    104,
+    105,
+    106,
+    107,
+    108,
+    109
+   ],
+   "PItem": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    3,
+    2,
+    3,
+    1
+   ]
+  },
+  "Sonidos": {
+   "SndBase": 205,
+   "Carne": 1
+  }
+ },
+ "7": {
+  "title": "ORCO BRUTAL",
+  "General": {
+   "Tipo_IA": 1,
+   "Raza": 2,
+   "Vel_Ataque": [
+    18,
+    40
+   ],
+   "Rnd_Bloqueo": 5.0,
+   "Centrado": [
+    162,
+    123
+   ],
+   "Altura": 30
+  },
+  "HDP": {
+   "Vida": 24,
+   "Fuerza": [
+    6,
+    8
+   ],
+   "Armadura": 1,
+   "Aturdirse": 6,
+   "Pts_Experiencia": [
+    90,
+    150
+   ],
+   "Velocidad": 1.02
+  },
+  "IA": {
+   "Oido": 3,
+   "Radio_Busqueda": 5
+  },
+  "Animaciones": {
+   "Andar": [
+    6,
+    8
+   ],
+   "Respirar": [
+    7,
+    8
+   ],
+   "Atacar": [
+    3,
+    8
+   ],
+   "Cubrir": [
+    1,
+    2
+   ],
+   "Recibir": [
+    7,
+    3
+   ],
+   "Morir": [
+    6,
+    10
+   ],
+   "Recibir2": [
+    8,
+    3
+   ]
+  },
+  "Items": {
+   "IDItem": [
+    7,
+    19,
+    42,
+    43,
+    70,
+    77,
+    92,
+    93,
+    94,
+    104,
+    105,
+    106,
+    107,
+    108,
+    109
+   ],
+   "PItem": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    3,
+    2,
+    3,
+    1
+   ]
+  },
+  "Sonidos": {
+   "SndBase": 205,
+   "Carne": 0
+  }
+ },
+ "8": {
+  "title": "ORCO CAPITAN",
+  "General": {
+   "Tipo_IA": 1,
+   "Raza": 2,
+   "Vel_Ataque": [
+    19,
+    31
+   ],
+   "Tm_Bloqueo": 15,
+   "Rnd_Bloqueo": 31.0,
+   "Centrado": [
+    156,
+    138
+   ],
+   "Altura": 30,
+   "SangreFX": 1
+  },
+  "HDP": {
+   "Vida": 42,
+   "Fuerza": [
+    9,
+    11
+   ],
+   "Armadura": 3,
+   "Aturdirse": 8,
+   "Pts_Experiencia": [
+    240,
+    350
+   ],
+   "Velocidad": 1.08
+  },
+  "IA": {
+   "Oido": 3,
+   "Radio_Busqueda": 8
+  },
+  "Animaciones": {
+   "Andar": [
+    6,
+    10
+   ],
+   "Respirar": [
+    8,
+    8
+   ],
+   "Atacar": [
+    3,
+    9
+   ],
+   "Cubrir": [
+    1,
+    2
+   ],
+   "Recibir": [
+    7,
+    3
+   ],
+   "Morir": [
+    6,
+    10
+   ],
+   "Recibir2": [
+    8,
+    3
+   ],
+   "Alarma": [
+    3,
+    14
+   ],
+   "Aburrido": [
+    7,
+    11
+   ],
+   "Vigilar": [
+    10,
+    6
+   ]
+  },
+  "Items": {
+   "IDItem": [
+    9,
+    21,
+    22,
+    45,
+    71,
+    72,
+    79,
+    76,
+    99,
+    100,
+    101,
+    102,
+    103,
+    104,
+    105,
+    106,
+    107,
+    108,
+    109
+   ],
+   "PItem": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    3,
+    2,
+    3,
+    1
+   ]
+  },
+  "Sonidos": {
+   "SndBase": 205,
+   "Carne": 0
+  }
+ },
+ "9": {
+  "title": "ESQUELETO COMÚN",
+  "General": {
+   "Tipo_IA": 1,
+   "Raza": 4,
+   "Vel_Ataque": [
+    23,
+    55
+   ],
+   "Rnd_Bloqueo": 11.0,
+   "Centrado": [
+    154,
+    130
+   ],
+   "Altura": 30,
+   "SangreFX": 6
+  },
+  "HDP": {
+   "Vida": 14,
+   "Fuerza": [
+    3,
+    6
+   ],
+   "Armadura": 0,
+   "Aturdirse": 2,
+   "Pts_Experiencia": [
+    20,
+    34
+   ],
+   "Velocidad": 1.0
+  },
+  "IA": {
+   "Oido": 1,
+   "Radio_Busqueda": 6
+  },
+  "Animaciones": {
+   "Andar": [
+    7,
+    8
+   ],
+   "Respirar": [
+    9,
+    8
+   ],
+   "Atacar": [
+    3,
+    8
+   ],
+   "Cubrir": [
+    1,
+    2
+   ],
+   "Recibir": [
+    7,
+    3
+   ],
+   "Morir": [
+    6,
+    10
+   ],
+   "Recibir2": [
+    7,
+    3
+   ],
+   "Alarma": [
+    5,
+    11
+   ],
+   "Vigilar": [
+    7,
+    6
+   ],
+   "Aparecer": [
+    5,
+    15
+   ]
+  },
+  "Items": {
+   "IDItem": [
+    2,
+    16,
+    18,
+    40,
+    66,
+    67,
+    68,
+    86,
+    88,
+    104,
+    105,
+    106,
+    107,
+    108,
+    109
+   ],
+   "PItem": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    3,
+    2,
+    3,
+    1
+   ]
+  },
+  "Sonidos": {
+   "SndBase": 210,
+   "Carne": 0
+  }
+ },
+ "10": {
+  "title": "ESQUELETO INFERNAL",
+  "General": {
+   "Tipo_IA": 1,
+   "Raza": 4,
+   "Vel_Ataque": [
+    18,
+    35
+   ],
+   "Rnd_Bloqueo": 20.0,
+   "Centrado": [
+    162,
+    123
+   ],
+   "Altura": 30,
+   "SangreFX": 6
+  },
+  "HDP": {
+   "Vida": 30,
+   "Fuerza": [
+    7,
+    14
+   ],
+   "Armadura": 1,
+   "Aturdirse": 6,
+   "Pts_Experiencia": [
+    75,
+    93
+   ],
+   "Velocidad": 1.1
+  },
+  "IA": {
+   "Oido": 3,
+   "Radio_Busqueda": 8
+  },
+  "Animaciones": {
+   "Andar": [
+    7,
+    8
+   ],
+   "Respirar": [
+    9,
+    8
+   ],
+   "Atacar": [
+    3,
+    8
+   ],
+   "Cubrir": [
+    1,
+    2
+   ],
+   "Recibir": [
+    7,
+    3
+   ],
+   "Morir": [
+    6,
+    10
+   ],
+   "Recibir2": [
+    7,
+    3
+   ],
+   "Alarma": [
+    5,
+    11
+   ],
+   "Vigilar": [
+    7,
+    6
+   ],
+   "Aparecer": [
+    5,
+    15
+   ]
+  },
+  "Items": {
+   "IDItem": [
+    2,
+    16,
+    18,
+    40,
+    66,
+    67,
+    68,
+    86,
+    88,
+    104,
+    105,
+    106,
+    107,
+    108,
+    109
+   ],
+   "PItem": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    3,
+    2,
+    3,
+    1
+   ]
+  },
+  "Sonidos": {
+   "SndBase": 210,
+   "Carne": 0
+  }
+ },
+ "11": {
+  "title": "ESQUELETO MAESTRO",
+  "General": {
+   "Tipo_IA": 1,
+   "Raza": 4,
+   "Vel_Ataque": [
+    22,
+    35
+   ],
+   "Rnd_Bloqueo": 22.0,
+   "Centrado": [
+    162,
+    123
+   ],
+   "Altura": 30,
+   "SangreFX": 6
+  },
+  "HDP": {
+   "Vida": 38,
+   "Fuerza": [
+    9,
+    18
+   ],
+   "Armadura": 4,
+   "Aturdirse": 7,
+   "Pts_Experiencia": [
+    200,
+    320
+   ],
+   "Velocidad": 1.05
+  },
+  "IA": {
+   "Oido": 3,
+   "Radio_Busqueda": 9
+  },
+  "Animaciones": {
+   "Andar": [
+    7,
+    8
+   ],
+   "Respirar": [
+    9,
+    8
+   ],
+   "Atacar": [
+    3,
+    8
+   ],
+   "Cubrir": [
+    1,
+    2
+   ],
+   "Recibir": [
+    7,
+    3
+   ],
+   "Morir": [
+    6,
+    10
+   ],
+   "Recibir2": [
+    8,
+    3
+   ],
+   "Alarma": [
+    7,
+    9
+   ],
+   "Vigilar": [
+    7,
+    6
+   ]
+  },
+  "Items": {
+   "IDItem": [
+    8,
+    19,
+    42,
+    44,
+    68,
+    77,
+    76,
+    91,
+    104,
+    105,
+    106,
+    107,
+    108,
+    109
+   ],
+   "PItem": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    3,
+    2,
+    3,
+    1
+   ]
+  },
+  "Sonidos": {
+   "SndBase": 210,
+   "Carne": 0
+  }
+ },
+ "12": {
+  "title": "ESQUELETO GUARDIAN",
+  "General": {
+   "Tipo_IA": 1,
+   "Raza": 4,
+   "Vel_Ataque": [
+    34,
+    50
+   ],
+   "Rnd_Bloqueo": 34.0,
+   "Centrado": [
+    162,
+    123
+   ],
+   "Altura": 30,
+   "SangreFX": 6
+  },
+  "HDP": {
+   "Vida": 40,
+   "Fuerza": [
+    12,
+    18
+   ],
+   "Armadura": 2,
+   "Aturdirse": 14,
+   "Pts_Experiencia": [
+    150,
+    300
+   ],
+   "Velocidad": 1.25
+  },
+  "IA": {
+   "Oido": 3,
+   "Radio_Busqueda": 5
+  },
+  "Animaciones": {
+   "Andar": [
+    7,
+    8
+   ],
+   "Respirar": [
+    8,
+    8
+   ],
+   "Atacar": [
+    3,
+    8
+   ],
+   "Cubrir": [
+    1,
+    2
+   ],
+   "Recibir": [
+    7,
+    3
+   ],
+   "Morir": [
+    6,
+    10
+   ],
+   "Recibir2": [
+    8,
+    3
+   ],
+   "Extra": [
+    0,
+    0
+   ],
+   "Atacar2": [
+    0,
+    0
+   ],
+   "Alarma": [
+    7,
+    10
+   ],
+   "Vigilar": [
+    7,
+    6
+   ]
+  },
+  "Items": {
+   "IDItem": [
+    8,
+    19,
+    42,
+    44,
+    68,
+    77,
+    76,
+    91,
+    104,
+    105,
+    106,
+    107,
+    108,
+    109
+   ],
+   "PItem": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    3,
+    2,
+    3,
+    1
+   ]
+  },
+  "Sonidos": {
+   "SndBase": 210,
+   "Carne": 0
+  }
+ },
+ "13": {
+  "title": "GROAK",
+  "General": {
+   "Tipo_IA": 1,
+   "Raza": 8,
+   "Vel_Ataque": [
+    18,
+    39
+   ],
+   "Rnd_Bloqueo": 0.5,
+   "Centrado": [
+    162,
+    123
+   ],
+   "Altura": 30
+  },
+  "HDP": {
+   "Vida": 5,
+   "Fuerza": [
+    2,
+    3
+   ],
+   "Aturdirse": 99,
+   "Pts_Experiencia": [
+    10,
+    15
+   ],
+   "Velocidad": 1.6
+  },
+  "IA": {
+   "Oido": 3,
+   "Radio_Busqueda": 12
+  },
+  "Animaciones": {
+   "Andar": [
+    5,
+    8
+   ],
+   "Respirar": [
+    7,
+    8
+   ],
+   "Atacar": [
+    3,
+    8
+   ],
+   "Recibir": [
+    4,
+    3
+   ],
+   "Morir": [
+    2,
+    10
+   ],
+   "Recibir2": [
+    4,
+    3
+   ]
+  },
+  "Items": {
+   "IDItem": [
+    0
+   ],
+   "PItem": [
+    0
+   ]
+  },
+  "Sonidos": {
+   "SndBase": 220,
+   "Carne": 1
+  }
+ },
+ "14": {
+  "title": "LEHCIM",
+  "General": {
+   "Tipo_IA": 1,
+   "Raza": 8,
+   "Vel_Ataque": [
+    24,
+    46
+   ],
+   "Rnd_Bloqueo": 0.5,
+   "Centrado": [
+    162,
+    123
+   ],
+   "Altura": 30,
+   "SangreFX": 2
+  },
+  "HDP": {
+   "Vida": 12,
+   "Fuerza": [
+    1,
+    4
+   ],
+   "Armadura": 0,
+   "Aturdirse": 1,
+   "Pts_Experiencia": [
+    26,
+    35
+   ],
+   "Velocidad": 2.5
+  },
+  "IA": {
+   "Oido": 3,
+   "Radio_Busqueda": 5
+  },
+  "Animaciones": {
+   "Andar": [
+    2,
+    10
+   ],
+   "Respirar": [
+    9,
+    10
+   ],
+   "Atacar": [
+    3,
+    8
+   ],
+   "Morir": [
+    4,
+    15
+   ]
+  },
+  "Items": {
+   "IDItem": [
+    0
+   ],
+   "PItem": [
+    0
+   ]
+  },
+  "Sonidos": {
+   "SndBase": 225,
+   "Carne": 1
+  }
+ },
+ "15": {
+  "title": "OPAHC",
+  "General": {
+   "Tipo_IA": 1,
+   "Raza": 8,
+   "Vel_Ataque": [
+    24,
+    50
+   ],
+   "Rnd_Bloqueo": 1.0,
+   "Centrado": [
+    162,
+    123
+   ],
+   "Altura": 30,
+   "SangreFX": 2
+  },
+  "HDP": {
+   "Vida": 26,
+   "Fuerza": [
+    2,
+    10
+   ],
+   "Armadura": 1,
+   "Aturdirse": 2,
+   "Pts_Experiencia": [
+    45,
+    65
+   ],
+   "Velocidad": 1.6
+  },
+  "IA": {
+   "Oido": 3,
+   "Radio_Busqueda": 5,
+   "Espera": 50
+  },
+  "Animaciones": {
+   "Andar": [
+    1,
+    10
+   ],
+   "Respirar": [
+    14,
+    10
+   ],
+   "Atacar": [
+    3,
+    9
+   ],
+   "Morir": [
+    4,
+    12
+   ]
+  },
+  "Items": {
+   "IDItem": [
+    0
+   ],
+   "PItem": [
+    0
+   ]
+  },
+  "Sonidos": {
+   "SndBase": 225,
+   "Carne": 1
+  }
+ },
+ "16": {
+  "title": "ZOMBIE",
+  "General": {
+   "Tipo_IA": 1,
+   "Raza": 4,
+   "Vel_Ataque": [
+    20,
+    38
+   ],
+   "Tm_Bloqueo": 0,
+   "Rnd_Bloqueo": 0,
+   "Centrado": [
+    156,
+    138
+   ],
+   "Altura": 30
+  },
+  "HDP": {
+   "Vida": 20,
+   "Fuerza": [
+    3,
+    9
+   ],
+   "Armadura": 1,
+   "Aturdirse": 88,
+   "Pts_Experiencia": [
+    35,
+    50
+   ],
+   "Velocidad": 0.66
+  },
+  "IA": {
+   "Seguir_Busqueda": 525,
+   "Oido": 3,
+   "Radio_Busqueda": 7,
+   "Tm_Busqueda": 3500
+  },
+  "Animaciones": {
+   "Andar": [
+    6,
+    12
+   ],
+   "Respirar": [
+    9,
+    8
+   ],
+   "Atacar": [
+    6,
+    9
+   ],
+   "Recibir": [
+    7,
+    3
+   ],
+   "Morir": [
+    6,
+    10
+   ],
+   "Recibir2": [
+    7,
+    3
+   ]
+  },
+  "Items": {
+   "IDItem": [
+    7,
+    19,
+    42,
+    43,
+    70,
+    77,
+    92,
+    104,
+    105,
+    106,
+    107,
+    108,
+    109
+   ],
+   "PItem": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    3,
+    2,
+    3,
+    1
+   ]
+  },
+  "Sonidos": {
+   "SndBase": 240,
+   "Carne": 1
+  }
+ },
+ "17": {
+  "title": "TROLL COMÚN",
+  "General": {
+   "Tipo_IA": 1,
+   "Raza": 16,
+   "Vel_Ataque": [
+    20,
+    48
+   ],
+   "Tm_Bloqueo": 10,
+   "Rnd_Bloqueo": 4.0,
+   "Centrado": [
+    162,
+    150
+   ],
+   "Altura": 30,
+   "Overlay": 1
+  },
+  "HDP": {
+   "Vida": 37,
+   "Fuerza": [
+    7,
+    13
+   ],
+   "Armadura": 1,
+   "Aturdirse": 5,
+   "Pts_Experiencia": [
+    40,
+    70
+   ],
+   "Velocidad": 0.95
+  },
+  "IA": {
+   "Oido": 3,
+   "Radio_Busqueda": 5
+  },
+  "Animaciones": {
+   "Andar": [
+    8,
+    10
+   ],
+   "Respirar": [
+    10,
+    8
+   ],
+   "Atacar": [
+    6,
+    9
+   ],
+   "Recibir": [
+    9,
+    3
+   ],
+   "Morir": [
+    9,
+    8
+   ],
+   "Recibir2": [
+    8,
+    3
+   ],
+   "Alarma": [
+    6,
+    13
+   ]
+  },
+  "Items": {
+   "IDItem": [
+    8,
+    19,
+    20,
+    43,
+    77,
+    78,
+    90,
+    92,
+    93,
+    104,
+    105,
+    106,
+    107,
+    108,
+    109
+   ],
+   "PItem": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    3,
+    2,
+    3,
+    1
+   ]
+  },
+  "Sonidos": {
+   "SndBase": 215,
+   "Carne": 1
+  }
+ },
+ "18": {
+  "title": "TROLL GUERRERO",
+  "General": {
+   "Tipo_IA": 1,
+   "Raza": 16,
+   "Vel_Ataque": [
+    15,
+    48
+   ],
+   "Tm_Bloqueo": 20,
+   "Rnd_Bloqueo": 10.0,
+   "Centrado": [
+    162,
+    190
+   ],
+   "Altura": 60,
+   "Overlay": 1
+  },
+  "HDP": {
+   "Vida": 63,
+   "Fuerza": [
+    14,
+    25
+   ],
+   "Armadura": 2,
+   "Aturdirse": 999,
+   "Pts_Experiencia": [
+    400,
+    650
+   ],
+   "Velocidad": 0.94
+  },
+  "IA": {
+   "Oido": 3,
+   "Radio_Busqueda": 8
+  },
+  "Animaciones": {
+   "Andar": [
+    7,
+    10
+   ],
+   "Respirar": [
+    10,
+    8
+   ],
+   "Atacar": [
+    7,
+    9
+   ],
+   "Recibir": [
+    9,
+    2
+   ],
+   "Morir": [
+    9,
+    8
+   ],
+   "Recibir2": [
+    8,
+    2
+   ],
+   "Extra": [
+    8,
+    13
+   ],
+   "Alarma": [
+    6,
+    13
+   ]
+  },
+  "Items": {
+   "IDItem": [
+    9,
+    21,
+    20,
+    45,
+    79,
+    78,
+    92,
+    93,
+    104,
+    105,
+    106,
+    107,
+    108,
+    109
+   ],
+   "PItem": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    3,
+    2,
+    3,
+    1
+   ]
+  },
+  "Sonidos": {
+   "SndBase": 215,
+   "Carne": 1
+  }
+ },
+ "19": {
+  "title": "DEMONIO",
+  "General": {
+   "Tipo_IA": 1,
+   "Raza": 32,
+   "Vel_Ataque": [
+    40,
+    50
+   ],
+   "Rnd_Bloqueo": 0,
+   "Centrado": [
+    162,
+    120
+   ],
+   "Altura": 30,
+   "SangreFX": 4
+  },
+  "HDP": {
+   "Vida": 55,
+   "Fuerza": [
+    6,
+    13
+   ],
+   "Armadura": 2,
+   "Aturdirse": 4,
+   "Pts_Experiencia": [
+    240,
+    300
+   ],
+   "Velocidad": 1.2
+  },
+  "IA": {
+   "Oido": 3,
+   "Radio_Busqueda": 6
+  },
+  "Animaciones": {
+   "Andar": [
+    4,
+    10
+   ],
+   "Respirar": [
+    8,
+    10
+   ],
+   "Atacar": [
+    3,
+    10
+   ],
+   "Recibir": [
+    3,
+    3
+   ],
+   "Morir": [
+    5,
+    10
+   ],
+   "Recibir2": [
+    3,
+    3
+   ],
+   "Atacar2": [
+    3,
+    9
+   ],
+   "Alarma": [
+    4,
+    10
+   ]
+  },
+  "Items": {
+   "IDItem": [
+    10,
+    21,
+    18,
+    45,
+    75,
+    80,
+    96,
+    93,
+    95,
+    104,
+    105,
+    106,
+    107,
+    108,
+    109
+   ],
+   "PItem": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    3,
+    2,
+    3,
+    1
+   ]
+  },
+  "Sonidos": {
+   "SndBase": 230,
+   "Carne": 1
+  }
+ },
+ "20": {
+  "title": "DEMONIO INFERNAL",
+  "General": {
+   "Tipo_IA": 1,
+   "Raza": 32,
+   "Vel_Ataque": [
+    22,
+    40
+   ],
+   "Rnd_Bloqueo": 0,
+   "Centrado": [
+    158,
+    120
+   ],
+   "Altura": 30,
+   "SangreFX": 7
+  },
+  "HDP": {
+   "Vida": 70,
+   "Fuerza": [
+    10,
+    20
+   ],
+   "Armadura": 5,
+   "Aturdirse": 999,
+   "Pts_Experiencia": [
+    340,
+    680
+   ],
+   "Velocidad": 1.3
+  },
+  "IA": {
+   "Oido": 3,
+   "Radio_Busqueda": 6
+  },
+  "Animaciones": {
+   "Andar": [
+    4,
+    10
+   ],
+   "Respirar": [
+    8,
+    10
+   ],
+   "Atacar": [
+    3,
+    10
+   ],
+   "Morir": [
+    5,
+    12
+   ],
+   "Atacar2": [
+    3,
+    10
+   ],
+   "Alarma": [
+    4,
+    10
+   ],
+   "Aparecer": [
+    4,
+    11
+   ]
+  },
+  "Items": {
+   "IDItem": [
+    9,
+    21,
+    20,
+    45,
+    80,
+    82,
+    96,
+    90,
+    95,
+    105,
+    107,
+    94,
+    95,
+    96,
+    97,
+    98
+   ],
+   "PItem": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    1,
+    1,
+    3,
+    1,
+    100,
+    100,
+    1,
+    1,
+    1,
+    1,
+    1
+   ]
+  },
+  "Sonidos": {
+   "SndBase": 235,
+   "Carne": 1
+  }
+ },
+ "21": {
+  "title": "AMAZONA",
+  "General": {
+   "Tipo_IA": 1,
+   "Raza": 64,
+   "Vel_Ataque": [
+    20,
+    40
+   ],
+   "Rnd_Bloqueo": 12.0,
+   "Centrado": [
+    156,
+    164
+   ],
+   "Altura": 30
+  },
+  "HDP": {
+   "Vida": 20,
+   "Fuerza": [
+    3,
+    6
+   ],
+   "Armadura": 1,
+   "Aturdirse": 6,
+   "Pts_Experiencia": [
+    69,
+    99
+   ],
+   "Velocidad": 1.3
+  },
+  "IA": {
+   "Oido": 4,
+   "Radio_Busqueda": 6
+  },
+  "Animaciones": {
+   "Andar": [
+    4,
+    11
+   ],
+   "Respirar": [
+    8,
+    8
+   ],
+   "Atacar": [
+    3,
+    10
+   ],
+   "Cubrir": [
+    2,
+    2
+   ],
+   "Recibir": [
+    7,
+    5
+   ],
+   "Morir": [
+    6,
+    11
+   ],
+   "Recibir2": [
+    7,
+    3
+   ],
+   "Alarma": [
+    3,
+    10
+   ],
+   "Vigilar": [
+    4,
+    6
+   ]
+  },
+  "Items": {
+   "IDItem": [
+    3,
+    16,
+    41,
+    68,
+    87,
+    89,
+    104,
+    105,
+    106,
+    107,
+    108,
+    109
+   ],
+   "PItem": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    3,
+    2,
+    3,
+    1
+   ]
+  },
+  "Sonidos": {
+   "SndBase": 245,
+   "Carne": 1
+  }
+ },
+ "22": {
+  "title": "AMAZONA DIABOLICA",
+  "General": {
+   "Tipo_IA": 1,
+   "Raza": 64,
+   "Vel_Ataque": [
+    16,
+    26
+   ],
+   "Rnd_Bloqueo": 40.0,
+   "Centrado": [
+    156,
+    164
+   ],
+   "Altura": 30
+  },
+  "HDP": {
+   "Vida": 37,
+   "Fuerza": [
+    7,
+    12
+   ],
+   "Armadura": 2,
+   "Aturdirse": 3,
+   "Pts_Experiencia": [
+    151,
+    199
+   ],
+   "Velocidad": 1.3
+  },
+  "IA": {
+   "Oido": 4,
+   "Radio_Busqueda": 6
+  },
+  "Animaciones": {
+   "Andar": [
+    4,
+    11
+   ],
+   "Respirar": [
+    8,
+    8
+   ],
+   "Atacar": [
+    3,
+    10
+   ],
+   "Cubrir": [
+    2,
+    2
+   ],
+   "Recibir": [
+    7,
+    5
+   ],
+   "Morir": [
+    6,
+    11
+   ],
+   "Recibir2": [
+    7,
+    3
+   ],
+   "Alarma": [
+    3,
+    10
+   ],
+   "Vigilar": [
+    4,
+    6
+   ]
+  },
+  "Items": {
+   "IDItem": [
+    3,
+    16,
+    41,
+    68,
+    98,
+    89,
+    104,
+    105,
+    106,
+    107,
+    108,
+    109
+   ],
+   "PItem": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    3,
+    2,
+    3,
+    1
+   ]
+  },
+  "Sonidos": {
+   "SndBase": 245,
+   "Carne": 1
+  }
+ },
+ "23": {
+  "title": "ARQUERO",
+  "General": {
+   "Tipo_IA": 3,
+   "Raza": 64,
+   "Vel_Ataque": [
+    35,
+    55
+   ],
+   "Centrado": [
+    162,
+    133
+   ],
+   "Altura": 30,
+   "SangreFX": 1
+  },
+  "HDP": {
+   "Vida": 14,
+   "Fuerza": [
+    3,
+    5
+   ],
+   "Armadura": 0,
+   "Aturdirse": 5,
+   "Pts_Experiencia": [
+    70,
+    99
+   ],
+   "Velocidad": 1.1
+  },
+  "IA": {
+   "Oido": 3,
+   "Tm_Busqueda": 2100,
+   "Radio_Busqueda": 9
+  },
+  "Animaciones": {
+   "Andar": [
+    6,
+    10
+   ],
+   "Respirar": [
+    9,
+    8
+   ],
+   "Atacar": [
+    3,
+    14
+   ],
+   "Recibir": [
+    7,
+    3
+   ],
+   "Morir": [
+    6,
+    11
+   ],
+   "Recibir2": [
+    8,
+    3
+   ]
+  },
+  "Items": {
+   "IDItem": [
+    18,
+    40,
+    41,
+    66,
+    67,
+    104,
+    105,
+    106,
+    107,
+    108,
+    109
+   ],
+   "PItem": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    3,
+    2,
+    3,
+    1
+   ]
+  },
+  "Sonidos": {
+   "SndBase": 255,
+   "Carne": 1
+  }
+ },
+ "24": {
+  "title": "CABALLERO",
+  "General": {
+   "Tipo_IA": 1,
+   "Raza": 64,
+   "Vel_Ataque": [
+    17,
+    30
+   ],
+   "Rnd_Bloqueo": 30.0,
+   "Centrado": [
+    156,
+    138
+   ],
+   "Altura": 30,
+   "SangreFX": 0
+  },
+  "HDP": {
+   "Vida": 38,
+   "Fuerza": [
+    9,
+    14
+   ],
+   "Armadura": 2,
+   "Aturdirse": 4,
+   "Pts_Experiencia": [
+    97,
+    112
+   ],
+   "Velocidad": 1.0
+  },
+  "IA": {
+   "Oido": 3,
+   "Radio_Busqueda": 7
+  },
+  "Animaciones": {
+   "Andar": [
+    8,
+    8
+   ],
+   "Respirar": [
+    8,
+    8
+   ],
+   "Atacar": [
+    4,
+    10
+   ],
+   "Cubrir": [
+    1,
+    3
+   ],
+   "Recibir": [
+    7,
+    3
+   ],
+   "Morir": [
+    6,
+    10
+   ],
+   "Recibir2": [
+    8,
+    3
+   ],
+   "Alarma": [
+    3,
+    12
+   ],
+   "Vigilar": [
+    10,
+    6
+   ]
+  },
+  "Items": {
+   "IDItem": [
+    10,
+    21,
+    45,
+    83,
+    80,
+    96,
+    97,
+    95,
+    104,
+    105,
+    106,
+    107,
+    108,
+    109
+   ],
+   "PItem": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    1,
+    3,
+    2,
+    3,
+    1
+   ]
+  },
+  "Sonidos": {
+   "SndBase": 260,
+   "Carne": 0
+  }
+ },
+ "25": {
+  "title": "MAGO",
+  "General": {
+   "Tipo_IA": 3,
+   "Raza": 64,
+   "Vel_Ataque": [
+    35,
+    50
+   ],
+   "Centrado": [
+    162,
+    133
+   ],
+   "Altura": 30,
+   "SangreFX": 1
+  },
+  "HDP": {
+   "Vida": 86,
+   "Fuerza": [
+    8,
+    16
+   ],
+   "Armadura": 3,
+   "Aturdirse": 3,
+   "Pts_Experiencia": [
+    390,
+    500
+   ],
+   "Velocidad": 1.1
+  },
+  "IA": {
+   "Oido": 3,
+   "Tm_Busqueda": 2100,
+   "Radio_Busqueda": 9
+  },
+  "Animaciones": {
+   "Andar": [
+    8,
+    10
+   ],
+   "Respirar": [
+    8,
+    8
+   ],
+   "Atacar": [
+    4,
+    10
+   ],
+   "Cubrir": [
+    1,
+    7
+   ],
+   "Recibir": [
+    7,
+    3
+   ],
+   "Morir": [
+    6,
+    9
+   ],
+   "Recibir2": [
+    8,
+    3
+   ]
+  },
+  "Items": {
+   "IDItem": [
+    90,
+    91,
+    92,
+    93,
+    94,
+    95,
+    96,
+    97,
+    98,
+    99,
+    105
+   ],
+   "PItem": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Sonidos": {
+   "SndBase": 265,
+   "Carne": 1
+  }
+ },
+ "27": {
+  "title": "POSADERO",
+  "General": {
+   "Tipo_IA": 2,
+   "Raza": 128,
+   "Centrado": [
+    146,
+    118
+   ]
+  },
+  "Animaciones": {
+   "Andar": [
+    8,
+    14
+   ],
+   "Respirar": [
+    6,
+    15
+   ],
+   "Atacar": [
+    6,
+    70
+   ]
+  }
+ },
+ "28": {
+  "title": "BORRACHO BARRA",
+  "General": {
+   "Tipo_IA": 2,
+   "Raza": 128,
+   "Centrado": [
+    156,
+    128
+   ]
+  },
+  "Animaciones": {
+   "Andar": [
+    10,
+    11
+   ],
+   "Respirar": [
+    6,
+    24
+   ],
+   "Atacar": [
+    0,
+    0
+   ]
+  }
+ },
+ "29": {
+  "title": "ARQUERO BARRA",
+  "General": {
+   "Tipo_IA": 2,
+   "Raza": 128,
+   "Centrado": [
+    156,
+    128
+   ]
+  },
+  "Animaciones": {
+   "Andar": [
+    4,
+    30
+   ],
+   "Respirar": [
+    4,
+    30
+   ]
+  }
+ },
+ "30": {
+  "title": "CABALLERO",
+  "General": {
+   "Tipo_IA": 2,
+   "Raza": 128,
+   "Centrado": [
+    156,
+    128
+   ]
+  },
+  "Animaciones": {
+   "Andar": [
+    5,
+    30
+   ],
+   "Respirar": [
+    6,
+    30
+   ],
+   "Atacar": [
+    0,
+    0
+   ]
+  }
+ },
+ "31": {
+  "title": "BÁRBARO",
+  "General": {
+   "Tipo_IA": 2,
+   "Raza": 128,
+   "Centrado": [
+    156,
+    128
+   ]
+  },
+  "Animaciones": {
+   "Andar": [
+    5,
+    30
+   ],
+   "Respirar": [
+    6,
+    30
+   ],
+   "Atacar": [
+    0,
+    0
+   ]
+  }
+ },
+ "32": {
+  "title": "GUERRERO MESA",
+  "General": {
+   "Tipo_IA": 2,
+   "Raza": 128,
+   "Centrado": [
+    156,
+    128
+   ]
+  },
+  "Animaciones": {
+   "Andar": [
+    5,
+    30
+   ],
+   "Respirar": [
+    6,
+    30
+   ],
+   "Atacar": [
+    0,
+    0
+   ]
+  }
+ },
+ "33": {
+  "title": "BORRACHO MESA",
+  "General": {
+   "Tipo_IA": 2,
+   "Raza": 128,
+   "Centrado": [
+    156,
+    128
+   ]
+  },
+  "Animaciones": {
+   "Andar": [
+    5,
+    30
+   ],
+   "Respirar": [
+    4,
+    61
+   ],
+   "Atacar": [
+    0,
+    0
+   ]
+  }
+ },
+ "34": {
+  "title": "GORDO DORMIDO",
+  "General": {
+   "Tipo_IA": 2,
+   "Raza": 128,
+   "Centrado": [
+    156,
+    128
+   ]
+  },
+  "Animaciones": {
+   "Andar": [
+    6,
+    30
+   ],
+   "Respirar": [
+    4,
+    50
+   ],
+   "Atacar": [
+    0,
+    0
+   ]
+  }
+ },
+ "35": {
+  "title": "JUGADOR 1",
+  "General": {
+   "Tipo_IA": 2,
+   "Raza": 128,
+   "Centrado": [
+    156,
+    128
+   ]
+  },
+  "Animaciones": {
+   "Andar": [
+    4,
+    30
+   ],
+   "Respirar": [
+    4,
+    30
+   ],
+   "Atacar": [
+    4,
+    30
+   ],
+   "Cubrir": [
+    4,
+    50
+   ]
+  }
+ },
+ "36": {
+  "title": "JUGADOR 2",
+  "General": {
+   "Tipo_IA": 2,
+   "Raza": 128,
+   "Centrado": [
+    176,
+    130
+   ]
+  },
+  "Animaciones": {
+   "Andar": [
+    4,
+    30
+   ],
+   "Respirar": [
+    4,
+    30
+   ],
+   "Atacar": [
+    4,
+    30
+   ],
+   "Cubrir": [
+    4,
+    50
+   ]
+  }
+ },
+ "37": {
+  "title": "MAGO37",
+  "General": {
+   "Tipo_IA": 2,
+   "Raza": 128,
+   "Centrado": [
+    176,
+    130
+   ]
+  },
+  "Animaciones": {
+   "Andar": [
+    4,
+    30
+   ]
+  }
+ },
+ "38": {
+  "title": "Fase 1: Viejo orco",
+  "General": {
+   "Tipo_IA": 2,
+   "Raza": 128,
+   "Centrado": [
+    154,
+    130
+   ]
+  },
+  "Animaciones": {
+   "Andar": [
+    8,
+    12
+   ]
+  }
+ },
+ "39": {
+  "title": "LIDER GOBLIN(FASE 3)",
+  "General": {
+   "Tipo_IA": 1,
+   "Raza": 256,
+   "Vel_Ataque": [
+    22,
+    36
+   ],
+   "Rnd_Bloqueo": 50.0,
+   "Centrado": [
+    162,
+    123
+   ],
+   "Altura": 30,
+   "SangreFX": 3
+  },
+  "HDP": {
+   "Vida": 40,
+   "Fuerza": [
+    6,
+    10
+   ],
+   "Armadura": 1,
+   "Aturdirse": 3,
+   "Pts_Experiencia": [
+    110,
+    180
+   ],
+   "Velocidad": 1.2
+  },
+  "IA": {
+   "Oido": 4,
+   "Radio_Busqueda": 5
+  },
+  "Animaciones": {
+   "Andar": [
+    7,
+    8
+   ],
+   "Respirar": [
+    7,
+    8
+   ],
+   "Atacar": [
+    3,
+    8
+   ],
+   "Cubrir": [
+    1,
+    2
+   ],
+   "Recibir": [
+    7,
+    3
+   ],
+   "Morir": [
+    6,
+    10
+   ],
+   "Recibir2": [
+    8,
+    3
+   ],
+   "Extra": [
+    0,
+    0
+   ],
+   "Atacar2": [
+    0,
+    0
+   ],
+   "Alarma": [
+    7,
+    12
+   ],
+   "Vigilar": [
+    0,
+    0
+   ]
+  },
+  "Items": {
+   "IDItem": [
+    95
+   ],
+   "PItem": [
+    999
+   ]
+  },
+  "Sonidos": {
+   "SndBase": 200,
+   "Carne": 1
+  }
+ },
+ "40": {
+  "title": "SEÑOR DE FEARM",
+  "General": {
+   "Tipo_IA": 1,
+   "Raza": 256,
+   "Vel_Ataque": [
+    21,
+    31
+   ],
+   "Rnd_Bloqueo": 35.0,
+   "Centrado": [
+    156,
+    138
+   ],
+   "Altura": 30,
+   "SangreFX": 0
+  },
+  "HDP": {
+   "Vida": 80,
+   "Fuerza": [
+    9,
+    11
+   ],
+   "Armadura": 2,
+   "Aturdirse": 99,
+   "Pts_Experiencia": [
+    235,
+    300
+   ],
+   "Velocidad": 1.03
+  },
+  "IA": {
+   "Oido": 4,
+   "Radio_Busqueda": 7
+  },
+  "Animaciones": {
+   "Andar": [
+    8,
+    8
+   ],
+   "Respirar": [
+    8,
+    8
+   ],
+   "Atacar": [
+    4,
+    10
+   ],
+   "Cubrir": [
+    1,
+    3
+   ],
+   "Recibir": [
+    7,
+    3
+   ],
+   "Morir": [
+    6,
+    10
+   ],
+   "Recibir2": [
+    8,
+    3
+   ],
+   "Alarma": [
+    3,
+    12
+   ],
+   "Vigilar": [
+    10,
+    6
+   ]
+  },
+  "Items": {
+   "IDItem": [
+    130
+   ],
+   "PItem": [
+    999
+   ]
+  },
+  "Sonidos": {
+   "SndBase": 260,
+   "Carne": 0
+  }
+ },
+ "41": {
+  "title": " FASE 5: Viajero ",
+  "General": {
+   "Tipo_IA": 2,
+   "Raza": 128,
+   "Centrado": [
+    154,
+    130
+   ]
+  },
+  "Animaciones": {
+   "Andar": [
+    8,
+    10
+   ]
+  }
+ },
+ "42": {
+  "title": " FASE 5: Fantasma del mago ",
+  "General": {
+   "Tipo_IA": 2,
+   "Raza": 128,
+   "Centrado": [
+    154,
+    130
+   ]
+  },
+  "Animaciones": {
+   "Andar": [
+    8,
+    10
+   ]
+  }
+ },
+ "43": {
+  "title": "LIDER GOBLIN(FASE 6)",
+  "General": {
+   "Tipo_IA": 1,
+   "Raza": 256,
+   "Vel_Ataque": [
+    22,
+    36
+   ],
+   "Rnd_Bloqueo": 50.0,
+   "Centrado": [
+    162,
+    123
+   ],
+   "Altura": 30,
+   "SangreFX": 3
+  },
+  "HDP": {
+   "Vida": 100,
+   "Fuerza": [
+    9,
+    12
+   ],
+   "Armadura": 1,
+   "Aturdirse": 6,
+   "Pts_Experiencia": [
+    210,
+    420
+   ],
+   "Velocidad": 1.2
+  },
+  "IA": {
+   "Oido": 4,
+   "Radio_Busqueda": 5
+  },
+  "Animaciones": {
+   "Andar": [
+    7,
+    8
+   ],
+   "Respirar": [
+    7,
+    8
+   ],
+   "Atacar": [
+    3,
+    8
+   ],
+   "Cubrir": [
+    1,
+    2
+   ],
+   "Recibir": [
+    7,
+    3
+   ],
+   "Morir": [
+    6,
+    10
+   ],
+   "Recibir2": [
+    8,
+    3
+   ],
+   "Extra": [
+    0,
+    0
+   ],
+   "Atacar2": [
+    0,
+    0
+   ],
+   "Alarma": [
+    7,
+    12
+   ],
+   "Vigilar": [
+    0,
+    0
+   ]
+  },
+  "Items": {
+   "IDItem": [
+    6
+   ],
+   "PItem": [
+    999
+   ]
+  },
+  "Sonidos": {
+   "SndBase": 200,
+   "Carne": 1
+  }
+ },
+ "44": {
+  "title": " FASE 7: Aldeano ",
+  "General": {
+   "Tipo_IA": 2,
+   "Raza": 128,
+   "Centrado": [
+    154,
+    130
+   ]
+  },
+  "Animaciones": {
+   "Andar": [
+    8,
+    9
+   ]
+  }
+ },
+ "45": {
+  "title": "ORCO MASTER (ORCO CAPITAN MEJORADO) FASE 8",
+  "General": {
+   "Tipo_IA": 1,
+   "Raza": 256,
+   "Vel_Ataque": [
+    20,
+    32
+   ],
+   "Tm_Bloqueo": 15,
+   "Rnd_Bloqueo": 50.0,
+   "Centrado": [
+    162,
+    123
+   ],
+   "Altura": 30,
+   "SangreFX": 1
+  },
+  "HDP": {
+   "Vida": 104,
+   "Fuerza": [
+    10,
+    12
+   ],
+   "Armadura": 3,
+   "Aturdirse": 16,
+   "Pts_Experiencia": [
+    320,
+    430
+   ],
+   "Velocidad": 1.05
+  },
+  "IA": {
+   "Oido": 4,
+   "Radio_Busqueda": 8
+  },
+  "Animaciones": {
+   "Andar": [
+    6,
+    8
+   ],
+   "Respirar": [
+    7,
+    8
+   ],
+   "Atacar": [
+    3,
+    8
+   ],
+   "Cubrir": [
+    1,
+    2
+   ],
+   "Recibir": [
+    7,
+    3
+   ],
+   "Morir": [
+    6,
+    10
+   ],
+   "Recibir2": [
+    8,
+    3
+   ]
+  },
+  "Items": {
+   "IDItem": [
+    79
+   ],
+   "PItem": [
+    999
+   ]
+  }
+ },
+ "46": {
+  "title": " FASE 9: Guerrero ",
+  "General": {
+   "Tipo_IA": 2,
+   "Raza": 128,
+   "Centrado": [
+    154,
+    130
+   ]
+  },
+  "Animaciones": {
+   "Andar": [
+    8,
+    11
+   ]
+  }
+ },
+ "47": {
+  "title": " FASE 11: Caballero ",
+  "General": {
+   "Tipo_IA": 2,
+   "Raza": 128,
+   "Centrado": [
+    154,
+    130
+   ]
+  },
+  "Animaciones": {
+   "Andar": [
+    8,
+    10
+   ]
+  }
+ },
+ "48": {
+  "title": "TROLL GUERRERO MAESTRO",
+  "General": {
+   "Tipo_IA": 1,
+   "Raza": 256,
+   "Vel_Ataque": [
+    20,
+    58
+   ],
+   "Tm_Bloqueo": 20,
+   "Rnd_Bloqueo": 0,
+   "Centrado": [
+    162,
+    190
+   ],
+   "Altura": 60,
+   "Overlay": 1
+  },
+  "HDP": {
+   "Vida": 96,
+   "Fuerza": [
+    14,
+    20
+   ],
+   "Armadura": 2,
+   "Aturdirse": 999,
+   "Pts_Experiencia": [
+    160,
+    200
+   ],
+   "Velocidad": 1.08
+  },
+  "IA": {
+   "Oido": 3,
+   "Radio_Busqueda": 12
+  },
+  "Animaciones": {
+   "Andar": [
+    8,
+    10
+   ],
+   "Respirar": [
+    10,
+    8
+   ],
+   "Atacar": [
+    7,
+    9
+   ],
+   "Recibir": [
+    9,
+    2
+   ],
+   "Morir": [
+    9,
+    8
+   ],
+   "Recibir2": [
+    8,
+    2
+   ],
+   "Extra": [
+    8,
+    13
+   ],
+   "Alarma": [
+    6,
+    13
+   ]
+  },
+  "Items": {
+   "IDItem": [
+    77
+   ],
+   "PItem": [
+    999
+   ]
+  },
+  "Sonidos": {
+   "SndBase": 215,
+   "Carne": 1
+  }
+ },
+ "51": {
+  "title": "SEÑOR DE AILM",
+  "General": {
+   "Tipo_IA": 1,
+   "Raza": 256,
+   "Vel_Ataque": [
+    15,
+    28
+   ],
+   "Rnd_Bloqueo": 38.0,
+   "Centrado": [
+    156,
+    138
+   ],
+   "Altura": 30,
+   "SangreFX": 0
+  },
+  "HDP": {
+   "Vida": 152,
+   "Fuerza": [
+    8,
+    10
+   ],
+   "Armadura": 2,
+   "Aturdirse": 99,
+   "Pts_Experiencia": [
+    248,
+    330
+   ],
+   "Velocidad": 1.13
+  },
+  "IA": {
+   "Oido": 4,
+   "Radio_Busqueda": 7
+  },
+  "Animaciones": {
+   "Andar": [
+    7,
+    8
+   ],
+   "Respirar": [
+    8,
+    8
+   ],
+   "Atacar": [
+    4,
+    10
+   ],
+   "Cubrir": [
+    1,
+    3
+   ],
+   "Recibir": [
+    7,
+    3
+   ],
+   "Morir": [
+    6,
+    10
+   ],
+   "Recibir2": [
+    8,
+    3
+   ],
+   "Alarma": [
+    3,
+    12
+   ],
+   "Vigilar": [
+    10,
+    6
+   ]
+  },
+  "Items": {
+   "IDItem": [
+    43
+   ],
+   "PItem": [
+    999
+   ]
+  },
+  "Sonidos": {
+   "SndBase": 260,
+   "Carne": 0
+  }
+ },
+ "52": {
+  "title": "ORCO MASTER (ORCO CAPITAN MEJORADO) FASE 18",
+  "General": {
+   "Tipo_IA": 1,
+   "Raza": 256,
+   "Vel_Ataque": [
+    18,
+    32
+   ],
+   "Tm_Bloqueo": 15,
+   "Rnd_Bloqueo": 30.0,
+   "Centrado": [
+    156,
+    138
+   ],
+   "Altura": 30,
+   "SangreFX": 1
+  },
+  "HDP": {
+   "Vida": 184,
+   "Fuerza": [
+    9,
+    15
+   ],
+   "Armadura": 2,
+   "Aturdirse": 19,
+   "Pts_Experiencia": [
+    620,
+    930
+   ],
+   "Velocidad": 1.05
+  },
+  "IA": {
+   "Oido": 4,
+   "Radio_Busqueda": 8
+  },
+  "Animaciones": {
+   "Andar": [
+    5,
+    10
+   ],
+   "Respirar": [
+    8,
+    8
+   ],
+   "Atacar": [
+    3,
+    9
+   ],
+   "Cubrir": [
+    1,
+    2
+   ],
+   "Recibir": [
+    7,
+    3
+   ],
+   "Morir": [
+    6,
+    10
+   ],
+   "Recibir2": [
+    8,
+    3
+   ],
+   "Alarma": [
+    3,
+    14
+   ],
+   "Aburrido": [
+    7,
+    11
+   ],
+   "Vigilar": [
+    10,
+    6
+   ]
+  },
+  "Items": {
+   "IDItem": [
+    75
+   ],
+   "PItem": [
+    999
+   ]
+  }
+ },
+ "53": {
+  "title": " FASE 19: FANTASMA DE CABALLERO",
+  "General": {
+   "Tipo_IA": 2,
+   "Raza": 128,
+   "Centrado": [
+    146,
+    118
+   ]
+  },
+  "Animaciones": {
+   "Andar": [
+    8,
+    10
+   ]
+  }
+ },
+ "54": {
+  "title": " FASE 21: Anciano ",
+  "General": {
+   "Tipo_IA": 2,
+   "Raza": 128,
+   "Centrado": [
+    154,
+    130
+   ]
+  },
+  "Animaciones": {
+   "Andar": [
+    8,
+    8
+   ]
+  }
+ },
+ "55": {
+  "title": "ZELOS",
+  "General": {
+   "Tipo_IA": 3,
+   "Raza": 256,
+   "Vel_Ataque": [
+    35,
+    50
+   ],
+   "Centrado": [
+    162,
+    133
+   ],
+   "Altura": 30,
+   "SangreFX": 1
+  },
+  "HDP": {
+   "Vida": 186,
+   "Fuerza": [
+    9,
+    18
+   ],
+   "Armadura": 3,
+   "Aturdirse": 12,
+   "Pts_Experiencia": [
+    860,
+    999
+   ],
+   "Velocidad": 1.1
+  },
+  "IA": {
+   "Oido": 3,
+   "Tm_Busqueda": 2100,
+   "Radio_Busqueda": 9
+  },
+  "Animaciones": {
+   "Andar": [
+    8,
+    10
+   ],
+   "Respirar": [
+    8,
+    8
+   ],
+   "Atacar": [
+    4,
+    10
+   ],
+   "Cubrir": [
+    1,
+    7
+   ],
+   "Recibir": [
+    7,
+    3
+   ],
+   "Morir": [
+    6,
+    9
+   ],
+   "Recibir2": [
+    8,
+    3
+   ]
+  },
+  "Items": {
+   "IDItem": [
+    60
+   ],
+   "PItem": [
+    999
+   ]
+  },
+  "Sonidos": {
+   "SndBase": 265,
+   "Carne": 1
+  }
+ },
+ "56": {
+  "title": " FASE 24: CAMPESINO",
+  "General": {
+   "Tipo_IA": 2,
+   "Raza": 128,
+   "Centrado": [
+    146,
+    118
+   ]
+  },
+  "Animaciones": {
+   "Andar": [
+    8,
+    12
+   ]
+  }
+ },
+ "57": {
+  "title": "FASE 25: Fantasma de héroe",
+  "General": {
+   "Tipo_IA": 2,
+   "Raza": 128,
+   "Centrado": [
+    166,
+    118
+   ]
+  },
+  "Animaciones": {
+   "Andar": [
+    8,
+    30
+   ]
+  }
+ },
+ "58": {
+  "title": "ORCO MASTER (ORCO CAPITAN MEJORADO) FASE 25",
+  "General": {
+   "Tipo_IA": 1,
+   "Raza": 256,
+   "Vel_Ataque": [
+    19,
+    30
+   ],
+   "Tm_Bloqueo": 15,
+   "Rnd_Bloqueo": 30.0,
+   "Centrado": [
+    162,
+    123
+   ],
+   "Altura": 30,
+   "SangreFX": 1
+  },
+  "HDP": {
+   "Vida": 95,
+   "Fuerza": [
+    10,
+    14
+   ],
+   "Armadura": 1,
+   "Aturdirse": 6,
+   "Pts_Experiencia": [
+    320,
+    430
+   ],
+   "Velocidad": 1.05
+  },
+  "IA": {
+   "Oido": 4,
+   "Radio_Busqueda": 8
+  },
+  "Animaciones": {
+   "Andar": [
+    6,
+    8
+   ],
+   "Respirar": [
+    7,
+    8
+   ],
+   "Atacar": [
+    3,
+    8
+   ],
+   "Cubrir": [
+    1,
+    2
+   ],
+   "Recibir": [
+    7,
+    3
+   ],
+   "Morir": [
+    6,
+    10
+   ],
+   "Recibir2": [
+    8,
+    3
+   ]
+  },
+  "Items": {
+   "IDItem": [
+    90
+   ],
+   "PItem": [
+    999
+   ]
+  }
+ },
+ "59": {
+  "title": " FASE 25: Piedra blanca ",
+  "General": {
+   "Tipo_IA": 2,
+   "Raza": 128,
+   "Centrado": [
+    154,
+    130
+   ]
+  },
+  "Animaciones": {
+   "Andar": [
+    8,
+    10
+   ]
+  }
+ },
+ "61": {
+  "title": "ORCO GENERAL DE TODOS LOS EJERCITOS",
+  "General": {
+   "Tipo_IA": 1,
+   "Raza": 256,
+   "Vel_Ataque": [
+    15,
+    35
+   ],
+   "Tm_Bloqueo": 15,
+   "Rnd_Bloqueo": 35.0,
+   "Centrado": [
+    156,
+    138
+   ],
+   "Altura": 30,
+   "SangreFX": 1
+  },
+  "HDP": {
+   "Vida": 250,
+   "Fuerza": [
+    18,
+    26
+   ],
+   "Armadura": 4,
+   "Aturdirse": 5,
+   "Pts_Experiencia": [
+    830,
+    950
+   ],
+   "Velocidad": 1.08
+  },
+  "IA": {
+   "Oido": 5,
+   "Radio_Busqueda": 8
+  },
+  "Animaciones": {
+   "Andar": [
+    5,
+    10
+   ],
+   "Respirar": [
+    8,
+    8
+   ],
+   "Atacar": [
+    3,
+    9
+   ],
+   "Cubrir": [
+    1,
+    2
+   ],
+   "Recibir": [
+    7,
+    3
+   ],
+   "Morir": [
+    6,
+    10
+   ],
+   "Recibir2": [
+    8,
+    3
+   ],
+   "Alarma": [
+    3,
+    14
+   ],
+   "Aburrido": [
+    7,
+    11
+   ],
+   "Vigilar": [
+    10,
+    6
+   ]
+  },
+  "Items": {
+   "IDItem": [
+    14
+   ],
+   "PItem": [
+    999
+   ]
+  },
+  "Sonidos": {
+   "SndBase": 205,
+   "Carne": 0
+  }
+ },
+ "62": {
+  "title": " FASE 34: Niñera ",
+  "General": {
+   "Tipo_IA": 2,
+   "Raza": 128,
+   "Centrado": [
+    154,
+    130
+   ]
+  },
+  "Animaciones": {
+   "Andar": [
+    8,
+    21
+   ]
+  }
+ },
+ "63": {
+  "title": "Naya",
+  "General": {
+   "Tipo_IA": 3,
+   "Raza": 256,
+   "Vel_Ataque": [
+    50,
+    75
+   ],
+   "Centrado": [
+    162,
+    133
+   ],
+   "Altura": 30,
+   "SangreFX": 1
+  },
+  "HDP": {
+   "Vida": 250,
+   "Fuerza": [
+    20,
+    30
+   ],
+   "Armadura": 5,
+   "Aturdirse": 99,
+   "Pts_Experiencia": [
+    390,
+    500
+   ],
+   "Velocidad": 1.1
+  },
+  "IA": {
+   "Oido": 5,
+   "Tm_Busqueda": 2100,
+   "Radio_Busqueda": 9
+  },
+  "Animaciones": {
+   "Andar": [
+    8,
+    10
+   ],
+   "Respirar": [
+    8,
+    10
+   ],
+   "Atacar": [
+    4,
+    11
+   ],
+   "Cubrir": [
+    0,
+    0
+   ],
+   "Recibir": [
+    7,
+    3
+   ],
+   "Morir": [
+    6,
+    10
+   ],
+   "Atacar2": [
+    4,
+    16
+   ],
+   "Recibir2": [
+    8,
+    3
+   ]
+  },
+  "Items": {
+   "IDItem": [
+    90,
+    91,
+    92,
+    93,
+    94,
+    95,
+    96,
+    97,
+    98,
+    99,
+    105
+   ],
+   "PItem": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Sonidos": {
+   "SndBase": 265,
+   "Carne": 1
+  }
+ },
+ "64": {
+  "title": "PIEDRA DEL FINAL",
+  "General": {
+   "Tipo_IA": 3,
+   "Raza": 512,
+   "Vel_Ataque": [
+    50,
+    75
+   ],
+   "Centrado": [
+    162,
+    133
+   ],
+   "Altura": 30,
+   "SangreFX": 1
+  },
+  "HDP": {
+   "Vida": 250,
+   "Fuerza": [
+    20,
+    30
+   ],
+   "Armadura": 5,
+   "Aturdirse": 99,
+   "Pts_Experiencia": [
+    390,
+    500
+   ],
+   "Velocidad": 1.1
+  },
+  "IA": {
+   "Oido": 5,
+   "Tm_Busqueda": 2100,
+   "Radio_Busqueda": 9
+  },
+  "Animaciones": {
+   "Andar": [
+    8,
+    10
+   ],
+   "Respirar": [
+    8,
+    10
+   ],
+   "Atacar": [
+    4,
+    11
+   ],
+   "Cubrir": [
+    0,
+    0
+   ],
+   "Recibir": [
+    7,
+    3
+   ],
+   "Morir": [
+    6,
+    10
+   ],
+   "Atacar2": [
+    4,
+    16
+   ],
+   "Recibir2": [
+    8,
+    3
+   ]
+  },
+  "Items": {
+   "IDItem": [
+    90,
+    91,
+    92,
+    93,
+    94,
+    95,
+    96,
+    97,
+    98,
+    99,
+    105
+   ],
+   "PItem": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Sonidos": {
+   "SndBase": 265,
+   "Carne": 1
+  }
+ },
+ "70": {
+  "title": "DarkStone(Pequeña)",
+  "General": {
+   "Raza": 512,
+   "Vida": 102
+  }
+ },
+ "71": {
+  "title": "DarkStone(Pequeña)",
+  "General": {
+   "Raza": 512,
+   "Vida": 40
+  }
+ },
+ "72": {
+  "title": "DarkStone(Pequeña)",
+  "General": {
+   "Raza": 512,
+   "Vida": 40
+  }
+ },
+ "73": {
+  "title": "DarkStone(Pequeña)",
+  "General": {
+   "Raza": 512,
+   "Vida": 40
+  }
+ },
+ "74": {
+  "title": "DarkStone(Pequeña)",
+  "General": {
+   "Raza": 512,
+   "Vida": 40
+  }
+ },
+ "75": {
+  "title": "DarkStone(Pequeña)",
+  "General": {
+   "Raza": 512,
+   "Vida": 40
+  }
+ },
+ "80": {
+  "title": "Caldero(Principal)",
+  "General": {
+   "Raza": 512,
+   "Vida": 64
+  }
+ },
+ "81": {
+  "title": "Caldero(-Unión-)",
+  "General": {
+   "Raza": 512,
+   "Vida": 28
+  }
+ },
+ "82": {
+  "title": "Caldero(-Unión-)",
+  "General": {
+   "Raza": 512,
+   "Vida": 28
+  }
+ },
+ "100": {
+  "title": "BARBARO - BÁSICO",
+  "General": {
+   "Centrado": [
+    -162,
+    -123
+   ],
+   "Raza": 0,
+   "Altura": 40
+  },
+  "HDP": {
+   "Aturdirse": 2,
+   "Velocidad": 1.0
+  },
+  "Animaciones": {
+   "Andar": [
+    7,
+    10
+   ],
+   "Respirar": [
+    8,
+    8
+   ],
+   "Atacar": [
+    4,
+    9
+   ],
+   "Cubrir": [
+    1,
+    2
+   ],
+   "Recibir": [
+    7,
+    3
+   ],
+   "Morir": [
+    6,
+    11
+   ],
+   "Recibir2": [
+    8,
+    3
+   ],
+   "Extra": [
+    5,
+    11
+   ],
+   "Atacar2": [
+    4,
+    9
+   ],
+   "Alarma": [
+    0,
+    0
+   ],
+   "Vigilar": [
+    7,
+    10
+   ]
+  },
+  "Items": {
+   "IDItem": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "PItem": [
+    10,
+    98,
+    50,
+    30
+   ]
+  }
+ },
+ "101": {
+  "title": "ARQUERA- BÁSICA",
+  "General": {
+   "Centrado": [
+    -162,
+    -110
+   ],
+   "Raza": 0,
+   "Altura": 40
+  },
+  "HDP": {
+   "Aturdirse": 1,
+   "Velocidad": 1.0
+  },
+  "Animaciones": {
+   "Andar": [
+    7,
+    10
+   ],
+   "Respirar": [
+    8,
+    8
+   ],
+   "Atacar": [
+    2,
+    14
+   ],
+   "Recibir": [
+    7,
+    3
+   ],
+   "Morir": [
+    6,
+    11
+   ],
+   "Recibir2": [
+    8,
+    3
+   ],
+   "Extra": [
+    5,
+    11
+   ],
+   "Atacar2": [
+    5,
+    9
+   ],
+   "Alarma": [
+    0,
+    0
+   ],
+   "Vigilar": [
+    7,
+    10
+   ]
+  }
+ },
+ "102": {
+  "title": "HECHICERA- BÁSICA",
+  "General": {
+   "Centrado": [
+    -162,
+    -110
+   ],
+   "Raza": 0,
+   "Altura": 40
+  },
+  "HDP": {
+   "Aturdirse": 1,
+   "Velocidad": 1.0
+  },
+  "Animaciones": {
+   "Andar": [
+    7,
+    10
+   ],
+   "Respirar": [
+    8,
+    8
+   ],
+   "Atacar": [
+    2,
+    14
+   ],
+   "Cubrir": [
+    2,
+    2
+   ],
+   "Recibir": [
+    7,
+    3
+   ],
+   "Morir": [
+    4,
+    10
+   ],
+   "Recibir2": [
+    8,
+    3
+   ],
+   "Extra": [
+    5,
+    11
+   ],
+   "Vigilar": [
+    7,
+    11
+   ]
+  }
+ }
+}

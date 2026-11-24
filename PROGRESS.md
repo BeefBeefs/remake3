@@ -17,6 +17,20 @@ Each working session appends an entry below (newest first). Format knowledge liv
 | Renderer (iso, three.js) | 🟡 real Lost Forrest, chunked, Barbarian walking (milestone 1) — **never run in a browser** |
 | Combat, AI, items, inventory, UI, multiplayer, editor | ⬜ not started |
 
+## Turn 3 — 2026-11-24 · game data, animations, enemies (steps logged as they finish)
+
+### Step 1 ✅ NHS archives decoded → actor and item tables
+- `.Nhs` layout: 256 × 64-byte names | u32 offset[256] | u32 size[256] | data (absolute offsets; contents are bitwise
+  NOT of plain text). `tools/nhs.py` reads them; `tools/convert_nhs.py` writes `public/assets/data/actors.json`
+  (**72 actors**, INI sections General/HDP/IA/Animaciones/Items/Sonidos…) and `items.json` (**141 items**), and
+  unpacks the 34 `.map` files embedded in `NightStone.NHS` to `public/assets/maps/nhs/` (gzip, same format as the
+  other maps — probably the multiplayer/mission maps).
+- Gold for the next steps: actor INIs give life, damage range, armour, XP, speed, hearing radius, drop tables
+  and — importantly — the **animation table** `Andar/Respirar/Atacar/Cubrir/Recibir/Morir/Recibir2/Alarma = (speed, frames
+  per direction)`, which is the key to segmenting the P16 packs (step 2). Item INIs give type, graphic, damage
+  range, durability, requirements and bonuses. Names are Spanish (e.g. `Raza`, `Vida`, `Fuerza`); in-game English names
+  come from `Idioma.bdt`.
+
 ## Turn 2 — 2026-11-24 · sprites and the real map
 
 **Done**

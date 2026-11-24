@@ -1,0 +1,2087 @@
+{
+ "1": {
+  "title": "ESPADA #1: CIMITARRA",
+  "General": {
+   "Tipo": 1,
+   "Grafico": 1,
+   "Potencia": [
+    2,
+    4
+   ],
+   "Durabilidad": 56,
+   "CofreLv": 1
+  },
+  "Requerimientos": {
+   "Character": 100,
+   "R_Fuerza": 0,
+   "R_Destreza": 0,
+   "R_Resistencia": 0,
+   "R_Magia": 0,
+   "R_Nivel": 0
+  },
+  "Bonificadores": {
+   "B_Fuerza": 0,
+   "B_Destreza": 0,
+   "B_Resistencia": 0,
+   "B_Magia": 0
+  }
+ },
+ "2": {
+  "title": "ESPADA #2: CIMITARRA LARGA",
+  "General": {
+   "Tipo": 1,
+   "Grafico": 1,
+   "Potencia": [
+    3,
+    4
+   ],
+   "Durabilidad": 60,
+   "CofreLv": 1
+  },
+  "Requerimientos": {
+   "Character": 100,
+   "Precio": 20
+  }
+ },
+ "3": {
+  "title": "ESPADA #3: ESPADA",
+  "General": {
+   "Tipo": 1,
+   "Grafico": 1,
+   "Potencia": [
+    2,
+    6
+   ],
+   "Durabilidad": 68,
+   "CofreLv": 1,
+   "Precio": 60
+  },
+  "Requerimientos": {
+   "Character": 100,
+   "R_Fuerza": 36
+  }
+ },
+ "4": {
+  "title": "ESPADA #4: ESPADA LARGA",
+  "General": {
+   "Tipo": 1,
+   "Grafico": 1,
+   "Potencia": [
+    3,
+    7
+   ],
+   "Durabilidad": 79,
+   "CofreLv": 2,
+   "Precio": 110
+  },
+  "Requerimientos": {
+   "Character": 100,
+   "R_Fuerza": 43
+  }
+ },
+ "5": {
+  "title": "ESPADA #5: SABLE DE LA VIDA",
+  "General": {
+   "Tipo": 1,
+   "Grafico": 1,
+   "Potencia": [
+    5,
+    7
+   ],
+   "Durabilidad": 81,
+   "CofreLv": 2,
+   "Precio": 350
+  },
+  "Requerimientos": {
+   "Character": 100,
+   "R_Destreza": 38,
+   "R_Magia": 13
+  },
+  "Bonificadores": {
+   "B_Fuerza": 3,
+   "B_Resistencia": 3
+  }
+ },
+ "6": {
+  "title": "ESPADA #6: SABLE DE LA MUERTE",
+  "General": {
+   "Tipo": 1,
+   "Especial": 1,
+   "Grafico": 1,
+   "Potencia": [
+    3,
+    8
+   ],
+   "Durabilidad": 68,
+   "CofreLv": 2,
+   "Precio": 650
+  },
+  "Requerimientos": {
+   "Character": 100,
+   "R_Destreza": 36,
+   "R_Magia": 23
+  }
+ },
+ "7": {
+  "title": "ESPADA #7: ESPADA A DOS MANOS",
+  "General": {
+   "Tipo": 2,
+   "Grafico": 2,
+   "Potencia": [
+    5,
+    8
+   ],
+   "Durabilidad": 118,
+   "CofreLv": 2,
+   "Peso": 1,
+   "Precio": 850
+  },
+  "Requerimientos": {
+   "Character": 100,
+   "R_Fuerza": 47,
+   "R_Destreza": 32
+  }
+ },
+ "8": {
+  "title": "ESPADA #8: GRAN ESPADA",
+  "General": {
+   "Tipo": 2,
+   "Grafico": 2,
+   "Potencia": [
+    5,
+    9
+   ],
+   "Durabilidad": 102,
+   "CofreLv": 3,
+   "Peso": 1,
+   "Precio": 1350
+  },
+  "Requerimientos": {
+   "Character": 100,
+   "R_Fuerza": 49,
+   "R_Destreza": 36
+  }
+ },
+ "9": {
+  "title": "ESPADA #9: ESPADA BASTARDA",
+  "General": {
+   "Tipo": 2,
+   "Grafico": 2,
+   "Potencia": [
+    7,
+    9
+   ],
+   "Durabilidad": 97,
+   "CofreLv": 3,
+   "Peso": 1,
+   "Precio": 1450
+  },
+  "Requerimientos": {
+   "Character": 100,
+   "R_Fuerza": 54,
+   "R_Destreza": 42
+  }
+ },
+ "10": {
+  "title": "ESPADA #10: ESPADA INFERNAL",
+  "General": {
+   "Tipo": 2,
+   "Grafico": 2,
+   "Potencia": [
+    6,
+    11
+   ],
+   "Durabilidad": 94,
+   "CofreLv": 3,
+   "Peso": 1
+  },
+  "Requerimientos": {
+   "Character": 100,
+   "R_Fuerza": 55,
+   "R_Destreza": 44,
+   "R_Magia": 25
+  },
+  "Bonificadores": {
+   "B_Destreza": -2
+  }
+ },
+ "11": {
+  "title": "ESPADA #11: ESPADA MAGNIFICA",
+  "General": {
+   "Tipo": 2,
+   "Grafico": 2,
+   "Potencia": [
+    9,
+    10
+   ],
+   "Durabilidad": 90,
+   "CofreLv": 3,
+   "Peso": 1
+  },
+  "Requerimientos": {
+   "Character": 100,
+   "R_Fuerza": 60,
+   "R_Destreza": 35,
+   "R_Magia": 18
+  }
+ },
+ "12": {
+  "title": "ESPADA #12: ESPADA DEL SUFRIMIENTO",
+  "General": {
+   "Tipo": 2,
+   "Grafico": 2,
+   "Potencia": [
+    9,
+    11
+   ],
+   "Durabilidad": 90,
+   "CofreLv": 3,
+   "Peso": 1
+  },
+  "Requerimientos": {
+   "Character": 100,
+   "R_Fuerza": 55,
+   "R_Magia": 26
+  },
+  "Bonificadores": {
+   "B_Destreza": -8,
+   "B_Resistencia": -10
+  }
+ },
+ "13": {
+  "title": "ESPADA #13: ESPADA DE LA LUZ",
+  "General": {
+   "Tipo": 2,
+   "Especial": 1,
+   "Grafico": 2,
+   "Potencia": [
+    7,
+    10
+   ],
+   "Durabilidad": 999,
+   "Peso": 1,
+   "CofreLv": 3
+  },
+  "Requerimientos": {
+   "Character": 100,
+   "R_Fuerza": 57,
+   "R_Magia": 25
+  },
+  "Bonificadores": {
+   "B_Fuerza": 2,
+   "B_Resistencia": 2
+  }
+ },
+ "14": {
+  "title": "ESPADA #14: ESPADA DESGARRADORA",
+  "General": {
+   "Tipo": 2,
+   "Grafico": 5,
+   "Potencia": [
+    6,
+    9
+   ],
+   "Durabilidad": 80,
+   "Peso": 1
+  },
+  "Requerimientos": {
+   "Character": 100,
+   "R_Fuerza": 50,
+   "R_Destreza": 30
+  },
+  "Bonificadores": {
+   "B_Destreza": 1,
+   "B_Fuerza": 1,
+   "B_Magia": 1,
+   "B_Resistencia": 1
+  }
+ },
+ "15": {
+  "title": "HACHA #15: HACHA PEQUEÑA",
+  "General": {
+   "Tipo": 4,
+   "Grafico": 3,
+   "Potencia": [
+    1,
+    5
+   ],
+   "Durabilidad": 59,
+   "CofreLv": 1,
+   "Precio": 17
+  },
+  "Requerimientos": {
+   "Character": 100
+  }
+ },
+ "16": {
+  "title": "HACHA #16: HACHA DE ACERO",
+  "General": {
+   "Tipo": 4,
+   "Grafico": 3,
+   "Potencia": [
+    3,
+    5
+   ],
+   "Durabilidad": 87,
+   "CofreLv": 1,
+   "Precio": 42
+  },
+  "Requerimientos": {
+   "Character": 100,
+   "R_Destreza": 29
+  }
+ },
+ "17": {
+  "title": "HACHA #17: HACHA LARGA",
+  "General": {
+   "Tipo": 4,
+   "Grafico": 3,
+   "Potencia": [
+    2,
+    7
+   ],
+   "Durabilidad": 74,
+   "CofreLv": 1
+  },
+  "Requerimientos": {
+   "Character": 100,
+   "R_Fuerza": 39,
+   "R_Destreza": 25
+  }
+ },
+ "18": {
+  "title": "HACHA #18: HACHA FINA",
+  "General": {
+   "Tipo": 4,
+   "Grafico": 3,
+   "Potencia": [
+    1,
+    7
+   ],
+   "Durabilidad": 37,
+   "CofreLv": 1,
+   "Precio": 39
+  },
+  "Requerimientos": {
+   "Character": 100,
+   "R_Fuerza": 33,
+   "R_Destreza": 28
+  }
+ },
+ "19": {
+  "title": "HACHA #19: HACHA DE VIGOR",
+  "General": {
+   "Tipo": 4,
+   "Grafico": 3,
+   "Potencia": [
+    3,
+    7
+   ],
+   "Durabilidad": 105,
+   "CofreLv": 2,
+   "Precio": 500
+  },
+  "Requerimientos": {
+   "Character": 100,
+   "R_Destreza": 36,
+   "R_Magia": 15
+  },
+  "Bonificadores": {
+   "B_Resistencia": 3,
+   "B_Fuerza": 2
+  }
+ },
+ "20": {
+  "title": "HACHA #20: HACHA A 2 MANOS",
+  "General": {
+   "Tipo": 8,
+   "Grafico": 4,
+   "Potencia": [
+    3,
+    10
+   ],
+   "Durabilidad": 165,
+   "CofreLv": 2,
+   "Peso": 1
+  },
+  "Requerimientos": {
+   "Character": 100,
+   "R_Fuerza": 48
+  }
+ },
+ "21": {
+  "title": "HACHA #21: HACHA DE LA VELOCIDAD",
+  "General": {
+   "Tipo": 8,
+   "Grafico": 4,
+   "Potencia": [
+    1,
+    9
+   ],
+   "Durabilidad": 131,
+   "CofreLv": 2
+  },
+  "Requerimientos": {
+   "Character": 100,
+   "R_Fuerza": 44,
+   "R_Destreza": 29
+  }
+ },
+ "22": {
+  "title": "HACHA #22: HACHA DE BATALLA",
+  "General": {
+   "Tipo": 8,
+   "Grafico": 4,
+   "Potencia": [
+    2,
+    12
+   ],
+   "Durabilidad": 127,
+   "CofreLv": 2,
+   "Peso": 1,
+   "Precio": 1100
+  },
+  "Requerimientos": {
+   "Character": 100,
+   "R_Fuerza": 52,
+   "R_Destreza": 34
+  }
+ },
+ "23": {
+  "title": "HACHA #23: HACHA MISTICA",
+  "General": {
+   "Tipo": 8,
+   "Grafico": 4,
+   "Potencia": [
+    8,
+    9
+   ],
+   "Durabilidad": 999,
+   "CofreLv": 3,
+   "Peso": 1
+  },
+  "Requerimientos": {
+   "Character": 100,
+   "R_Destreza": 45,
+   "R_Magia": 29
+  },
+  "Bonificadores": {
+   "B_Magia": -2,
+   "B_Destreza": -2
+  }
+ },
+ "24": {
+  "title": "HACHA #24: HACHA DE TITANES",
+  "General": {
+   "Tipo": 8,
+   "Grafico": 4,
+   "Potencia": [
+    9,
+    11
+   ],
+   "Durabilidad": 80,
+   "Peso": 1
+  },
+  "Requerimientos": {
+   "Character": 100,
+   "R_Fuerza": 62,
+   "R_Magia": 21,
+   "R_Destreza": 36
+  },
+  "Bonificadores": {
+   "B_Resistencia": 1
+  }
+ },
+ "25": {
+  "title": "ESCUDO #25: ESCUDO BASICO",
+  "General": {
+   "Tipo": 16,
+   "Grafico": 1,
+   "Potencia": [
+    1,
+    1
+   ],
+   "Durabilidad": 50,
+   "CofreLv": 1,
+   "Precio": 15
+  },
+  "Requerimientos": {
+   "Character": 100
+  }
+ },
+ "26": {
+  "title": "ESCUDO #26: ESCUDO DE LA SERPIENTE",
+  "General": {
+   "Tipo": 16,
+   "Grafico": 1,
+   "Nivel": 1,
+   "Durabilidad": 70,
+   "CofreLv": 1,
+   "Precio": 40
+  },
+  "Requerimientos": {
+   "Character": 100
+  }
+ },
+ "27": {
+  "title": "ESCUDO #27: ESCUDO DEL ALISO",
+  "General": {
+   "Tipo": 16,
+   "Grafico": 1,
+   "Nivel": 1,
+   "Durabilidad": 70,
+   "Precio": 200
+  },
+  "Requerimientos": {
+   "Character": 100
+  },
+  "Bonificacion": {
+   "B_Fuerza": 2
+  }
+ },
+ "28": {
+  "title": "ESCUDO #28: ESCUDO DE DOBLE FILO",
+  "General": {
+   "Tipo": 16,
+   "Especial": 1,
+   "Grafico": 1,
+   "Nivel": 1,
+   "Durabilidad": 60,
+   "CofreLv": 2,
+   "Precio": 115
+  },
+  "Requerimientos": {
+   "Character": 100,
+   "R_Destreza": 25
+  }
+ },
+ "29": {
+  "title": "ESCUDO #29: GRAN ESCUDO",
+  "General": {
+   "Tipo": 16,
+   "Grafico": 2,
+   "Nivel": 2,
+   "Durabilidad": 75,
+   "CofreLv": 2,
+   "Precio": 450
+  },
+  "Requerimientos": {
+   "Character": 100,
+   "R_Destreza": 25,
+   "R_Fuerza": 34
+  }
+ },
+ "30": {
+  "title": "ESCUDO #30: ESCUDO DEL DRAGON",
+  "General": {
+   "Tipo": 16,
+   "Especial": 1,
+   "Grafico": 2,
+   "Nivel": 2,
+   "Durabilidad": 150,
+   "CofreLv": 2
+  },
+  "Requerimientos": {
+   "Character": 100,
+   "R_Destreza": 32,
+   "R_Magia": 16
+  }
+ },
+ "31": {
+  "title": "ESCUDO #31: ESCUDO OSCURO",
+  "General": {
+   "Tipo": 16,
+   "Grafico": 2,
+   "Nivel": 2,
+   "Durabilidad": 90,
+   "CofreLv": 3,
+   "Precio": 500
+  },
+  "Requerimientos": {
+   "Character": 100,
+   "R_Fuerza": 42
+  }
+ },
+ "32": {
+  "title": "ESCUDO #32: ESCUDO INFERNAL",
+  "General": {
+   "Tipo": 16,
+   "Grafico": 2,
+   "Nivel": 2,
+   "Durabilidad": 60,
+   "CofreLv": 3
+  },
+  "Requerimientos": {
+   "Character": 100,
+   "R_Magia": 14
+  },
+  "Bonificadores": {
+   "B_Destreza": 2,
+   "B_Fuerza": -3
+  }
+ },
+ "33": {
+  "title": "ESCUDO #33: ESCUDO ROBUSTO",
+  "General": {
+   "Tipo": 16,
+   "Grafico": 2,
+   "Nivel": 4,
+   "Durabilidad": 175,
+   "CofreLv": 3
+  },
+  "Requerimientos": {
+   "Character": 100,
+   "R_Fuerza": 46,
+   "R_Magia": 8
+  },
+  "Bonificadores": {
+   "B_Destreza": -2
+  }
+ },
+ "34": {
+  "title": "ESCUDO #34: ESCUDO DEL FENIX",
+  "General": {
+   "Tipo": 16,
+   "Grafico": 2,
+   "Nivel": 5,
+   "Durabilidad": 999
+  },
+  "Requerimientos": {
+   "Character": 100,
+   "R_Fuerza": 46,
+   "R_Magia": 18
+  },
+  "Bonificadores": {
+   "B_Destreza": 4
+  }
+ },
+ "35": {
+  "title": "ARMADURA #35: ARMADURA DE CUERO",
+  "General": {
+   "Tipo": 8192,
+   "Grafico": 1,
+   "Nivel": 1,
+   "Durabilidad": 99,
+   "CofreLv": 1,
+   "Precio": 100
+  },
+  "Requerimientos": {
+   "Character": 100
+  }
+ },
+ "36": {
+  "title": "ARMADURA #36: ARMADURA DE CUERO ENDURECIDO",
+  "General": {
+   "Tipo": 8192,
+   "Grafico": 1,
+   "Nivel": 2,
+   "Durabilidad": 120,
+   "CofreLv": 2,
+   "Precio": 250
+  },
+  "Requerimientos": {
+   "Character": 100
+  }
+ },
+ "38": {
+  "title": "ARMADURA #38: ARMADURA DE BATALLA",
+  "General": {
+   "Tipo": 8192,
+   "Grafico": 2,
+   "Nivel": 4,
+   "Durabilidad": 200,
+   "Precio": 1400,
+   "CofreLv": 3
+  },
+  "Requerimientos": {
+   "Character": 100
+  },
+  "Bonificadores": {
+   "B_Destreza": -2
+  }
+ },
+ "39": {
+  "title": "ARMADURA #39: ARMADURA DE LOS TITANES",
+  "General": {
+   "Tipo": 8192,
+   "Grafico": 2,
+   "Nivel": 5,
+   "Durabilidad": 250
+  },
+  "Requerimientos": {
+   "Character": 100
+  },
+  "Bonificadores": {
+   "B_Destreza": -2
+  }
+ },
+ "40": {
+  "title": "ARCO #40: ARCO CORTO",
+  "General": {
+   "Tipo": 32,
+   "Grafico": 1,
+   "Potencia": [
+    1,
+    4
+   ],
+   "Durabilidad": 99,
+   "CofreLv": 1,
+   "Precio": 44
+  },
+  "Requerimientos": {
+   "Character": 101
+  }
+ },
+ "41": {
+  "title": "ARCO #41: ARCO DEL ZORRO",
+  "General": {
+   "Tipo": 32,
+   "Grafico": 1,
+   "Potencia": [
+    1,
+    5
+   ],
+   "Durabilidad": 124,
+   "CofreLv": 1,
+   "Precio": 80
+  },
+  "Requerimientos": {
+   "Character": 101,
+   "R_Fuerza": 24
+  },
+  "Bonificadores": {
+   "B_Destreza": 1
+  }
+ },
+ "42": {
+  "title": "ARCO #42: ARCO DEL CAZADOR",
+  "General": {
+   "Tipo": 32,
+   "Grafico": 1,
+   "Potencia": [
+    2,
+    5
+   ],
+   "Durabilidad": 119,
+   "CofreLv": 1,
+   "Precio": 104
+  },
+  "Requerimientos": {
+   "Character": 101,
+   "R_Fuerza": 25
+  }
+ },
+ "43": {
+  "title": "ARCO #43: ARCO LARGO",
+  "General": {
+   "Tipo": 32,
+   "Grafico": 2,
+   "Potencia": [
+    3,
+    7
+   ],
+   "Durabilidad": 134,
+   "CofreLv": 2,
+   "Peso": 1,
+   "Precio": 350
+  },
+  "Requerimientos": {
+   "Character": 101,
+   "R_Fuerza": 32,
+   "R_Destreza": 38
+  }
+ },
+ "44": {
+  "title": "ARCO #44: ARCO DEL TRIUNFO",
+  "General": {
+   "Tipo": 32,
+   "Grafico": 3,
+   "Potencia": [
+    5,
+    9
+   ],
+   "Durabilidad": 185,
+   "CofreLv": 3,
+   "Peso": 1,
+   "Precio": 1250
+  },
+  "Requerimientos": {
+   "Character": 101,
+   "R_Fuerza": 41,
+   "R_Destreza": 48,
+   "R_Magia": 19
+  },
+  "Bonificadores": {
+   "B_Fuerza": 5,
+   "B_Resistencia": -2
+  }
+ },
+ "45": {
+  "title": "ARCO #45: ARCO COMPUESTO",
+  "General": {
+   "Tipo": 32,
+   "Grafico": 2,
+   "Potencia": [
+    4,
+    8
+   ],
+   "Durabilidad": 160,
+   "CofreLv": 2,
+   "Peso": 1
+  },
+  "Requerimientos": {
+   "Character": 101,
+   "R_Destreza": 37,
+   "R_Fuerza": 35
+  },
+  "Bonificadores": {
+   "B_Magia": 2
+  }
+ },
+ "46": {
+  "title": "ARCO #46: ARCO DE LA PRECISION",
+  "General": {
+   "Tipo": 32,
+   "Grafico": 3,
+   "Potencia": [
+    7,
+    8
+   ],
+   "Durabilidad": 152,
+   "CofreLv": 3
+  },
+  "Requerimientos": {
+   "Character": 101,
+   "R_Destreza": 51,
+   "R_Fuerza": 40,
+   "R_Magia": 21
+  },
+  "Bonificacion": {
+   "B_Destreza": 2,
+   "B_Magia": 1,
+   "B_Resistencia": -1
+  }
+ },
+ "47": {
+  "title": "ARCO #47: ARCO DEL UNICORNIO",
+  "General": {
+   "Tipo": 32,
+   "Grafico": 3,
+   "Potencia": [
+    8,
+    9
+   ],
+   "Peso": 1,
+   "Durabilidad": 177
+  },
+  "Requerimientos": {
+   "Character": 101,
+   "R_Magia": 20,
+   "R_Fuerza": 44,
+   "R_Destreza": 55
+  },
+  "Bonificadores": {
+   "B_Resistencia": 2,
+   "B_Magia": 4
+  }
+ },
+ "48": {
+  "title": "ARCO #48:ARCO DE LA VIRTUD",
+  "General": {
+   "Tipo": 32,
+   "Grafico": 3,
+   "Potencia": [
+    7,
+    9
+   ],
+   "Peso": 1,
+   "Durabilidad": 200
+  },
+  "Requerimientos": {
+   "Character": 101,
+   "R_Magia": 16,
+   "R_Destreza": 53,
+   "R_Fuerza": 38
+  },
+  "Bonificadores": {
+   "B_Resistencia": 1,
+   "B_Magia": 1,
+   "B_Fuerza": 1,
+   "B_Destreza": 1
+  }
+ },
+ "49": {
+  "title": "ARMADURA #49: ARMADURA DE CUERO",
+  "General": {
+   "Tipo": 16384,
+   "Grafico": 1,
+   "Nivel": 1,
+   "Durabilidad": 92,
+   "CofreLv": 1,
+   "Precio": 150
+  },
+  "Requerimientos": {
+   "Character": 101
+  }
+ },
+ "50": {
+  "title": "ARMADURA #50: ARMADURA DE CUERO ENDURECIDO",
+  "General": {
+   "Tipo": 16384,
+   "Grafico": 1,
+   "Nivel": 2,
+   "Durabilidad": 110,
+   "CofreLv": 2,
+   "Precio": 250
+  },
+  "Requerimientos": {
+   "Character": 101,
+   "R_Fuerza": 36
+  }
+ },
+ "51": {
+  "title": "ARMADURA #51: ARMADURA DE COTA DE MALLA",
+  "General": {
+   "Tipo": 16384,
+   "Grafico": 2,
+   "Nivel": 3,
+   "Durabilidad": 135,
+   "CofreLv": 3,
+   "Precio": 800
+  },
+  "Requerimientos": {
+   "Character": 101,
+   "B_Destreza": -2,
+   "R_Fuerza": 41,
+   "R_Resistencia": 26
+  }
+ },
+ "52": {
+  "title": "ARMADURA #52: ARMADURA DE COTA DE MALLA REFORZADA",
+  "General": {
+   "Tipo": 16384,
+   "Grafico": 2,
+   "Nivel": 4,
+   "Durabilidad": 160
+  },
+  "Requerimientos": {
+   "Character": 101,
+   "B_Destreza": -4,
+   "R_Fuerza": 47,
+   "R_Resistencia": 30
+  }
+ },
+ "53": {
+  "title": "CETRO #53: Bastón de la electricidad ",
+  "General": {
+   "Tipo": 64,
+   "Grafico": 1,
+   "Potencia": [
+    3,
+    4
+   ],
+   "Durabilidad": 37,
+   "CofreLv": 2,
+   "Precio": 120
+  },
+  "Requerimientos": {
+   "Character": 102,
+   "R_Magia": 45,
+   "R_Destreza": 23
+  },
+  "Bonificadores": {
+   "B_Humanos": 0.25,
+   "B_Bestias": 0.1,
+   "B_Orcos": 0.15,
+   "B_Goblins": 0.2
+  }
+ },
+ "54": {
+  "title": "CETRO #54: Bastón de la tormenta ",
+  "General": {
+   "Tipo": 64,
+   "Grafico": 1,
+   "Potencia": [
+    3,
+    5
+   ],
+   "Durabilidad": 42,
+   "CofreLv": 3,
+   "Precio": 540
+  },
+  "Requerimientos": {
+   "Character": 102,
+   "R_Magia": 48,
+   "R_Destreza": 25
+  },
+  "Bonificadores": {
+   "B_Humanos": 0.35,
+   "B_Bestias": 0.21,
+   "B_Orcos": 0.32,
+   "B_Goblins": 0.39
+  }
+ },
+ "55": {
+  "title": "CETRO #55: Bastón de la tormenta electrica",
+  "General": {
+   "Tipo": 64,
+   "Grafico": 2,
+   "Potencia": [
+    4,
+    7
+   ],
+   "Durabilidad": 62
+  },
+  "Requerimientos": {
+   "Character": 102,
+   "R_Magia": 56,
+   "R_Destreza": 27
+  },
+  "Bonificadores": {
+   "B_Humanos": 0.7,
+   "B_Bestias": 0.43,
+   "B_Orcos": 0.6,
+   "B_Goblins": 0.64
+  }
+ },
+ "56": {
+  "title": "CETRO #56: Bastón del carámbano ",
+  "General": {
+   "Tipo": 64,
+   "Grafico": 1,
+   "Potencia": [
+    2,
+    3
+   ],
+   "Durabilidad": 102,
+   "CofreLv": 1,
+   "Precio": 100
+  },
+  "Requerimientos": {
+   "Character": 102
+  },
+  "Bonificadores": {
+   "B_Demonios": 0.18
+  }
+ },
+ "57": {
+  "title": "CETRO #57: Bastón del hielo ",
+  "General": {
+   "Tipo": 64,
+   "Grafico": 1,
+   "Potencia": [
+    2,
+    6
+   ],
+   "Durabilidad": 124,
+   "CofreLv": 2,
+   "Precio": 450
+  },
+  "Requerimientos": {
+   "Character": 102,
+   "R_Magia": 35
+  },
+  "Bonificadores": {
+   "B_Demonios": 0.5
+  }
+ },
+ "58": {
+  "title": "CETRO #58: Bastón del frio eterno",
+  "General": {
+   "Tipo": 64,
+   "Grafico": 2,
+   "Potencia": [
+    3,
+    6
+   ],
+   "Durabilidad": 129,
+   "CofreLv": 3,
+   "Precio": 1200
+  },
+  "Requerimientos": {
+   "Character": 102,
+   "R_Magia": 51,
+   "R_Destreza": 27
+  },
+  "Bonificadores": {
+   "B_Demonios": 0.7
+  }
+ },
+ "59": {
+  "title": "CETRO #59: Bastón del nigromante ",
+  "General": {
+   "Tipo": 64,
+   "Grafico": 1,
+   "Potencia": [
+    1,
+    4
+   ],
+   "Durabilidad": 80,
+   "CofreLv": 1,
+   "Precio": 110
+  },
+  "Requerimientos": {
+   "Character": 102
+  },
+  "Bonificadores": {
+   "B_NoMuertos": 0.25
+  }
+ },
+ "60": {
+  "title": "CETRO #60: Bastón de los muertos ",
+  "General": {
+   "Tipo": 64,
+   "Grafico": 1,
+   "Potencia": [
+    2,
+    6
+   ],
+   "Durabilidad": 124,
+   "CofreLv": 3,
+   "Precio": 800
+  },
+  "Requerimientos": {
+   "Character": 102,
+   "R_Magia": 46
+  },
+  "Bonificadores": {
+   "B_NoMuertos": 0.44
+  }
+ },
+ "61": {
+  "title": "CETRO #61: Bastón del destino",
+  "General": {
+   "Tipo": 64,
+   "Grafico": 2,
+   "Potencia": [
+    2,
+    5
+   ],
+   "Durabilidad": 250
+  },
+  "Requerimientos": {
+   "Character": 102,
+   "R_Magia": 50,
+   "R_Destreza": 30
+  },
+  "Bonificadores": {
+   "B_NoMuertos": 0.65
+  }
+ },
+ "62": {
+  "title": "CAPA #62: CAPA DE PROTECCION",
+  "General": {
+   "Tipo": 32768,
+   "Grafico": 1,
+   "Nivel": 1,
+   "Durabilidad": 92,
+   "CofreLv": 1,
+   "Precio": 30
+  },
+  "Requerimientos": {
+   "Character": 102
+  }
+ },
+ "63": {
+  "title": "CAPA #63: CAPA MÍSTICA",
+  "General": {
+   "Tipo": 32768,
+   "Grafico": 1,
+   "Nivel": 2,
+   "Durabilidad": 120,
+   "CofreLv": 2,
+   "Precio": 90
+  },
+  "Requerimientos": {
+   "Character": 102
+  }
+ },
+ "64": {
+  "title": "CAPA #64: TÚNICA DE LOS VIENTOS",
+  "General": {
+   "Tipo": 32768,
+   "Grafico": 2,
+   "Nivel": 3,
+   "Durabilidad": 190,
+   "CofreLv": 3,
+   "Precio": 900
+  },
+  "Requerimientos": {
+   "Character": 102
+  }
+ },
+ "65": {
+  "title": "CAPA #65: TÚNICA DE LA VIDA",
+  "General": {
+   "Tipo": 32768,
+   "Grafico": 2,
+   "Nivel": 4,
+   "Durabilidad": 240
+  },
+  "Requerimientos": {
+   "Character": 102
+  }
+ },
+ "66": {
+  "title": "ANILLO #66: ANILLO DE LA FUERZA",
+  "General": {
+   "Tipo": 128,
+   "CofreLv": 1,
+   "Precio": 300
+  },
+  "Bonificadores": {
+   "B_Fuerza": 1
+  }
+ },
+ "67": {
+  "title": "ANILLO #67: ANILLO DEL FÍSICO",
+  "General": {
+   "Tipo": 128,
+   "CofreLv": 1,
+   "Precio": 234
+  },
+  "Bonificadores": {
+   "B_Fuerza": 2,
+   "B_Destreza": -1
+  }
+ },
+ "68": {
+  "title": "ANILLO #68: ANILLO DEL PODER",
+  "General": {
+   "Tipo": 128,
+   "CofreLv": 2,
+   "Precio": 400
+  },
+  "Bonificadores": {
+   "B_Magia": 2
+  }
+ },
+ "69": {
+  "title": "ANILLO #69: ANILLO CANALIZADOR",
+  "General": {
+   "Tipo": 128,
+   "CofreLv": 2,
+   "Precio": 750
+  },
+  "Bonificadores": {
+   "B_Magia": 5,
+   "B_Fuerza": -1,
+   "B_Destreza": -2
+  }
+ },
+ "70": {
+  "title": "ANILLO #70: ANILLO PROTECTOR",
+  "General": {
+   "Tipo": 128,
+   "CofreLv": 3,
+   "Precio": 1250
+  },
+  "Bonificadores": {
+   "B_Resistencia": 5
+  }
+ },
+ "71": {
+  "title": "ANILLO #71: ANILLO ESCUDO",
+  "General": {
+   "Tipo": 128,
+   "CofreLv": 3
+  },
+  "Bonificadores": {
+   "B_Resistencia": -2,
+   "B_Fuerza": -2,
+   "B_Destreza": -2,
+   "B_Magia": -2,
+   "B_Armadura": 1
+  }
+ },
+ "72": {
+  "title": "ANILLO #72: ANILLO DE LA VELOCIDAD",
+  "General": {
+   "Tipo": 128,
+   "CofreLv": 2
+  },
+  "Bonificadores": {
+   "B_Destreza": 2
+  }
+ },
+ "73": {
+  "title": "ANILLO #73: ANILLO DEL RAYO",
+  "General": {
+   "Tipo": 128,
+   "CofreLv": 1
+  },
+  "Bonificadores": {
+   "B_Destreza": 1,
+   "B_Resistencia": -2
+  }
+ },
+ "74": {
+  "title": "ANILLO #74: ANILLO CELESTIAL",
+  "General": {
+   "Tipo": 128,
+   "CofreLv": 3
+  },
+  "Bonificadores": {
+   "B_Destreza": 2,
+   "B_Resistencia": 2,
+   "B_Fuerza": 2,
+   "B_Magia": 2
+  }
+ },
+ "75": {
+  "title": "ANILLO #75: ANILLO DEL CONSUMO",
+  "General": {
+   "Tipo": 128,
+   "CofreLv": 1
+  },
+  "Bonificadores": {
+   "B_Destreza": 1,
+   "B_Resistencia": -1,
+   "B_Fuerza": 1,
+   "B_Magia": 1
+  }
+ },
+ "76": {
+  "title": "MEDALLON #76: MEDALLON DE LA MAGIA",
+  "General": {
+   "Tipo": 256,
+   "CofreLv": 1,
+   "Precio": 860
+  },
+  "Bonificadores": {
+   "B_Magia": 2
+  }
+ },
+ "77": {
+  "title": "MEDALLON #77: MEDALLON DEL OLVIDO",
+  "General": {
+   "Tipo": 256,
+   "CofreLv": 1,
+   "Precio": 500
+  },
+  "Bonificadores": {
+   "B_Magia": -3,
+   "B_Destreza": -1,
+   "B_Fuerza": 2,
+   "B_Resistencia": 2
+  }
+ },
+ "78": {
+  "title": "MEDALLON #78: MEDALLON DE LA PRECISION",
+  "General": {
+   "Tipo": 256,
+   "CofreLv": 1,
+   "Precio": 600
+  },
+  "Bonificadores": {
+   "B_Destreza": 2
+  }
+ },
+ "79": {
+  "title": "MEDALLON #79: MEDALLON DE LA VITALIDAD",
+  "General": {
+   "Tipo": 256,
+   "CofreLv": 2,
+   "Precio": 675
+  },
+  "Bonificadores": {
+   "B_Resistencia": 3,
+   "B_Fuerza": 1
+  }
+ },
+ "80": {
+  "title": "MEDALLON #80: MEDALLON DE LA CARNICERIA",
+  "General": {
+   "Tipo": 256,
+   "CofreLv": 2
+  },
+  "Bonificadores": {
+   "B_Fuerza": 8,
+   "B_Destreza": -4,
+   "B_Resistencia": -4,
+   "B_Poder": -6
+  }
+ },
+ "81": {
+  "title": "MEDALLON #81: MEDALLON DE LA ABSORCION",
+  "General": {
+   "Tipo": 256,
+   "Especial": 1,
+   "CofreLv": 3
+  },
+  "Bonificadores": {
+   "B_Resistencia": 1
+  }
+ },
+ "82": {
+  "title": "MEDALLON #82: MEDALLON DE LA VENGANZA",
+  "General": {
+   "Tipo": 256,
+   "Especial": 1,
+   "CofreLv": 3
+  },
+  "Bonificadores": {
+   "B_Fuerza": 2,
+   "B_Destreza": 2,
+   "B_Resistencia": 4
+  }
+ },
+ "83": {
+  "title": "MEDALLON #83: MEDALLON DE LA SANGRE",
+  "General": {
+   "Tipo": 256,
+   "Especial": 1,
+   "CofreLv": 3,
+   "Precio": 1500
+  },
+  "Bonificadores": {
+   "B_Magia": -5,
+   "B_Destreza": -3,
+   "B_Resistencia": -6
+  }
+ },
+ "84": {
+  "title": "MEDALLON #84: MEDALLON DE LAS ESTRELLAS",
+  "General": {
+   "Tipo": 256
+  },
+  "Bonificadores": {
+   "B_Magia": 2,
+   "B_Resistencia": 2,
+   "B_Destreza": 2,
+   "B_Fuerza": 2
+  }
+ },
+ "85": {
+  "title": "MEDALLON #85: MEDALLON DE COLL",
+  "General": {
+   "Tipo": 256
+  },
+  "Bonificadores": {
+   "B_Magia": 4,
+   "B_Resistencia": 1,
+   "B_Destreza": 3,
+   "B_Fuerza": -2
+  }
+ },
+ "86": {
+  "title": "PERGAMINOS #86: PERGAMINO DE LA LUZ",
+  "General": {
+   "Tipo": 512,
+   "Nivel": 2,
+   "CofreLv": 1,
+   "Precio": 100
+  },
+  "Requerimientos": {},
+  "Bonificadores": {
+   "B_Humanos": 0.2
+  }
+ },
+ "87": {
+  "title": "PERGAMINOS #87: PERGAMINO DE LA TORMENTA",
+  "General": {
+   "Tipo": 512,
+   "Nivel": 2,
+   "CofreLv": 2,
+   "Precio": 275
+  },
+  "Requerimientos": {
+   "R_Magia": 20
+  },
+  "Bonificadores": {
+   "B_Humanos": 0.4
+  }
+ },
+ "88": {
+  "title": "PERGAMINOS #88: PERGAMINO DE HIELO",
+  "General": {
+   "Tipo": 512,
+   "Nivel": 2,
+   "CofreLv": 1,
+   "Precio": 180
+  },
+  "Requerimientos": {
+   "R_Magia": 16
+  },
+  "Bonificadores": {
+   "B_Demonios": 0.25
+  }
+ },
+ "89": {
+  "title": "PERGAMINOS #89: PERGAMINO DEL FUEGO",
+  "General": {
+   "Tipo": 512,
+   "Nivel": 2,
+   "CofreLv": 1,
+   "Precio": 130
+  },
+  "Requerimientos": {
+   "R_Magia": 16
+  },
+  "Bonificadores": {
+   "B_Demonios": -0.25
+  }
+ },
+ "90": {
+  "title": "PERGAMINOS #90: PERGAMINO DE LA INCINERACION",
+  "General": {
+   "Tipo": 512,
+   "Nivel": 2,
+   "CofreLv": 2,
+   "Precio": 200
+  },
+  "Requerimientos": {
+   "R_Magia": 24
+  },
+  "Bonificadores": {
+   "B_Demonios": -1.0
+  }
+ },
+ "91": {
+  "title": "PERGAMINOS #91: PERGAMINO DE LA TIERRA",
+  "General": {
+   "Tipo": 512,
+   "Nivel": 2,
+   "CofreLv": 2,
+   "Precio": 175
+  },
+  "Requerimientos": {
+   "R_Magia": 19
+  }
+ },
+ "92": {
+  "title": "PERGAMINOS #92: PERGAMINO DE LA VIDA",
+  "General": {
+   "Tipo": 512,
+   "Nivel": 2,
+   "CofreLv": 1,
+   "Precio": 75
+  },
+  "Requerimientos": {
+   "R_Magia": 16
+  },
+  "Bonificadores": {}
+ },
+ "93": {
+  "title": "PERGAMINOS #93: PERGAMINO DE LA VITALIDAD",
+  "General": {
+   "Tipo": 512,
+   "Nivel": 3,
+   "CofreLv": 3,
+   "Precio": 155
+  },
+  "Requerimientos": {
+   "R_Magia": 29
+  },
+  "Bonificadores": {}
+ },
+ "94": {
+  "title": "PERGAMINOS #94: PERGAMINO VAMPÍRICO",
+  "General": {
+   "Tipo": 512,
+   "Nivel": 4,
+   "CofreLv": 2
+  },
+  "Requerimientos": {
+   "R_Magia": 15
+  },
+  "Bonificadores": {}
+ },
+ "95": {
+  "title": "PERGAMINOS #95: PERGAMINO DE LA FUERZA",
+  "General": {
+   "Tipo": 512,
+   "Nivel": 4,
+   "CofreLv": 2,
+   "Precio": 200
+  },
+  "Requerimientos": {
+   "R_Magia": 26
+  },
+  "Bonificadores": {
+   "B_Fuerza": 1
+  }
+ },
+ "96": {
+  "title": "PERGAMINOS #96: PERGAMINO DE LA DESTREZA",
+  "General": {
+   "Tipo": 512,
+   "Nivel": 4,
+   "CofreLv": 2,
+   "Precio": 200
+  },
+  "Requerimientos": {
+   "R_Magia": 31
+  },
+  "Bonificadores": {
+   "B_Destreza": 1
+  }
+ },
+ "97": {
+  "title": "PERGAMINOS #97: PERGAMINO DE LA RESISTENCIA",
+  "General": {
+   "Tipo": 512,
+   "Nivel": 4,
+   "CofreLv": 2,
+   "Precio": 150
+  },
+  "Requerimientos": {
+   "R_Magia": 22
+  },
+  "Bonificadores": {
+   "B_Resistencia": 1
+  }
+ },
+ "98": {
+  "title": "PERGAMINOS #98: PERGAMINO DEL PODER",
+  "General": {
+   "Tipo": 512,
+   "Nivel": 4,
+   "CofreLv": 2,
+   "Precio": 250
+  },
+  "Requerimientos": {
+   "R_Magia": 19
+  },
+  "Bonificadores": {
+   "B_Magia": 1
+  }
+ },
+ "99": {
+  "title": "PERGAMINOS #99: PERGAMINO SAGRADO",
+  "General": {
+   "Tipo": 512,
+   "Nivel": 5,
+   "CofreLv": 3,
+   "Precio": 800
+  },
+  "Requerimientos": {
+   "R_Magia": 33
+  },
+  "Bonificadores": {
+   "B_Fuerza": 1,
+   "B_Destreza": 1,
+   "B_Magia": 1,
+   "B_Resistencia": 1
+  }
+ },
+ "100": {
+  "title": "PERGAMINOS #100: PERGAMINO DE LOS DIOSES",
+  "General": {
+   "Tipo": 512,
+   "Nivel": 5,
+   "CofreLv": 3,
+   "Precio": 1400
+  },
+  "Requerimientos": {
+   "R_Magia": 41
+  },
+  "Bonificadores": {
+   "B_Fuerza": 2,
+   "B_Destreza": 2,
+   "B_Resistencia": 2,
+   "B_Magia": 2
+  }
+ },
+ "101": {
+  "title": "PERGAMINOS #101: PERGAMINO BERSEK",
+  "General": {
+   "Tipo": 512,
+   "Nivel": 5,
+   "CofreLv": 3
+  },
+  "Requerimientos": {
+   "R_Magia": 30
+  },
+  "Bonificadores": {
+   "B_Fuerza": 2
+  }
+ },
+ "102": {
+  "title": "PERGAMINOS #102: PERGAMINO DE LA MENTE",
+  "General": {
+   "Tipo": 512,
+   "Nivel": 5,
+   "CofreLv": 3
+  },
+  "Requerimientos": {},
+  "Bonificadores": {
+   "B_Magia": 2
+  }
+ },
+ "103": {
+  "title": "PERGAMINOS #103: PERGAMINO DE RESTAURACION",
+  "General": {
+   "Tipo": 512,
+   "Nivel": 2,
+   "CofreLv": 1
+  },
+  "Requerimientos": {
+   "R_Magia": 17
+  }
+ },
+ "104": {
+  "title": "POTION #104: POCION DE VIDA PEQUEÑA",
+  "General": {
+   "Tipo": 1024,
+   "Potencia": [
+    30,
+    45
+   ],
+   "Data": 1,
+   "CofreLv": 1,
+   "Precio": 50
+  }
+ },
+ "105": {
+  "title": "POTION #105: POCION DE VIDA GRANDE",
+  "General": {
+   "Tipo": 1024,
+   "Potencia": [
+    60,
+    80
+   ],
+   "Data": 1,
+   "CofreLv": 2,
+   "Precio": 87
+  }
+ },
+ "106": {
+  "title": "POTION #106: POCION DE ESTAMINA PEQUEÑA",
+  "General": {
+   "Tipo": 1024,
+   "Potencia": [
+    40,
+    60
+   ],
+   "Data": 2,
+   "CofreLv": 1,
+   "Precio": 20
+  }
+ },
+ "107": {
+  "title": "POTION #107: POCION DE ESTAMINA GRANDE",
+  "General": {
+   "Tipo": 1024,
+   "Potencia": [
+    80,
+    90
+   ],
+   "Data": 2,
+   "CofreLv": 2,
+   "Precio": 37
+  }
+ },
+ "108": {
+  "title": "POTION #108: POCION DE MAGIA PEQUEÑA",
+  "General": {
+   "Tipo": 1024,
+   "Potencia": [
+    20,
+    40
+   ],
+   "Data": 4,
+   "CofreLv": 1,
+   "Precio": 35
+  }
+ },
+ "109": {
+  "title": "POTION #109: POCION DE MAGIA GRANDE",
+  "General": {
+   "Tipo": 1024,
+   "Potencia": [
+    50,
+    75
+   ],
+   "Data": 4,
+   "CofreLv": 2,
+   "Precio": 65
+  }
+ },
+ "110": {
+  "title": "POTION #110: POCION DE VITALIDAD",
+  "General": {
+   "Tipo": 1024,
+   "Potencia": [
+    -35,
+    75
+   ],
+   "Data": 7,
+   "CofreLv": 1,
+   "Precio": 25
+  }
+ },
+ "111": {
+  "title": "POTION #111: POCIÓN DEL AZAR",
+  "General": {
+   "Tipo": 1024,
+   "Especial": 1,
+   "Potencia": [
+    0,
+    0
+   ],
+   "Data": 0,
+   "CofreLv": 3
+  }
+ },
+ "112": {
+  "title": "POTION #112: POCIÓN DEL CONOCIMIENTO",
+  "General": {
+   "Tipo": 1024,
+   "Especial": 1,
+   "Potencia": [
+    0,
+    0
+   ],
+   "Data": 0,
+   "CofreLv": 3
+  }
+ },
+ "120": {
+  "title": "LLAVE #120: LLAVE A (VERDE)",
+  "General": {
+   "Tipo": 2048,
+   "CofreLv": 1
+  }
+ },
+ "121": {
+  "title": "LLAVE #121: LLAVE B (AMARILLA)",
+  "General": {
+   "Tipo": 2048,
+   "CofreLv": 2
+  }
+ },
+ "122": {
+  "title": "LLAVE #122: LLAVE C (AZUL)",
+  "General": {
+   "Tipo": 2048,
+   "CofreLv": 3
+  }
+ },
+ "123": {
+  "title": "LLAVE #123: LLAVE D (ROJA)",
+  "General": {
+   "Tipo": 2048
+  }
+ },
+ "124": {
+  "title": "ITEM #124: BOLSA DE DINERO PEQUEÑA",
+  "General": {
+   "Tipo": 4096,
+   "Durabilidad": 6,
+   "CofreLv": 1
+  }
+ },
+ "125": {
+  "title": "ITEM #125: BOLSA DE DINERO GRANDE",
+  "General": {
+   "Tipo": 4096,
+   "Durabilidad": 14,
+   "CofreLv": 2
+  }
+ },
+ "126": {
+  "title": "ITEM #126: BOLSA DE DINERO MUY GRANDE",
+  "General": {
+   "Tipo": 4096,
+   "Durabilidad": 26,
+   "CofreLv": 3
+  }
+ },
+ "130": {
+  "title": "LLAVE #131: LLAVE DE Uath",
+  "General": {
+   "Tipo": 2048
+  }
+ },
+ "131": {
+  "title": "OBJETO #131: El cuerno de muir",
+  "General": {
+   "Tipo": 262144,
+   "Durabilidad": 3
+  },
+  "Requerimientos": {
+   "Character": 0
+  }
+ },
+ "132": {
+  "title": "CETRO #132: Bastón del fuego ",
+  "General": {
+   "Tipo": 64,
+   "Grafico": 1,
+   "Potencia": [
+    1,
+    4
+   ],
+   "Durabilidad": 98,
+   "CofreLv": 1,
+   "Precio": 300
+  },
+  "Requerimientos": {
+   "Character": 102
+  },
+  "Bonificadores": {
+   "B_Demonios": -1.1,
+   "B_Bestias": 0.2,
+   "B_Humanos": 0.1,
+   "B_Trolls": 0.12
+  }
+ },
+ "133": {
+  "title": "CETRO #133: Bastón de las llamas ",
+  "General": {
+   "Tipo": 64,
+   "Grafico": 1,
+   "Potencia": [
+    3,
+    4
+   ],
+   "Durabilidad": 112,
+   "CofreLv": 2,
+   "Precio": 710
+  },
+  "Requerimientos": {
+   "Character": 102,
+   "R_Magia": 36
+  },
+  "Bonificadores": {
+   "B_Demonios": -1.6,
+   "B_Bestias": 0.3,
+   "B_Humanos": 0.1,
+   "B_Trolls": 0.2
+  }
+ },
+ "134": {
+  "title": "CETRO #134: Cetro infernal",
+  "General": {
+   "Tipo": 64,
+   "Grafico": 2,
+   "Potencia": [
+    4,
+    6
+   ],
+   "Durabilidad": 121,
+   "CofreLv": 3,
+   "Precio": 1300
+  },
+  "Requerimientos": {
+   "Character": 102,
+   "R_Magia": 48,
+   "R_Fuerza": 32
+  },
+  "Bonificadores": {
+   "B_Demonios": -2.0,
+   "B_Bestias": 0.35,
+   "B_Humanos": 0.18,
+   "B_Trolls": 0.3
+  }
+ },
+ "135": {
+  "title": "LECTURA #135: El nuevo círculo del suroeste",
+  "General": {
+   "Tipo": 65536
+  }
+ },
+ "136": {
+  "title": "LECTURA #136: La carne de la piedra",
+  "General": {
+   "Tipo": 65536
+  }
+ },
+ "137": {
+  "title": "LECTURA #137: Los viejos dioses",
+  "General": {
+   "Tipo": 131072
+  }
+ },
+ "138": {
+  "title": "LECTURA #138:El cuerno de Muin",
+  "General": {
+   "Tipo": 65536
+  }
+ },
+ "139": {
+  "title": "LECTURA #139: Mastabas...",
+  "General": {
+   "Tipo": 131072
+  }
+ },
+ "140": {
+  "title": "LECTURA #140: El gran mago Coll...",
+  "General": {
+   "Tipo": 131072
+  }
+ },
+ "141": {
+  "title": "LECTURA #141: Por orden de Eadha....",
+  "General": {
+   "Tipo": 65536
+  }
+ },
+ "142": {
+  "title": "LECTURA #142: Las grandes guerras",
+  "General": {
+   "Tipo": 131072
+  }
+ },
+ "143": {
+  "title": "LECTURA #143: El bosque de Dair",
+  "General": {
+   "Tipo": 131072
+  }
+ },
+ "144": {
+  "title": "LECTURA #144: El mago",
+  "General": {
+   "Tipo": 65536
+  }
+ },
+ "145": {
+  "title": "LECTURA #145: Los reinos del norte",
+  "General": {
+   "Tipo": 131072
+  }
+ },
+ "146": {
+  "title": "LECTURA #146: Reino de Ibur",
+  "General": {
+   "Tipo": 131072
+  }
+ },
+ "147": {
+  "title": "LECTURA #147: Los fragmentos",
+  "General": {
+   "Tipo": 131072
+  }
+ },
+ "148": {
+  "title": "LECTURA #148: El cetro del destino",
+  "General": {
+   "Tipo": 65536
+  }
+ },
+ "149": {
+  "title": "LECTURA #149: El diario de Zelos",
+  "General": {
+   "Tipo": 65536
+  }
+ },
+ "150": {
+  "title": "LECTURA #150: La cumbre de Ochtach",
+  "General": {
+   "Tipo": 131072
+  }
+ },
+ "151": {
+  "title": "LECTURA #151: La jerarquia del culto",
+  "General": {
+   "Tipo": 131072
+  }
+ },
+ "152": {
+  "title": "LECTURA #152: La encarnación de la diosa negra",
+  "General": {
+   "Tipo": 131072
+  }
+ }
+}
