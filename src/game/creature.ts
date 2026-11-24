@@ -4,7 +4,7 @@ import { ActorSprite } from './actor.ts';
 import { screenDir } from '../iso.ts';
 import { type ActorAnims, type AnimDef, TICK, frameId } from './anims.ts';
 
-export type State = 'idle' | 'walk' | 'attack' | 'hit' | 'dead';
+export type State = 'idle' | 'walk' | 'attack' | 'hit' | 'dead' | 'block';
 
 export interface Stats {
   name: string;
@@ -22,7 +22,9 @@ export interface Stats {
 }
 
 const ONE_SHOT = new Set<State>(['attack', 'hit', 'dead']);
-const ANIM_OF: Record<State, string> = { idle: 'Respirar', walk: 'Andar', attack: 'Atacar', hit: 'Recibir', dead: 'Morir' };
+/** Plays once, then holds its last frame until the state changes. */
+const HOLD = new Set<State>(['block']);
+const ANIM_OF: Record<State, string> = { idle: 'Respirar', walk: 'Andar', attack: 'Atacar', hit: 'Recibir', dead: 'Morir', block: 'Cubrir' };
 
 /** A hero or monster: position in cell space, facing, animation state and hit points. */
 export class Creature {
@@ -100,7 +102,7 @@ export class Creature {
     const a = this.anim(this.state) ?? this.anim('idle') ?? this.anim('walk');
     if (a) {
       let step = Math.floor(this.t / (a.speed * TICK));
-      if (ONE_SHOT.has(this.state)) step = Math.min(step, a.frames - 1);
+      if (ONE_SHOT.has(this.state) || HOLD.has(this.state)) step = Math.min(step, a.frames - 1);
       this.sprite.setFrame(frameId(a, this.dir, step));
     }
     const w = cellToWorld(this.cx, this.cy);

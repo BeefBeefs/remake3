@@ -23,12 +23,15 @@ Each working session appends an entry below (newest first). Format knowledge liv
 | Skills/magic, dialogue, quests (`.adv`), multiplayer, editor | ⬜ not started |
 | Combat + monster AI | 🟡 first pass (placeholder numbers) |
 
-### Turn 9 — stamina and stances, item requirements (from the manual), then block/hold
+### Turn 9 — stamina and stances, item requirements, block/hold and parchments (from the manual)
 
 **Step 1 ✅ Stamina, mana, run and stealth.** Stamina = 2 × Resistance, mana = 2 × Power (ratios guessed); bars under the HP bar. Ctrl = run (×2, running footsteps 162/166/170, drains stamina, impossible at 0),
 Shift = stealth (×0.5, silent, unaware monsters hear you from half as far, first blow on one doubles). Potions use the item `Data` bit mask (1 life, 2 stamina, 4 magic; Vitality = all three and can hurt).
 **Step 2 ✅ Item requirements.** `R_Fuerza / R_Destreza (Skill) / R_Resistencia / R_Magia (Power) / R_Nivel` now block equipping with a message, and show a red border + tooltip; a test checks each class can use its starting weapon.
 Spending level-up points to reach a weapon's Strength now has a purpose (Barbarian's Sword #3 needs 36, he has 32).
+**Step 3 ✅ Block and hold position.** Right button: the Barbarian covers up (Cubrir pose, 4 stamina per blocked frontal blow, c_cubrir sounds); the Amazon and Sorceress plant their feet and shoot where clicked.
+**Step 4 ✅ Parchments.** All 18 scrolls have effects from the manual's descriptions (`src/game/spells.ts`): area damage, ice slow, life/vitality, permanent attribute gains, Berserk, immunity. They are used up and cost mana. Every magnitude is a placeholder.
+- Tests: 74 passing. Unverified: nothing run in a browser; manual says right-click uses items (the UI still uses left-click); no spell visual effects, only sounds.
 
 ### Turn 8 — tile surfaces, NPCs, shops and the character window
 

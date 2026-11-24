@@ -102,9 +102,15 @@ async function boot() {
   window.addEventListener('blur', () => { mods.ctrl = false; mods.shift = false; });
   let held = false;
   let last: { cx: number; cy: number } | null = null;
-  canvas.addEventListener('pointerdown', (e) => { readMods(e); held = true; last = pointerToCell(e); game.click(last.cx, last.cy); startAudio(); });
-  canvas.addEventListener('pointermove', (e) => { readMods(e); last = pointerToCell(e); if (held) game.click(last.cx, last.cy); });
-  window.addEventListener('pointerup', () => { held = false; });
+  canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+  canvas.addEventListener('pointerdown', (e) => {
+    readMods(e);
+    startAudio();
+    if (e.button === 2) { game.setGuard(true); return; } // right button: Barbarian blocks, others hold position
+    held = true; last = pointerToCell(e); game.click(last.cx, last.cy);
+  });
+  canvas.addEventListener('pointermove', (e) => { readMods(e); last = pointerToCell(e); if (held && !game.holding) game.click(last.cx, last.cy); });
+  window.addEventListener('pointerup', (e) => { if (e.button === 2) game.setGuard(false); else held = false; });
 
   // Keyboard: arrows/WASD move along the screen axes (up = towards the top of the screen); space swings.
   const keys = new Set<string>();
@@ -179,7 +185,7 @@ async function boot() {
     renderer.render(scene, camera);
     requestAnimationFrame(frame);
   }
-  hud.textContent = 'NightStone remake · milestone 2 · click ground to walk, click a monster (or Space) to fight · WASD moves · Ctrl run · Shift stealth · I inventory · C character';
+  hud.textContent = 'NightStone remake · milestone 2 · click ground to walk, click a monster (or Space) to fight · WASD moves · Ctrl run · Shift stealth · right button block / hold · I inventory · C character';
   frame();
 }
 

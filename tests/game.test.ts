@@ -456,3 +456,140 @@ test('class gear of another hero is blocked', () => {
   assert.equal(g.blocked(g.inventory.def(3)!), true);
   assert.equal(g.blocked(g.inventory.def(56)!), false);
 });
+
+const facing = (g: Game, x: number, y: number) => { (g as unknown as { facing: { x: number; y: number } }).facing = { x, y }; g.hero.face(x, y); };
+
+test('Barbarian block: frontal blows are stopped and cost stamina; blows from behind and with no stamina get through', () => {
+  const setup = () => { const g = makeGame({ spawns: [{ id: '1', cx: 129, cy: 128 }] }); g.setGuard(true); facing(g, 1, 0); return g; };
+  const front = setup();
+  const heard: number[] = [];
+  front.onSound = (id) => heard.push(id);
+  const s0 = front.stamina, hp0 = front.hero.hp;
+  run(front, 6);
+  assert.equal(front.hero.hp, hp0, 'no damage while covering up');
+  assert.ok(front.stamina < s0 && front.stamina !== s0, 'blocking spends stamina');
+  assert.equal(front.hero.state, 'block');
+  assert.ok(heard.some((id) => id >= 53 && id <= 56), 'c_cubrir');
+
+  const behind = setup();
+  facing(behind, -1, 0); // the goblin is behind him
+  run(behind, 6);
+  assert.ok(behind.hero.hp < behind.hero.stats.hp, 'a flank blow lands');
+
+  const tired = setup();
+  tired.stamina = 0;
+  run(tired, 6);
+  assert.ok(tired.hero.hp < tired.hero.stats.hp, 'no stamina, no block');
+});
+
+test('blocking holds the Cubrir pose, stops walking and attacking, and ends when the button is released', () => {
+  const g = makeGame();
+  g.click(g.hero.cx + 10, g.hero.cy);
+  run(g, 0.3);
+  assert.equal(g.hero.state, 'walk');
+  g.setGuard(true);
+  run(g, 0.2);
+  const x = g.hero.cx;
+  assert.equal(g.hero.state, 'block');
+  g.swing(); run(g, 0.5);
+  assert.equal(g.hero.state, 'block', 'cannot swing while covering');
+  assert.equal(g.hero.cx, x);
+  g.setGuard(false);
+  run(g, 0.1);
+  assert.equal(g.hero.state, 'idle');
+});
+
+test('the Amazon can plant her feet and shoot where she clicks (right button held)', () => {
+  const g = makeGame({ classId: 101, spawns: [{ id: '1', cx: 134, cy: 128 }] });
+  const gob = g.monsters[0]!;
+  gob.stats.hp = 500; gob.hp = 500;
+  g.setGuard(true);
+  assert.equal(g.holding, true);
+  assert.equal(g.blocking, false);
+  const x = g.hero.cx;
+  g.click(gob.cx, gob.cy); // aims, does not walk
+  run(g, 1);
+  assert.equal(g.hero.cx, x);
+  assert.ok(gob.hp < 500, 'the arrow found him');
+  g.setGuard(false);
+  g.click(g.hero.cx - 5, g.hero.cy);
+  run(g, 0.5);
+  assert.ok(g.hero.cx < x, 'walks again once released');
+});
+
+test('the Sorceress right button holds position too (block is Barbarian-only)', () => {
+  const g = makeGame({ classId: 102 });
+  g.setGuard(true);
+  assert.equal(g.blocking, false);
+  assert.equal(g.holding, true);
+});
+
+const withScroll = (id: number, opts: GameOptions = {}) => { const g = makeGame(opts); g.inventory.add(id); return g; };
+const read = (g: Game, id: number) => g.useSlot(g.inventory.slots.indexOf(id));
+
+test('a storm parchment hits every monster in sight, costs mana and is used up; far monsters are spared', () => {
+  const g = withScroll(87, { classId: 102, attrs: { strength: 19, skill: 23, resistance: 21, magic: 30 }, spawns: [{ id: '1', cx: 133, cy: 128 }, { id: '1', cx: 124, cy: 126 }, { id: '1', cx: 180, cy: 128 }] });
+  const [a, b, far] = g.monsters;
+  for (const m of g.monsters) { m.hp = 500; m.stats.hp = 500; }
+  const mana0 = g.mana;
+  read(g, 87);
+  assert.ok(a!.hp < 500 && b!.hp < 500);
+  assert.equal(far!.hp, 500);
+  assert.equal(g.mana, mana0 - 10, 'storm is a level-2 parchment: 5 mana per level');
+  assert.equal(g.inventory.slots.includes(87), false);
+});
+
+test('parchments need their Power requirement and enough mana, otherwise nothing happens', () => {
+  const weak = withScroll(87, { classId: 100 }); // Barbarian power 11 < 20
+  read(weak, 87);
+  assert.ok(weak.inventory.slots.includes(87));
+  assert.match(weak.log.at(-1)!, /You need Power 20/);
+  const dry = withScroll(86, { classId: 102, attrs: { strength: 19, skill: 23, resistance: 21, magic: 30 } });
+  dry.mana = 1;
+  read(dry, 86);
+  assert.ok(dry.inventory.slots.includes(86));
+  assert.match(dry.log.at(-1)!, /Not enough mana/);
+});
+
+test('ice slows monsters: they cover half the distance', () => {
+  const dist = (frozen: boolean) => {
+    const g = withScroll(88, { classId: 102, attrs: { strength: 19, skill: 23, resistance: 21, magic: 30 }, spawns: [{ id: '1', cx: 133, cy: 128 }] });
+    if (frozen) read(g, 88);
+    const m = g.monsters[0]!;
+    const x0 = m.cx;
+    run(g, 0.8);
+    return x0 - m.cx;
+  };
+  const normal = dist(false), slow = dist(true);
+  assert.ok(normal > 0.3 && slow > 0.05 && slow < normal * 0.7, `normal ${normal}, slowed ${slow}`);
+});
+
+test('the life parchment turns all mana into life and stamina; attribute parchments are permanent and use no mana', () => {
+  const g = withScroll(92, { classId: 102, attrs: { strength: 19, skill: 23, resistance: 21, magic: 30 } });
+  g.hero.hp = 10; g.stamina = 0; g.mana = 40;
+  read(g, 92);
+  assert.equal(g.mana, 0);
+  assert.equal(g.hero.hp, 42, 'capped at maximum life (2 x Resistance 21)');
+  assert.equal(g.stamina, 40);
+  const h = withScroll(97, { classId: 102, attrs: { strength: 19, skill: 23, resistance: 21, magic: 30 } });
+  const hp = h.hero.stats.hp;
+  read(h, 97);
+  assert.equal(h.attrs.resistance, 22);
+  assert.equal(h.hero.stats.hp, hp + 2);
+  const sacred = withScroll(99, { classId: 102, attrs: { strength: 19, skill: 23, resistance: 21, magic: 35 } });
+  read(sacred, 99);
+  assert.deepEqual(sacred.attrs, { strength: 21, skill: 25, resistance: 23, magic: 37 });
+});
+
+test('Berserk fills life, immunity fills mana', () => {
+  const b = withScroll(101, { classId: 100, attrs: { strength: 32, skill: 24, resistance: 30, magic: 30 } });
+  b.hero.hp = 5;
+  read(b, 101);
+  assert.equal(b.hero.hp, b.hero.stats.hp);
+  assert.equal(b.attrs.strength, 34);
+  const i = withScroll(102, { classId: 102, attrs: { strength: 19, skill: 23, resistance: 21, magic: 30 } });
+  i.mana = 30; // the level-5 parchment costs 25
+  read(i, 102);
+  assert.equal(i.attrs.magic, 32);
+  assert.equal(i.mana, i.maxMana, 'full pool after the cost');
+});

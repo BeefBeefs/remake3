@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Atlas } from '../assets/atlas.ts';
 import { type AnimData } from './anims.ts';
+import { SPELLS, SPELL_RADIUS, blastDamage, manaCost } from './spells.ts';
 import { STEP_SOUND, type Surface } from './surface.ts';
 import { Creature, type Stats } from './creature.ts';
 import { Inventory, missingReqs, rollByMask, rollDrop, slotOf, type ItemDef } from './items.ts';
@@ -88,6 +89,8 @@ const MANA_REGEN = 0.25; // per second
 /** Stealth: unaware monsters notice you from half as far, and the first blow on one of them does double damage. */
 const STEALTH_HEARING = 0.5;
 const SNEAK_MULT = 2;
+/** Barbarian block: stamina spent per blocked blow (a guess). Blows from the front arc are stopped completely while it lasts. */
+const BLOCK_COST = 4;
 /** Bows shoot: the swing hits the nearest monster in front within this many cells (no projectile is drawn yet). */
 const BOW_RANGE = 7;
 const HERO_SPEED = 3.2; // cells per second
@@ -128,6 +131,10 @@ export class Game {
   mana = 0;
   /** current movement stance as asked by the player (run needs stamina) */
   stance: Stance = 'walk';
+  /** Barbarian only: the right button is held, he covers up (Cubrir) and stops frontal blows. */
+  blocking = false;
+  /** Amazon / Sorceress: the right button is held, the hero stands still and shoots where clicked. */
+  holding = false;
   readonly inventory: Inventory;
   readonly ground: GroundItem[] = [];
   /** most recent messages, newest last (for the HUD) */
@@ -151,6 +158,8 @@ export class Game {
   private readonly surfaceAt: (cx: number, cy: number) => Surface;
   private stepClock = 0;
   private moving = false;
+  /** monsters frozen by an ice parchment: seconds of slowness left */
+  private readonly slowed = new Map<Creature, number>();
   /** monsters that had not noticed the hero when the current swing began (they take sneak damage) */
   private unaware = new Set<Creature>();
   private stepFoot = 0;
@@ -297,6 +306,8 @@ export class Game {
   /** Called with a cell-space click position. */
   click(cx: number, cy: number): void {
     if (!this.hero.alive) return;
+    if (this.holding) { this.aim(cx, cy); return; }
+    if (this.blocking) return;
     const npc = this.npcs.find((n) => Math.hypot(n.creature.cx - cx, n.creature.cy - cy) < 1.3);
     if (npc) { this.talkTarget = npc; this.target = null; this.targetBox = null; this.walkTarget = null; return; }
     this.talkTarget = null;
@@ -327,7 +338,7 @@ export class Game {
 
   private tryAttack(): boolean {
     const h = this.hero;
-    if (h.cooldown > 0 || h.state === 'attack' || h.state === 'hit') return false;
+    if (h.cooldown > 0 || h.state === 'attack' || h.state === 'hit' || this.blocking) return false;
     h.face(this.facing.x, this.facing.y);
     this.unaware = new Set(this.monsters.filter((m) => !this.alerted.has(m)));
     h.setState('attack');
@@ -364,11 +375,77 @@ export class Game {
     this.version++;
   }
 
+  /** Reads a parchment: needs its Power requirement and the mana it costs; the scroll is used up (guess: the manual says "once read"). */
+  castScroll(index: number, def: ItemDef): boolean {
+    const spell = SPELLS[def.id];
+    if (!spell) { this.say(`${def.name}: its magic is not understood yet`); return false; }
+    const lacks = this.missing(def);
+    if (lacks.length) { this.say(`You need ${lacks.join(', ')} to read the ${def.name}`); return false; }
+    const cost = manaCost(spell, def.level);
+    if (this.mana < cost) { this.say(`Not enough mana (${cost} needed)`); return false; }
+    const h = this.hero;
+    const near = this.monsters.filter((m) => m.alive && Math.hypot(m.cx - h.cx, m.cy - h.cy) <= SPELL_RADIUS);
+    switch (spell.kind) {
+      case 'blast': {
+        const dmg = blastDamage(spell, this.attrs.magic);
+        this.snd(spell.sound);
+        for (const m of near) {
+          this.damageMonster(m, dmg);
+          if (spell.stun && m.alive) m.setState('hit');
+        }
+        this.say(`${def.name}: ${near.length ? `${near.length} enemies take ${dmg}` : 'no enemy in sight'}`);
+        break;
+      }
+      case 'freeze':
+        this.snd(spell.sound);
+        for (const m of near) this.slowed.set(m, spell.seconds);
+        this.say(`${def.name}: ${near.length} enemies slowed`);
+        break;
+      case 'restore': {
+        const gain = Math.floor(this.mana * spell.scale);
+        this.hero.hp = Math.min(h.stats.hp, h.hp + gain);
+        this.stamina = Math.min(this.maxStamina, this.stamina + gain);
+        this.mana = 0;
+        this.snd(23);
+        this.say(`${def.name}: +${gain} HP and stamina`);
+        break;
+      }
+      case 'attr': {
+        for (const k of ['strength', 'skill', 'resistance', 'magic'] as const) {
+          const v = spell[k];
+          if (!v) continue;
+          this.attrs[k] += v;
+          if (k === 'resistance') { h.stats.hp += HP_PER_RESISTANCE * v; h.hp += HP_PER_RESISTANCE * v; }
+        }
+        if (spell.fillLife) h.hp = h.stats.hp;
+        if (spell.fillMana) this.mana = this.maxMana + cost; // the cost is deducted below, leaving a full pool
+        this.snd(23);
+        this.say(`${def.name}: your attributes grow`);
+        break;
+      }
+      case 'allies':
+        this.say(`${def.name}: there is no hero beside you to share it with`);
+        return false;
+      case 'repair':
+        this.say(`${def.name}: your weapons are as good as new (durability is not modelled yet)`);
+        this.snd(23);
+        break;
+    }
+    this.mana = Math.max(0, this.mana - cost);
+    this.inventory.take(index);
+    this.refreshHeroStats();
+    return true;
+  }
+
   /** Clicking an inventory slot: drink potions, wear equipment. */
   useSlot(index: number): void {
     const id = this.inventory.slots[index];
     const def = id ? this.inventory.def(id) : undefined;
     if (!def || !this.hero.alive) return;
+    if (def.kind === 'scroll') {
+      this.castScroll(index, def);
+      return;
+    }
     if (def.kind === 'potion') {
       if (def.data & 7) {
         // Data is a bit mask: 1 life, 2 stamina, 4 magic (the Vitality potion, 7, does all three and can hurt: -35..75)
@@ -434,6 +511,18 @@ export class Game {
     }
   }
 
+  /** Applies hero damage to a monster: hurt/die sounds, loot, kill count and experience. */
+  private damageMonster(m: Creature, dmg: number): void {
+    const killed = m.hurt(dmg);
+    this.msnd(m, killed ? 2 : 3);
+    if (killed) {
+      this.dropLoot(m, this.idOf.get(m) ?? '');
+      this.kills++;
+      this.xp += m.stats.xp[0] + Math.floor(this.rnd() * (m.stats.xp[1] - m.stats.xp[0] + 1));
+      this.checkLevel();
+    }
+  }
+
   private heroStrike(): void {
     const h = this.hero;
     let hit = false;
@@ -463,14 +552,7 @@ export class Game {
       if (sneak) this.say('Sneak attack!');
       const flesh = this.data.actors[this.idOf.get(m) ?? '']?.Sonidos?.Carne !== 0;
       this.snd(this.pick(flesh ? 59 : 62, 3)); // c_carne / c_nocarne
-      const killed = m.hurt(dmg);
-      this.msnd(m, killed ? 2 : 3);
-      if (killed) {
-        this.dropLoot(m, this.idOf.get(m) ?? '');
-        this.kills++;
-        this.xp += m.stats.xp[0] + Math.floor(this.rnd() * (m.stats.xp[1] - m.stats.xp[0] + 1));
-        this.checkLevel();
-      }
+      this.damageMonster(m, dmg);
     }
     for (const b of [...this.boxes]) {
       if (b.done) continue;
@@ -488,6 +570,15 @@ export class Game {
     if (!h.alive || Math.hypot(h.cx - m.cx, h.cy - m.cy) > MELEE + 0.5) return;
     const [lo, hi] = m.stats.damage;
     this.msnd(m, 0);
+    if (this.blocking && this.stamina >= BLOCK_COST) {
+      // the blow comes from the front arc when the monster is on the side the hero faces
+      const ex = m.cx - h.cx, ey = m.cy - h.cy, ed = Math.hypot(ex, ey) || 1;
+      if ((ex * this.facing.x + ey * this.facing.y) / ed > 0) {
+        this.stamina -= BLOCK_COST;
+        this.snd(this.pick(53, 4)); // c_cubrir
+        return;
+      }
+    }
     const died = h.hurt(Math.max(1, lo + Math.floor(this.rnd() * (hi - lo + 1)) - h.stats.armor));
     const sb = CLASSES[this.classId].sound;
     this.snd(died ? sb : this.pick(sb + 1, 2)); // <class>_morir / _recibir
@@ -502,6 +593,7 @@ export class Game {
     this.tickResources(dt);
     this.pickups();
     this.checkGoal();
+    for (const [m, t] of this.slowed) { if (t - dt <= 0 || !m.alive) this.slowed.delete(m); else this.slowed.set(m, t - dt); }
     for (const m of this.monsters) this.updateMonster(m, dt);
     for (const n of this.npcs) n.creature.update(dt);
     h.update(dt);
@@ -519,6 +611,29 @@ export class Game {
 
   /** Ctrl+click = run, Shift+click = stealth (manual); run wins if both are held. */
   setStance(run: boolean, stealth: boolean): void { this.stance = run ? 'run' : stealth ? 'stealth' : 'walk'; }
+
+  /** Right mouse button: the Barbarian blocks, the other heroes plant their feet ("block mode", manual). */
+  setGuard(on: boolean): void {
+    if (this.classId === 100) {
+      this.blocking = on && this.hero.alive && this.hero.has('block');
+      this.holding = false;
+      if (!this.blocking && this.hero.state === 'block') this.hero.setState('idle');
+    } else {
+      this.holding = on;
+      this.blocking = false;
+    }
+    if (on) { this.target = null; this.targetBox = null; this.walkTarget = null; this.talkTarget = null; }
+  }
+
+  /** Hold-position fire: face the clicked cell and shoot / swing without walking. */
+  aim(cx: number, cy: number): void {
+    if (!this.hero.alive) return;
+    const dx = cx - this.hero.cx, dy = cy - this.hero.cy, d = Math.hypot(dx, dy);
+    if (d < 1e-3) return;
+    this.facing = { x: dx / d, y: dy / d };
+    this.hero.face(dx, dy);
+    this.tryAttack();
+  }
 
   /** The stance actually in effect: you cannot run on empty. */
   private get effectiveStance(): Stance { return this.stance === 'run' && this.stamina < 0.5 ? 'walk' : this.stance; }
@@ -573,6 +688,8 @@ export class Game {
     const h = this.hero;
     if (!h.alive) return;
     if (h.state === 'attack' || h.state === 'hit') return;
+    if (this.blocking) { h.setState('block'); return; }
+    if (this.holding) { if (h.state === 'walk') h.setState('idle'); return; }
     let vx = 0, vy = 0;
     if (move) {
       this.target = null; this.walkTarget = null; this.targetBox = null; this.talkTarget = null;
@@ -643,7 +760,7 @@ export class Game {
     m.face(ex, ey);
     if (d > MELEE) {
       m.setState('walk');
-      this.step(m, ex / d, ey / d, m.stats.speed, dt);
+      this.step(m, ex / d, ey / d, m.stats.speed * (this.slowed.has(m) ? 0.5 : 1), dt);
       // keep monsters from stacking on top of each other
       for (const o of this.monsters) {
         if (o === m || !o.alive) continue;
@@ -654,7 +771,7 @@ export class Game {
       m.onStrike = (c) => this.monsterStrike(c);
       m.setState('attack');
       const [lo, hi] = m.stats.cooldown;
-      m.cooldown = lo + this.rnd() * (hi - lo);
+      m.cooldown = (lo + this.rnd() * (hi - lo)) * (this.slowed.has(m) ? 2 : 1);
     } else if (m.state === 'walk') m.setState('idle');
   }
 }
