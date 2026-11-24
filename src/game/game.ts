@@ -5,7 +5,7 @@ import { INFERNAL, SPELLS, SPELL_RADIUS, inSight, spellPower } from './spells.ts
 import { STEP_SOUND, type Surface } from './surface.ts';
 import { Creature, type Stats } from './creature.ts';
 import { levelUpFx, makeFx, potionFx, spellFx, stepFx, type Fx } from './effects.ts';
-import { lineClear, makeProjectile, type Projectile, type ProjKind } from './projectiles.ts';
+import { HIT_PIXELS, PX_HERO_ARROW, PX_HERO_BOLT, PX_MONSTER_SHOT, lineClear, makeProjectile, pixelDistance, type Projectile, type ProjKind } from './projectiles.ts';
 import { Inventory, missingReqs, rollByMask, rollDrop, slotOf, type ItemDef } from './items.ts';
 import { cellToWorld, depthOf } from '../iso.ts';
 import { World } from './world.ts';
@@ -860,7 +860,7 @@ export class Game {
       const sneakNow = this.effectiveStance === 'stealth' ? new Set(this.unaware) : new Set<Creature>();
       const kind: ProjKind = staff ? 'bolt' : 'arrow';
       const color = staff ? STAFF_COLOR[staffElement(this.inventory.equipped.weapon ?? 0)] : 0xffffff;
-      this.projectiles.push(makeProjectile(kind, h.cx + (ax / n) * 0.5, h.cy + (ay / n) * 0.5, ax, ay, BOW_RANGE + 1, true, (m) => { if (m) this.heroHitMonster(m, sneakNow.has(m), true); }, color));
+      this.projectiles.push(makeProjectile(kind, h.cx + (ax / n) * 0.5, h.cy + (ay / n) * 0.5, ax, ay, staff ? PX_HERO_BOLT : PX_HERO_ARROW, true, (m) => { if (m) this.heroHitMonster(m, sneakNow.has(m), true); }, color));
     }
     if (!bow) for (const m of this.monsters) {
       if (!m.alive || m.dormant) continue;
@@ -925,7 +925,7 @@ export class Game {
     const ex = h.cx - m.cx, ey = h.cy - m.cy, d = Math.hypot(ex, ey) || 1;
     this.msnd(m, 0);
     const from = { x: m.cx, y: m.cy };
-    this.projectiles.push(makeProjectile(r.kind, m.cx + (ex / d) * 0.6, m.cy + (ey / d) * 0.6, ex, ey, r.range + 2, false, (t) => {
+    this.projectiles.push(makeProjectile(r.kind, m.cx + (ex / d) * 0.6, m.cy + (ey / d) * 0.6, ex, ey, PX_MONSTER_SHOT, false, (t) => {
       if (t === h) this.hurtHero(m.stats.damage, from.x - h.cx, from.y - h.cy);
     }, r.color));
   }
@@ -939,8 +939,8 @@ export class Game {
       p.cy += p.vy * dt;
       let target: Creature | null | undefined;
       if (p.friendly) {
-        for (const m of this.monsters) if (m.alive && !m.dormant && Math.hypot(m.cx - p.cx, m.cy - p.cy) < 0.7) { target = m; break; }
-      } else if (h.alive && Math.hypot(h.cx - p.cx, h.cy - p.cy) < 0.6) target = h;
+        for (const m of this.monsters) if (m.alive && !m.dormant && pixelDistance(m.cx - p.cx, m.cy - p.cy) <= HIT_PIXELS) { target = m; break; }
+      } else if (h.alive && pixelDistance(h.cx - p.cx, h.cy - p.cy) <= HIT_PIXELS) target = h;
       if (target === undefined && !this.world.isWalkable(p.cx, p.cy)) target = null; // stuck in a tree or wall
       if (target === undefined && p.age >= p.life) target = null; // fell short
       if (p.kind === 'bolt' && !p.done) {

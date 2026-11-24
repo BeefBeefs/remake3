@@ -478,3 +478,8 @@ Read the use-item routine for type-512 items in `Nightstone.exe` (all 18 cases).
 - **Animation clock = 1/35 s.** The animation clock gains 1.0 per engine tick and a frame lasts `speed` ticks (the walk cycle
   7×10 = 70 ticks = 2 s now matches 2 steps of ~35 px, so feet no longer glide). The 1/60 guess was too fast. Footsteps every 1.0 s.
 - Tests re-timed (151 pass).
+- **Projectiles decoded.** The Amazon's shot routine (`0x42f290`), the Arquero/Mago/Zelos one (`0x437750`), the Sorceress's (`0x43cf79`)
+  and the shot object's update (`0x4250a0`): a shot moves 10 (hero arrow), 8 (Sorceress bolt) or 9 (monster) screen pixels a tick
+  along the longer screen axis, flies 60 ticks at most (then lingers a few ticks), and hits the first actor within 16 pixels that is
+  not its shooter (the shooter's own hit routine is called); walls stop it too. The old 16 / 9 cells per second, 7-cell reach
+  and 0.6-0.7-cell hit radius were guesses. Still guessed: when shooters decide to fire, the aim cone, bow reach for the hero.

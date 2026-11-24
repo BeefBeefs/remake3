@@ -937,10 +937,10 @@ test('border wall slices stand on their own cell and the empty wall frame still 
 });
 
 test('projectile maths: heading, range and line of sight', async () => {
-  const { makeProjectile, projectileAngle, lineClear, ARROW_SPEED } = await import('../src/game/projectiles.ts');
-  const p = makeProjectile('arrow', 10, 10, 1, 0, 8, true, () => {});
-  assert.ok(Math.abs(Math.hypot(p.vx, p.vy) - ARROW_SPEED) < 1e-9);
-  assert.ok(Math.abs(p.life * ARROW_SPEED - 8) < 1e-9);
+  const { makeProjectile, projectileAngle, lineClear, pixelsPerCell } = await import('../src/game/projectiles.ts');
+  const p = makeProjectile('arrow', 10, 10, 1, 0, 10, true, () => {});
+  assert.ok(Math.abs(Math.hypot(p.vx, p.vy) * pixelsPerCell(1, 0) - 350) < 1e-6, '10 pixels a tick at 35 ticks a second');
+  assert.ok(Math.abs(p.life - 60 / 35) < 1e-9, 'a shot flies 60 ticks');
   assert.ok(Math.abs(projectileAngle(p) - Math.atan2(-16, 32)) < 1e-9); // +cx runs to the lower right on screen
   assert.ok(lineClear(() => true, 0, 0, 6, 0));
   assert.ok(!lineClear((x) => x < 3, 0, 0, 6, 0));
