@@ -1,12 +1,12 @@
 import * as THREE from 'three';
 import { Atlas } from '../assets/atlas.ts';
 import { type AnimData } from './anims.ts';
-import { SPELLS, SPELL_RADIUS, blastDamage, manaCost } from './spells.ts';
+import { INFERNAL, SPELLS, SPELL_RADIUS, inSight, spellPower } from './spells.ts';
 import { STEP_SOUND, type Surface } from './surface.ts';
 import { Creature, type Stats } from './creature.ts';
 import { levelUpFx, makeFx, potionFx, spellFx, stepFx, type Fx } from './effects.ts';
 import { lineClear, makeProjectile, type Projectile, type ProjKind } from './projectiles.ts';
-import { Inventory, familyBonus, missingReqs, rollByMask, rollDrop, slotOf, type ItemDef } from './items.ts';
+import { Inventory, missingReqs, rollByMask, rollDrop, slotOf, type ItemDef } from './items.ts';
 import { cellToWorld, depthOf } from '../iso.ts';
 import { World } from './world.ts';
 import {
@@ -558,43 +558,54 @@ export class Game {
     this.version++;
   }
 
-  /** Reads a parchment: needs its Power requirement and the mana it costs; the scroll is used up (guess: the manual says "once read"). */
+  /**
+   * Reads a parchment (see `spells.ts` for the executable's numbers): needs its Power requirement; the strength comes from the mana
+   * you hold and the scroll leaves only part of it. The scroll is used up.
+   */
   castScroll(index: number, def: ItemDef): boolean {
     const spell = SPELLS[def.id];
     if (!spell) { this.say(`${def.name}: its magic is not understood yet`); return false; }
     const lacks = this.missing(def);
     if (lacks.length) { this.say(`You need ${lacks.join(', ')} to read the ${def.name}`); return false; }
-    const cost = manaCost(spell, def.level);
-    if (this.mana < cost) { this.say(`Not enough mana (${cost} needed)`); return false; }
     const h = this.hero;
-    const near = this.monsters.filter((m) => m.alive && !m.dormant && Math.hypot(m.cx - h.cx, m.cy - h.cy) <= SPELL_RADIUS);
+    const power = spellPower(this.mana);
+    if (power < 1 && (spell.kind === 'blast' || spell.kind === 'freeze' || spell.kind === 'restore')) { this.say(`Not enough mana for the ${def.name}`); return false; }
+    // "in sight": the monsters inside the screen rectangle around the hero
+    const near = this.monsters.filter((m) => m.alive && !m.dormant && inSight(m.cx - h.cx, m.cy - h.cy));
     if (spell.kind !== 'allies') {
       this.fx.push(...spellFx(def.id, h.cx, h.cy, SPELL_RADIUS, spell.kind === 'blast' || spell.kind === 'freeze' ? near : []));
       if (def.id === 91) this.shake = 0.7;
     }
+    const infernal = (m: Creature) => INFERNAL.has(this.idOf.get(m) ?? '');
+    let keep = 'keep' in spell ? spell.keep : 0;
     switch (spell.kind) {
       case 'blast': {
-        const dmg = blastDamage(spell, this.eff.magic);
+        const dmg = Math.trunc(power / spell.divisor);
         this.snd(spell.sound);
         for (const m of near) {
-          this.damageMonster(m, Math.round(dmg * (1 + familyBonus(def.bonus, m.stats.race ?? 0))));
-          if (spell.stun && m.alive) m.setState('hit');
+          if (spell.fire && infernal(m)) { m.hp = Math.min(m.stats.hp, m.hp + dmg); continue; } // fire feeds the infernal ones
+          this.damageMonster(m, dmg, !!spell.stagger);
         }
         this.say(`${def.name}: ${near.length ? `${near.length} enemies take ${dmg}` : 'no enemy in sight'}`);
         break;
       }
-      case 'freeze':
+      case 'freeze': {
+        const n = Math.trunc(power / spell.divisor);
         this.snd(spell.sound);
-        for (const m of near) this.slowed.set(m, spell.seconds);
-        this.say(`${def.name}: ${near.length} enemies slowed`);
+        for (const m of near) {
+          this.slowed.set(m, n * 37 / 35); // 37 engine ticks per point
+          if (infernal(m)) this.damageMonster(m, n, false);
+        }
+        this.say(`${def.name}: ${near.length} enemies slowed for ${n} s`);
         break;
+      }
       case 'restore': {
-        const gain = Math.floor(this.mana * spell.scale);
-        this.hero.hp = Math.min(h.stats.hp, h.hp + gain);
-        this.stamina = Math.min(this.maxStamina, this.stamina + gain);
-        this.mana = 0;
+        const mana = this.mana;
+        const life = Math.trunc(mana * 2); // M/100: two life per mana point
+        this.hero.hp = Math.min(h.stats.hp, h.hp + life);
+        this.stamina = Math.min(this.maxStamina, this.stamina + mana);
         this.snd(23);
-        this.say(`${def.name}: +${gain} HP and stamina`);
+        this.say(`${def.name}: +${life} life and ${Math.trunc(mana)} stamina`);
         break;
       }
       case 'attr': {
@@ -605,7 +616,7 @@ export class Game {
         }
         this.syncLife();
         if (spell.fillLife) h.hp = h.stats.hp;
-        if (spell.fillMana) this.mana = this.maxMana + cost; // the cost is deducted below, leaving a full pool
+        if (spell.fillMana) { keep = 0; this.mana = this.maxMana; }
         this.snd(23);
         this.say(`${def.name}: your attributes grow`);
         break;
@@ -614,12 +625,12 @@ export class Game {
         this.say(`${def.name}: there is no hero beside you to share it with`);
         return false;
       case 'repair':
-        this.inventory.repairAll();
-        this.say(`${def.name}: everything you carry is as good as new`);
+        this.inventory.repairWorn();
+        this.say(`${def.name}: what you wear is as good as new`);
         this.snd(23);
         break;
     }
-    this.mana = Math.max(0, this.mana - cost);
+    if (!('fillMana' in spell && spell.fillMana)) this.mana *= keep;
     this.inventory.take(index);
     this.refreshHeroStats();
     return true;

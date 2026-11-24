@@ -188,7 +188,10 @@ export class Inventory {
     return null;
   }
 
-  /** Restoration: every worn and carried item is as good as new. */
+  /** The restoration parchment: only what is worn (weapon, shield, armour) is as good as new; the pack stays as it was. */
+  repairWorn(): void { for (const k of ['weapon', 'shield', 'armor'] as const) delete this.equippedLeft[k]; }
+
+  /** Dying: every worn and carried item is as good as new (a guess; the executable's death handler was not read). */
   repairAll(): void {
     this.slotLeft.fill(0);
     for (const k of Object.keys(this.equippedLeft) as Slot[]) delete this.equippedLeft[k];

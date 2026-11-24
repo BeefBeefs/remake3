@@ -1,3 +1,4 @@
+import { spellPower } from '../src/game/spells.ts';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -517,11 +518,12 @@ test('a storm parchment hits every monster in sight, costs mana and is used up; 
   const g = withScroll(87, { classId: 102, attrs: { strength: 19, skill: 23, resistance: 21, magic: 30 }, spawns: [{ id: '1', cx: 133, cy: 128 }, { id: '1', cx: 124, cy: 126 }, { id: '1', cx: 180, cy: 128 }] });
   const [a, b, far] = g.monsters;
   for (const m of g.monsters) { m.hp = 500; m.stats.hp = 500; }
-  const mana0 = g.mana;
+  const power = spellPower(g.mana);
   read(g, 87);
-  assert.ok(a!.hp < 500 && b!.hp < 500);
+  assert.equal(500 - a!.hp, Math.trunc(power / 2), 'storm: half the strength, whatever the armour');
+  assert.ok(b!.hp < 500);
   assert.equal(far!.hp, 500);
-  assert.equal(g.mana, mana0 - 10, 'storm is a level-2 parchment: 5 mana per level');
+  assert.equal(g.mana, 0, 'storm takes all the mana');
   assert.equal(g.inventory.slots.includes(87), false);
 });
 
@@ -531,7 +533,7 @@ test('parchments need their Power requirement and enough mana, otherwise nothing
   assert.ok(weak.inventory.slots.includes(87));
   assert.match(weak.log.at(-1)!, /You need Power 20/);
   const dry = withScroll(86, { classId: 102, attrs: { strength: 19, skill: 23, resistance: 21, magic: 30 } });
-  dry.mana = 1;
+  dry.mana = 0;
   read(dry, 86);
   assert.ok(dry.inventory.slots.includes(86));
   assert.match(dry.log.at(-1)!, /Not enough mana/);
@@ -551,11 +553,11 @@ test('ice slows monsters: they cover half the distance', () => {
   assert.ok(normal > 0.3 && slow > 0.05 && slow < normal * 0.7, `normal ${normal}, slowed ${slow}`);
 });
 
-test('the life parchment turns all mana into life and stamina; attribute parchments are permanent and use no mana', () => {
+test('the life parchment turns mana into life and stamina and keeps half; attribute parchments are permanent', () => {
   const g = withScroll(92, { classId: 102, attrs: { strength: 19, skill: 23, resistance: 21, magic: 30 } });
   g.hero.hp = 10; g.stamina = 0; g.mana = 100;
   read(g, 92);
-  assert.equal(g.mana, 0);
+  assert.equal(g.mana, 50, 'half of the mana is left');
   assert.equal(g.hero.hp, 67, 'capped at maximum life');
   assert.equal(g.stamina, g.maxStamina, 'capped at maximum stamina');
   const h = withScroll(97, { classId: 102, attrs: { strength: 19, skill: 23, resistance: 21, magic: 30 } });
@@ -575,10 +577,10 @@ test('Berserk fills life, immunity fills mana', () => {
   assert.equal(b.hero.hp, b.hero.stats.hp);
   assert.equal(b.attrs.strength, 34);
   const i = withScroll(102, { classId: 102, attrs: { strength: 19, skill: 23, resistance: 21, magic: 30 } });
-  i.mana = 30; // the level-5 parchment costs 25
+  i.mana = 30;
   read(i, 102);
   assert.equal(i.attrs.magic, 32);
-  assert.equal(i.mana, i.maxMana, 'full pool after the cost');
+  assert.equal(i.mana, i.maxMana, 'immunity refills the pool');
 });
 
 const SORC = { strength: 19, skill: 23, resistance: 21, magic: 50 };
@@ -636,18 +638,18 @@ test('a staff does extra damage to the families it is made for and little to the
   assert.ok(c > d * 1.3, `staff 58: +70% against demons (${c} vs ${d})`);
 });
 
-test('a spell uses the scroll\'s own family bonus: storm hits humans 40% harder, incineration cannot hurt demons', () => {
-  const hit = (scroll: number, race: number) => {
-    const g = makeGame({ classId: 102, attrs: SORC, spawns: [{ id: '1', cx: 131, cy: 128 }] });
-    const m = g.monsters[0]!;
-    m.hp = m.stats.hp = 900; m.stats.armor = 0; m.stats.race = race;
-    g.inventory.add(scroll); g.mana = 500;
-    g.useSlot(g.inventory.slots.indexOf(scroll));
-    return 900 - m.hp;
-  };
-  assert.ok(hit(87, 64) > hit(87, 1) * 1.3);
-  assert.equal(hit(90, 32), 0);
-  assert.ok(hit(90, 1) > 0);
+test('scroll strength comes from the mana held: two per point, half of what is above 60; light keeps a third, fire feeds infernal monsters', () => {
+  assert.equal(spellPower(10), 20);
+  assert.equal(spellPower(30), 60);
+  assert.equal(spellPower(50), 80);
+  const g = makeGame({ classId: 102, attrs: SORC, spawns: [{ id: '1', cx: 131, cy: 128 }] });
+  const m = g.monsters[0]!;
+  m.hp = m.stats.hp = 900; m.stats.armor = 99;
+  g.inventory.add(86); g.mana = 40;
+  const p = spellPower(40);
+  g.useSlot(g.inventory.slots.indexOf(86));
+  assert.equal(900 - m.hp, Math.trunc(p / 4), 'spells ignore armour');
+  assert.equal(Math.round(g.mana * 3), 40, 'a third of the mana is left');
 });
 
 const killHero = (g: Game) => {

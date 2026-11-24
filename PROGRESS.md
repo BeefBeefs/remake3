@@ -414,3 +414,17 @@ per actor) to its receive-hit method (vtable slot 12, `0x436fd0`) and the wear r
 - `Especial` (special items): no code outside the loader reads the item's `+0x2c` field, so it probably has no gameplay effect.
 - 145 tests.
 
+
+## Turn 19 — the executable's parchment rules (replacing guesses)
+
+Read the use-item routine for type-512 items in `Nightstone.exe` (all 18 cases). The guessed damage/mana numbers are gone:
+
+- **Strength comes from your mana.** P = 2 × mana points held; above 60 only half of the excess counts. There is no per-scroll mana
+  price: each scroll keeps a share of what you hold (⅓ after light / ice / fire / earth, ¼ after incineration, ½ after life and the
+  attribute scrolls, nothing after storm and restoration; immunity refills it).
+- **Damage:** light P/4, storm P/2, fire P/4, incineration P/3, earth P/4 to every monster inside the 640×480 screen rectangle
+  around the hero, ignoring armour and block and without family bonuses. Fire *heals* the infernal ids 3, 10, 19, 20; ice slows for
+  P/4 s (37 ticks per point) and hurts those same ids.
+- **Life** adds 2 life and 1 stamina per mana point. **Restoration** repairs only the worn weapon, shield and armour.
+- Not decoded: the exact range test in the area routine (0x41e150) and the extra visual effects of the freeze and storm callbacks.
+- 147 tests.
