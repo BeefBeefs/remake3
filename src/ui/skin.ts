@@ -69,6 +69,16 @@ export class Skin {
     return d;
   }
 
+  /** A frame stretched to w x h (for plain textures such as the stone panel). */
+  fill(bank: GuiBank, id: number, w: number, h: number): HTMLDivElement {
+    const [fx, fy, fw, fh] = this.rect(bank, id);
+    const [aw, ah] = this.json.get(bank)!.size;
+    const kx = w / fw, ky = h / fh;
+    const d = document.createElement('div');
+    d.style.cssText = `width:${w}px;height:${h}px;background:url(${this.url.get(bank)}) -${fx * kx}px -${fy * ky}px / ${aw * kx}px ${ah * ky}px no-repeat;image-rendering:pixelated;flex:none`;
+    return d;
+  }
+
   /** Pixel width of a string in the bitmap font. */
   textWidth(s: string): number {
     let w = 0;

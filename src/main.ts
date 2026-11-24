@@ -118,7 +118,7 @@ async function boot() {
   const game = new Game(world, { anims: animData, actors: actorsIni, names, atlases, items, icons }, spawn, { spawns: [...spawns, ...npcSpawns], surface, attrs: adv.heroes[classId - 100], classId, save: carried?.save, difficulty, finalText: adv.final.startsWith('Enter the final text') ? 'You have found the Tomb of Donmir!' : adv.final });
   game.say(adv.mission_text);
   const panel = new InventoryPanel(game, icons, BASE, skin);
-  const shop = new ShopWindow(game, icons, BASE);
+  const shop = new ShopWindow(game, icons, BASE, skin);
   const charPanel = new CharacterPanel(game, skin);
   game.onTalk = (npc) => { if (MERCHANTS.has(npc.id)) shop.open(npc.name); };
   scene.add(game.group);
