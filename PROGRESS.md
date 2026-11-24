@@ -447,3 +447,12 @@ Read the use-item routine for type-512 items in `Nightstone.exe` (all 18 cases).
   with a floor of 0 (the setter's clamp). The exe drops worn gear on the ground rather than destroying it, and does not touch the
   backpack in that routine; the remake still loses the backpack (manual) because the map restarts anyway.
 - 149 tests.
+
+## Turn 20 (cont.) — monster idle routine
+
+- **Roaming.** Found the AI template fields (`Tm_Busqueda` +0x64, `Oido` +0x68, `Radio_Busqueda` +0x6c, `Espera` +0x30, `Velocidad` +0x60)
+  and the idle routine (`0x434090`): a monster with nothing to do picks a random cell within `Radio_Busqueda` of home, walks to it and
+  waits 1–8 s. Monsters without a patrol route now do that (they used to stand still). `Tm_Busqueda` (give-up time, 10 s default,
+  60 s for archers/mages) and `Espera` (pause chance) are understood but not modelled — the target-tracking state machine around
+  them (states 0x65–0x6e, path requests) is large and was not decoded in full.
+- 150 tests.

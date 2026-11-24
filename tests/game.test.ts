@@ -386,7 +386,7 @@ test('stealth hides you from monsters at half range', () => {
   const mk = (stealth: boolean, gx: number) => { const g = makeGame({ spawns: [{ id: '1', cx: gx, cy: 128 }] }); g.setStance(false, stealth); return g; };
   // a goblin 7 cells away: a walking hero is heard (hearing + 3 > 7?) only if inside range; stealth halves it
   const range = (stealth: boolean) => {
-    for (let d = 14; d >= 2; d--) { const g = mk(stealth, 128 + d); run(g, 0.3); if (g.monsters[0]!.state !== 'idle') return d; }
+    for (let d = 14; d >= 2; d--) { const g = mk(stealth, 128 + d); run(g, 0.3); if ((g as unknown as { alerted: Set<unknown> }).alerted.has(g.monsters[0]!)) return d; }
     return 0;
   };
   const walkRange = range(false), sneakRange = range(true);
@@ -1265,4 +1265,13 @@ test('blood mode puts a red puff on a creature that is hit; off, nothing', () =>
   g.blood = false;
   hit.heroHitMonster(m, false);
   assert.equal(g.fx.length, before + 1);
+});
+
+test('monsters without a patrol route roam within their search radius of home and wait between trips (executable idle routine)', () => {
+  const g = makeGame({ spawns: [{ id: '1', cx: 150, cy: 150 }] }); // goblin: Radio_Busqueda 5
+  const m = g.monsters[0]!;
+  let far = 0, moved = false;
+  for (let i = 0; i < 60 * 40; i++) { g.update(1 / 60); if (m.state === 'walk') moved = true; far = Math.max(far, Math.hypot(m.cx - 150, m.cy - 150)); }
+  assert.ok(moved, 'it walks now and then');
+  assert.ok(far > 0.5 && far < 9, `strays ${far.toFixed(1)} cells but stays near home`);
 });

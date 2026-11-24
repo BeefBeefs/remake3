@@ -46,6 +46,7 @@ These replaced earlier guesses. Hero values are the engine's record fields; stam
 | Monster staggers | After a blow that lands, the monster goes into its hit pose only if the blow ≥ `Aturdirse` (ranged: blow > `Aturdirse` + 1 + 0 or 1). `Aturdirse` 88 / 99 / 999 means practically never. It cries out only when staggered or killed |
 | Weapon wear | Each blow that lands: 9 % chance of 1 or 2 points, divided by the item's level (`Nivel`, integer division; no level = whole); each melee swing that lands also 5 % (Barbarian) / 7 % (others) of a flat point |
 | Armour wear | Hero struck for `d` after armour: Barbarian 20 % of `d/3 + rand(d/3)`; Amazon 27 % and Sorceress 30 % of `d/2 + rand(d/2 − 2) + armour`, only if armour is worn; divided by the armour's level. The Barbarian's raised shield: 80 % of blocked blows, `damage/3 + 1` points |
+| Idle monsters (`0x434090`) | A monster with no patrol route roams: a random cell within `Radio_Busqueda` cells (±) of its home, walks there at its normal speed, waits 1–8 s, repeats. Also in the monster AI (not modelled): `Tm_Busqueda` ticks (default 350 = 10 s; archers and mages 2100) before a hunter drops its target, `Espera` = percent chance of a short pause (20–54 ticks) while chasing |
 
 Still guessed: the state → stamina mapping, the exact range test and freeze/storm side effects of scrolls, shop prices of items without `Precio`, what the special items' `Especial` flag does, and what `SangreFX` selects (no reader found in the receive-hit routine).
 

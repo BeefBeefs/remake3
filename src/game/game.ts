@@ -20,7 +20,7 @@ type Range = [number, number];
 interface ActorIni {
   General?: { Vel_Ataque?: Range; Altura?: number; Raza?: number; Rnd_Bloqueo?: number };
   HDP?: { Vida?: number; Fuerza?: Range; Armadura?: number; Aturdirse?: number; Pts_Experiencia?: Range; Velocidad?: number };
-  IA?: { Oido?: number };
+  IA?: { Oido?: number; Radio_Busqueda?: number };
   Items?: { IDItem?: number[]; PItem?: number[] };
   Sonidos?: { SndBase?: number; Carne?: number };
 }
@@ -224,6 +224,8 @@ export class Game {
   /** Sound hook: numeric id of a GDI/Audio file (see data/sfx.json). Set by the front end. */
   onSound?: (id: number) => void;
   /** wander routes of unaware monsters (the map's zone records) */
+  /** Monsters without a route roam: a random cell within `r` of home, then wait 1-8 s (the executable's idle routine 0x434090). */
+  private readonly roamers = new Map<Creature, { home: { cx: number; cy: number }; r: number; to: { cx: number; cy: number } | null; wait: number }>();
   private readonly patrols = new Map<Creature, { pts: { cx: number; cy: number }[]; i: number; wait: number }>();
 
   /** hero attributes of the adventure (shown in the inventory panel; only resistance feeds back into HP, see below) */
@@ -310,6 +312,7 @@ export class Game {
       m.dormant = !!def.anims.Aparecer; // skeletons and infernal demons rise when the hero comes close
       this.monsters.push(m);
       this.group.add(m.sprite);
+      if (!sp.route?.length && !m.dormant) this.roamers.set(m, { home: { cx: sp.cx, cy: sp.cy }, r: Math.max(1, this.data.actors[sp.id]?.IA?.Radio_Busqueda ?? 5), to: null, wait: 0 });
       if (sp.route?.length) this.patrols.set(m, { pts: [{ cx: sp.cx, cy: sp.cy }, ...sp.route], i: 0, wait: this.rnd() * 3 });
     }
   }
@@ -1166,10 +1169,32 @@ export class Game {
     if (m.state === 'idle' && m.idleFor > 4 && this.rnd() < 0.01 && m.has('bored')) m.setState('bored');
   }
 
+  /**
+   * The executable's idle routine: with nothing to do a monster picks a random cell around its home (`Radio_Busqueda` cells
+   * either way), walks there at its normal speed and waits 1-8 seconds before picking the next.
+   */
+  private roam(m: Creature, dt: number): void {
+    const w = this.roamers.get(m);
+    if (!w) { if (m.state === 'walk') m.setState('idle'); return; }
+    if (w.wait > 0) w.wait -= dt;
+    else {
+      w.to = { cx: w.home.cx + Math.floor(this.rnd() * w.r) * 2 - w.r, cy: w.home.cy + Math.floor(this.rnd() * w.r) * 2 - w.r };
+      w.wait = 1 + Math.floor(this.rnd() * 8);
+    }
+    if (!w.to) { if (m.state === 'walk') m.setState('idle'); return; }
+    const ex = w.to.cx - m.cx, ey = w.to.cy - m.cy, d = Math.hypot(ex, ey);
+    if (d < 0.2) { w.to = null; if (m.state === 'walk') m.setState('idle'); return; }
+    m.face(ex, ey);
+    m.setState('walk');
+    const x0 = m.cx, y0 = m.cy;
+    this.step(m, ex / d, ey / d, m.stats.speed, dt);
+    if (Math.hypot(m.cx - x0, m.cy - y0) < 1e-4) { w.to = null; m.setState('idle'); } // blocked: stand and wait
+  }
+
   /** Unaware monsters stroll between their route points, pausing at each. */
   private patrol(m: Creature, dt: number): void {
     const p = this.patrols.get(m);
-    if (!p) { if (m.state === 'walk') m.setState('idle'); return; }
+    if (!p) { this.roam(m, dt); return; }
     if (p.wait > 0) { p.wait -= dt; if (m.state === 'walk') m.setState('idle'); return; }
     const t = p.pts[p.i]!;
     const ex = t.cx - m.cx, ey = t.cy - m.cy, d = Math.hypot(ex, ey);
