@@ -313,7 +313,7 @@ export class Game {
     const ini = this.data.actors[String(id)];
     if (!atlas || !ini) return;
     const max = (ini as { General?: { Vida?: number } }).General?.Vida ?? 40;
-    const s = new StoneObj(id, atlas, (this.data.names[String(id)] ?? ini.title ?? 'Stone').trim(), max, this.mapNumber === 35 ? 254 : max, cx, cy);
+    const s = new StoneObj(id, atlas, (this.data.names[String(id)] ?? (ini as { title?: string }).title ?? 'Stone').trim(), max, this.mapNumber === 35 ? 254 : max, cx, cy);
     this.stones.add(s);
     this.monsters.push(s);
     this.group.add(s.sprite);
