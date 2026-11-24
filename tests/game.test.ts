@@ -9,6 +9,7 @@ import type { Atlas } from '../src/assets/atlas.ts';
 import type { GameMap } from '../src/formats/map.ts';
 import { Mesh } from 'three';
 import { buildItems } from '../src/game/items.ts';
+import { STONE_ART, STONE_IDS, isStoneId, stoneDamage, stoneState } from '../src/game/stone.ts';
 
 const json = (p: string) => JSON.parse(readFileSync(new URL(`../public/assets/${p}`, import.meta.url), 'utf8'));
 const fakeAtlas = { mesh: () => Object.assign(new Mesh(), { scale: { set() {} } }), has: () => true, rect: () => [0, 0, 8, 8, 0, 0], hotspot: () => [0, 0], json: { size: [64, 64] }, material: {} } as unknown as Atlas;
@@ -1335,4 +1336,34 @@ test('ground tile orientation: mirror bits, a table that only names real transit
   const ids = Object.keys(t.outside).map(Number);
   assert.ok(ids.length >= 10 && ids.every((i) => i >= 156 && i <= 191), 'only the dirt/grass transition tiles are turned');
   assert.ok(Object.values(t.outside).every((o) => ['x', 'y', 'xy'].includes(o)));
+});
+
+test('Dark Stones: damage states, shielded main stone, halved blows, skeletons raised, last one ends the level', () => {
+  assert.deepEqual([102, 51, 50, 1, 0].map((hp) => stoneState(hp, 102)), [0, 1, 1, 1, 2]);
+  assert.deepEqual([[1, 12], [5, 12], [10, 12], [30, 35], [30, 12]].map(([d, m]) => stoneDamage(d!, m!)), [2, 2, 5, 10, 15]); // half (a third in mission 35), at least 2
+  assert.ok(Object.keys(STONE_ART).every((id) => isStoneId(id)) && STONE_IDS.length === 9);
+  const anims = json('data/anims.json');
+  const atlases = new Map<string, Atlas>([['stone', fakeAtlas]]);
+  for (const a of Object.values(anims.actors) as { pack: string }[]) atlases.set(a.pack, fakeAtlas);
+  const data: GameData = { anims, actors: json('data/actors.json'), names: { '100': 'Terak' }, atlases, items: buildItems(json('data/items.json'), {}), icons: fakeAtlas };
+  const spawns = [{ id: '70', cx: 120, cy: 120 }, { id: '71', cx: 123, cy: 120 }];
+  const g = new Game(flatWorld(), data, { cx: 128, cy: 128 }, { spawns, mapNumber: 12 });
+  const [big, small] = g.monsters as unknown as { alive: boolean; hp: number; hurt(n: number, s: boolean): boolean; stats: { race: number } }[];
+  assert.equal(g.monsters.length, 2);
+  assert.equal(big!.stats.race, 512);
+  assert.equal(big!.hp, 102);
+  const hit = (m: object, blow: number) => (g as any).hitStone(m, blow);
+  hit(big!, 50); // shielded while the small stone stands
+  assert.equal(big!.hp, 102);
+  hit(small!, 30); // 40 life, half of 30 = 15
+  assert.equal(small!.hp, 25);
+  for (let i = 0; i < 6 && small!.alive; i++) hit(small!, 30);
+  assert.ok(!small!.alive);
+  assert.equal(g.status, 'playing'); // the big one still stands
+  hit(big!, 50);
+  assert.equal(big!.hp, 77);
+  for (let i = 0; i < 12 && big!.alive; i++) hit(big!, 50);
+  assert.ok(!big!.alive);
+  assert.equal(g.status, 'complete');
+  assert.ok(g.monsters.length >= 2); // some blows raised skeletons next to the stones
 });

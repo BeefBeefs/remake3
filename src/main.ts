@@ -10,6 +10,7 @@ import { Sfx } from './audio/sfx.ts';
 import { surfaceLookup, type TileTable } from './game/surface.ts';
 import { DialogueWindow } from './ui/dialogue.ts';
 import { parseDialogue, speechFor } from './game/dialogue.ts';
+import { isStoneId } from './game/stone.ts';
 import { CLASSES, LEVEL_MSG, MERCHANTS, type ClassId, Game, type GameData, type HeroSave } from './game/game.ts';
 import type { AnimData } from './game/anims.ts';
 import { buildItems } from './game/items.ts';
@@ -23,7 +24,7 @@ import { TitleMenu, type Difficulty } from './ui/titlemenu.ts';
 import { loadPrefs, renderScale, savePrefs, type Prefs } from './ui/prefs.ts';
 import { keyInput, labelOf, mouseInput } from './ui/bindings.ts';
 import { gunzip, parseMap } from './formats/map.ts';
-import { applyCampaignNames, findMap, mapStart, missionBriefing, missionFinalText, tilesetDir, type MapEntry } from './game/maplist.ts';
+import { applyCampaignNames, campaignNumber, findMap, mapStart, missionBriefing, missionFinalText, tilesetDir, type MapEntry } from './game/maplist.ts';
 import { cellToWorld, worldToCell } from './iso.ts';
 
 const BASE = `${import.meta.env.BASE_URL}assets/`;
@@ -155,13 +156,16 @@ async function boot() {
   const items = buildItems((await (await fetch(`${BASE}data/items.json`)).json()) as Parameters<typeof buildItems>[0], itemNames);
   const icons = await Atlas.load(BASE, 'atlas/system/ilistdata.json');
   // Hero + every monster kind the map places (pack-0 markers).
-  const spawns = map.markers.filter((m) => animData.actors[String(m.id)] && m.id < 100).map((m) => ({ id: String(m.id), cx: m.cx, cy: m.cy, route: m.route }));
+  const spawns = map.markers.filter((m) => (animData.actors[String(m.id)] || isStoneId(m.id)) && m.id < 100).map((m) => ({ id: String(m.id), cx: m.cx, cy: m.cy, route: m.route }));
   // ?npc=27,28 puts those NPCs next to the start (the Lost Forrest has none; the Inn map is not in this install).
   const extraNpcs = (new URLSearchParams(location.search).get('npc') ?? '').split(',').filter((id) => animData.actors[id]?.npc);
   // ?mob=23,25 also drops those monsters (23 archer, 25 mage, 55 Zelos...) a few cells from the start, for trying them out.
   const extraMobs = (new URLSearchParams(location.search).get('mob') ?? '').split(',').filter((id) => animData.actors[id] && !animData.actors[id]!.npc);
   const atlases = new Map<string, Atlas>();
-  await Promise.all([String(classId), ...extraNpcs, ...extraMobs, ...new Set(spawns.map((s) => s.id))].map(async (id) => {
+  // The Dark Stones / Cauldron objective objects draw from the shared Stone sheet and raise common (9) and infernal (10) skeletons when hit.
+  const stoneIds = spawns.filter((s) => isStoneId(s.id));
+  if (stoneIds.length) { try { atlases.set('stone', await Atlas.load(BASE, 'p16/actors/stone.json')); } catch { /* objects left out */ } }
+  await Promise.all([String(classId), ...extraNpcs, ...extraMobs, ...(stoneIds.length ? ['9', '10'] : []), ...new Set(spawns.filter((s) => !isStoneId(s.id)).map((s) => s.id))].map(async (id) => {
     const pack = animData.actors[id]!.pack;
     if (!atlases.has(pack)) { try { atlases.set(pack, await Atlas.load(BASE, `p16/actors/${pack.toLowerCase()}.json`)); } catch { /* that monster is left out of the map */ } }
   }));
@@ -173,7 +177,7 @@ async function boot() {
   const tileSurface = surfaceLookup((await (await fetch(`${BASE}data/tiles.json`)).json()) as TileTable, map.tileset);
   const surface = (cx: number, cy: number) => (map.terrain[Math.floor(cy) * map.dim + Math.floor(cx)] !== undefined ? tileSurface(map.terrain[Math.floor(cy) * map.dim + Math.floor(cx)]!) : 'grass');
   const npcSpawns = extraNpcs.map((id, k) => { const c = world.findOpenCell(spawn.cx + 3 + 2 * k, spawn.cy + 2); return { id, cx: c.cx, cy: c.cy }; });
-  const game = new Game(world, { anims: animData, actors: actorsIni, names, atlases, items, icons }, spawn, { spawns: [...spawns, ...npcSpawns], surface, attrs: adv.heroes[classId - 100], classId, save: career.hero, difficulty, finalText: (custom && missionFinalText(idioma, custom.id)) || (adv.final.startsWith('Enter the final text') ? 'You have found the Tomb of Donmir!' : adv.final) });
+  const game = new Game(world, { anims: animData, actors: actorsIni, names, atlases, items, icons }, spawn, { spawns: [...spawns, ...npcSpawns], surface, attrs: adv.heroes[classId - 100], classId, save: career.hero, difficulty, mapNumber: campaignNumber(played.id) ?? 0, finalText: (custom && missionFinalText(idioma, custom.id)) || (adv.final.startsWith('Enter the final text') ? 'You have found the Tomb of Donmir!' : adv.final) });
   const briefing = custom ? missionBriefing(idioma, custom.id) : null;
   game.say(briefing ? briefing.title : custom ? custom.name : adv.mission_text);
   if (new URLSearchParams(location.search).has('debug')) (window as unknown as { __nst: unknown }).__nst = { game }; // for scripted browser checks

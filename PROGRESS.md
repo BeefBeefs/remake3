@@ -510,3 +510,9 @@ Read the use-item routine for type-512 items in `Nightstone.exe` (all 18 cases).
   idle bottoms of all 8 directions agree). The dirt/grass border tiles (VTiles 156–191) were also oriented wrongly: `tools/tile_orient.py`
   fits mirrors from the campaign maps' neighbours (cross-checked on two halves of the maps) and `data/tile_orient.json` lists 18 tiles drawn
   mirrored in the game and the editor. 156 tests.
+- **Remaining models: the Dark Stones.** Actors 54, 59, 64 (no pack in `Actors/`) have no art in this install; actors 70–75 and 80–82,
+  which the campaign maps 12, 26 and 35 place, were the real gap. They are `CActorDarkStone` objects drawn from `Stone.P16`: the
+  executable's init (`0x432ae0`), draw (`0x432fc0`) and receive (`0x433250`) routines gave the frame per damage state, the draw
+  offsets, life (254 in mission 35), halved / thirded blows, the shield on stones 70 and 80 while others stand and the skeleton
+  spawn chances. The game now places them (`src/game/stone.ts`), the level completes when the last falls. Rat and Spider are
+  unused critters. 157 tests.

@@ -313,6 +313,7 @@ yet; they hold the 72 actor and 141 item definitions.
 - `System/*.dat` (`Fnt.dat`, `BigFont.dat`, `SmallFnt.dat` = 256 bytes: glyph width tables; `BackMask.dat` 608 bytes),
   `Mask.raw` (786,432 = 512×512×3?), `*.Nhs`, `*.CDt` (collision?), `*.p16` in `System` are gzip. All ❓.
 - `MAN/Manual.pdf` (6.7 MB) is scanned images – no text layer (needs OCR for the controls/skills reference).
+- `Actors/Stone.P16` (27 frames) is the sheet of the Dark Stone / Cauldron objects (1–3 large stone intact/damaged/rubble, 4–18 five small stones in the same three states, 19–21 cauldron, 22–27 its two tentacles, three states each); `Rat.P16` (207 frames) and `Spider.P16` (82) are small critters (`CActorRat`, `CActorSpider`) that no map or actor INI places (not used).
 - Engine strings (`Nightstone.exe`): `CActorSpider`, `Actors\Gfx\{Amazon,Barbarian,Sorceress,Rat,Spider,Stone}`,
   `@NHS@%d.map`, `Loading Actor IA:: 72 actors`, `Loading Items: 141 items` (Debug.txt).
 

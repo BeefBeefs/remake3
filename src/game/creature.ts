@@ -119,7 +119,7 @@ export class Creature {
     this.apply();
   }
 
-  private apply(): void {
+  protected apply(): void {
     const a = this.anim(this.state) ?? this.anim('idle') ?? this.anim('walk');
     if (this.dormant && this.def.anims.Aparecer) {
       this.sprite.setFrame(frameId(this.def.anims.Aparecer, this.dir, 0));

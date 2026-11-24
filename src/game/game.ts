@@ -8,6 +8,7 @@ import { levelUpFx, makeFx, potionFx, spellFx, stepFx, type Fx } from './effects
 import { HIT_PIXELS, PX_HERO_ARROW, PX_HERO_BOLT, PX_MONSTER_SHOT, lineClear, makeProjectile, pixelDistance, type Projectile, type ProjKind } from './projectiles.ts';
 import { Inventory, missingReqs, rollByMask, rollDrop, slotOf, SPECIAL, type ItemDef } from './items.ts';
 import { cellToWorld, depthOf } from '../iso.ts';
+import { StoneObj, isStoneId, stoneDamage } from './stone.ts';
 import { World } from './world.ts';
 import {
   ATTR_CAPS, GAME_FPS, MAX_LEVEL, POINTS_PER_LEVEL, START_ATTRS, STAFF_MANA, STAMINA_TICK, TICK, classDamage, hitReceived,
@@ -48,6 +49,8 @@ export interface GameOptions {
   classId?: ClassId;
   /** text shown when the mission's goal object is reached */
   finalText?: string;
+  /** campaign mission number (the executable's map index): mission 35 changes how the Dark Stones behave */
+  mapNumber?: number;
   /** 0 Apprentice (easy), 1 Expert (normal, default), 2 Hero (hard): scales monster life and damage */
   difficulty?: 0 | 1 | 2;
   /** continue with a hero from an earlier attempt (see `Game.save`); its attributes replace `attrs` */
@@ -200,6 +203,9 @@ export class Game {
   private facing = { x: 0, y: 1 };
   private readonly rnd = mulberry32(0x4e53);
   private readonly idOf = new Map<Creature, string>();
+  /** Dark Stones / Cauldron parts (actors 70-82): objective objects kept in `monsters` so the hero can hit and see them, but they never act */
+  private readonly stones = new Set<Creature>();
+  private mapNumber = 0;
   /** monsters that have noticed the hero (they shout once) */
   private readonly alerted = new Set<Creature>();
   private readonly boxes: Box[] = [];
@@ -265,6 +271,7 @@ export class Game {
     this.refreshHeroStats();
     this.hero.onStrike = () => this.heroStrike();
     this.group.add(this.hero.sprite);
+    this.mapNumber = opts.mapNumber ?? 0;
     if (opts.spawns) this.spawnFromMap(opts.spawns); else this.populate(start);
     this.initContainers();
   }
@@ -300,9 +307,46 @@ export class Game {
     return new Creature(def, atlas, stats, cx, cy);
   }
 
+  /** A Dark Stone / Cauldron part: life from the INI (254 in mission 35, 0x432e18), picture by damage state. */
+  private addStone(id: number, cx: number, cy: number): void {
+    const atlas = this.data.atlases.get('stone');
+    const ini = this.data.actors[String(id)];
+    if (!atlas || !ini) return;
+    const max = (ini as { General?: { Vida?: number } }).General?.Vida ?? 40;
+    const s = new StoneObj(id, atlas, (this.data.names[String(id)] ?? ini.title ?? 'Stone').trim(), max, this.mapNumber === 35 ? 254 : max, cx, cy);
+    this.stones.add(s);
+    this.monsters.push(s);
+    this.group.add(s.sprite);
+  }
+
+  /**
+   * A hero blow on a stone (receive routine 0x433250): only the hero hurts it; the large stone (70) and the cauldron (80) take
+   * nothing while another objective object still stands; the blow counts half (a third in mission 35), at least 2. Each blow may
+   * raise a skeleton next to it (27 %; the cauldron 34 %, two of them; mission 35 60 %): the common one, or the infernal one in
+   * mission 35 and for 31 % of the cauldron's. The last stone's death completes the level (the missions' objective texts).
+   */
+  private hitStone(m: StoneObj, blow: number): void {
+    if (!m.alive || blow <= 0) return;
+    const others = [...this.stones].some((o) => o !== m && o.alive);
+    if ((m.actorId === 70 || m.actorId === 80) && others) return;
+    const killed = m.hurt(stoneDamage(blow, this.mapNumber), false);
+    this.snd(this.pick(62, 3));
+    const final = this.mapNumber === 35, cauldron = m.actorId === 80;
+    if (this.monsters.length < 200 && this.rnd() * 100 < (final ? 60 : cauldron ? 34 : 27)) {
+      for (let i = 0; i < (cauldron ? 2 : 1); i++) {
+        let kind = final ? 10 : 9;
+        if (cauldron && this.rnd() * 100 > 68) kind = 10;
+        const c = this.world.findOpenCell(m.cx + Math.floor(this.rnd() * 6), m.cy + Math.floor(this.rnd() * 6));
+        this.spawnScripted(kind, Math.floor(this.rnd() * 8), c.cx, c.cy);
+      }
+    }
+    if (killed && ![...this.stones].some((o) => o.alive)) this.completeLevel();
+  }
+
   /** Real placement: one monster per pack-0 marker whose actor we have art and animations for. */
   private spawnFromMap(spawns: NonNullable<GameOptions['spawns']>): void {
     for (const sp of spawns) {
+      if (isStoneId(sp.id)) { this.addStone(Number(sp.id), sp.cx, sp.cy); continue; }
       const def = this.data.anims.actors[sp.id];
       if (!def || !this.data.atlases.has(def.pack)) continue;
       const m = this.make(sp.id, sp.cx, sp.cy);
@@ -776,6 +820,7 @@ export class Game {
 
   /** Applies hero damage to a monster: hurt/die sounds, loot, kill count and experience. */
   private damageMonster(m: Creature, dmg: number, stagger = true): void {
+    if (this.stones.has(m)) { if (dmg > 0) this.hitStone(m as StoneObj, dmg); return; }
     if (dmg < 0) { m.hp = Math.min(m.stats.hp, m.hp - dmg); return; } // a family bonus below -1 heals (fire on demons)
     if (dmg === 0) return;
     const killed = m.hurt(dmg, stagger);
@@ -817,6 +862,7 @@ export class Game {
     let total = part < 0 ? Math.trunc(part) : classDamage(this.classId as ClassKey, this.eff, this.level) + potency + Math.trunc(part);
     total = minDamage(total, this.rnd());
     if (total > 0 && this.inventory.wearing(SPECIAL.dragonShield)) total += 1; // shield: "+1 in the attack"
+    if (this.stones.has(m)) { this.hitStone(m as StoneObj, total); return; }
     const flesh = this.data.actors[this.idOf.get(m) ?? '']?.Sonidos?.Carne !== 0;
     let dmg = total, mult = 1;
     if (total > 0) {
@@ -1251,7 +1297,7 @@ export class Game {
   }
 
   private updateMonster(m: Creature, dt: number): void {
-    if (!m.alive) return;
+    if (!m.alive || this.stones.has(m)) return;
     const h = this.hero;
     if (m.state === 'attack' || m.state === 'hit' || m.state === 'appear' || m.state === 'taunt' || m.state === 'bored') return;
     const ex = h.cx - m.cx, ey = h.cy - m.cy, d = Math.hypot(ex, ey);
