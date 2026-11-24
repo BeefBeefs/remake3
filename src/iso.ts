@@ -20,3 +20,12 @@ export function worldToCell(x: number, y: number): { cx: number; cy: number } {
 export function depthOf(cx: number, cy: number): number {
   return cx + cy;
 }
+
+/** The 8 direction blocks of a P16 actor animation, in storage order (judged by eye on the Barbarian idle cycle). */
+export const DIR_NAMES = ['W', 'NW', 'N', 'NE', 'E', 'SE', 'S', 'SW'] as const;
+
+/** 8-way direction index from a screen-space vector (x right, y up). */
+export function screenDir(sx: number, sy: number): number {
+  const a = Math.atan2(sx, sy); // 0 = up (N), clockwise
+  return (Math.round(a / (Math.PI / 4)) + 2 + 8) % 8;
+}

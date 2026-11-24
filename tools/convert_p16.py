@@ -24,10 +24,9 @@ PACKS = {
     'scenary/outside/pack3': 'Scenary/OutSide/Pack3.P16',
     'scenary/outside/packcell': 'Scenary/OutSide/PackCell.P16',
     'actors/barbarian0': 'Actors/000-Barbarian.P16',
+    'actors/barbarian2': 'Actors/002-Barbarian.P16',
     'actors/sorceress0': 'Actors/000-Sorceress.P16',
     'actors/amazon0': 'Actors/000-Amazon.P16',
-    'actors/e1': 'Actors/1E.P16',
-    'actors/e2': 'Actors/2E.P16',
     'actors/rat': 'Actors/Rat.P16',
     'actors/spider': 'Actors/Spider.P16',
     'actors/stone': 'Actors/Stone.P16',
@@ -47,7 +46,7 @@ def shelf_pack(sizes):
     return pos, y + row_h
 
 
-def convert(src, dst_base):
+def convert(src, dst_base, quantize=False):
     p = P16(src)
     frames = {}
     sizes = {}
@@ -69,15 +68,39 @@ def convert(src, dst_base):
     fy = [p.y[i - 1] + p.h[i - 1] for i in p.ids()]
     ref = [float(np.median(fx)), float(np.median(fy))] if fx else [0.0, 0.0]
     os.makedirs(os.path.dirname(dst_base), exist_ok=True)
-    Image.fromarray(atlas).save(dst_base + '.png', optimize=True)
+    im = Image.fromarray(atlas)
+    if quantize:  # 256-colour palette + 1-bit transparency: ~3x smaller, visually the same for these sprites
+        im = im.quantize(255, method=Image.Quantize.FASTOCTREE, dither=Image.Dither.NONE)
+        pal = im.getpalette()[:255 * 3] + [0, 0, 0]
+        a = np.asarray(Image.fromarray(atlas)[..., 3] if False else atlas[..., 3])
+        idx = np.where(a < 128, 255, np.asarray(im))
+        im = Image.fromarray(idx.astype(np.uint8), 'P')
+        im.putpalette(pal)
+        im.info['transparency'] = 255
+        im.save(dst_base + '.png', optimize=True, transparency=255)
+    else:
+        im.save(dst_base + '.png', optimize=True)
     with open(dst_base + '.json', 'w') as f:
         json.dump({'image': os.path.relpath(dst_base + '.png', OUT).replace(os.sep, '/'), 'size': [ATLAS_W, H],
                    'ref': ref, 'frames': frames}, f, separators=(',', ':'))
     return len(frames), H, ref
 
 
+def monster_packs(game, out):
+    """Every Actors/<id>E|X.P16 that data/anims.json describes (written by tools/build_anims.py)."""
+    path = os.path.join(out, 'data', 'anims.json')
+    if not os.path.exists(path):
+        return {}
+    res = {}
+    for aid, a in json.load(open(path))['actors'].items():
+        if a['pack'][0].isdigit() and a['pack'].endswith('E'):  # hostile monsters; NPC 'X' packs are converted later
+            res[f"actors/{a['pack'].lower()}"] = f"Actors/{a['pack']}.P16"
+    return res
+
+
 if __name__ == '__main__':
     game, OUT = sys.argv[1], sys.argv[2]
+    PACKS.update(monster_packs(game, OUT))
     for name, rel in PACKS.items():
-        n, h, ref = convert(os.path.join(game, rel), os.path.join(OUT, 'p16', name))
+        n, h, ref = convert(os.path.join(game, rel), os.path.join(OUT, 'p16', name), quantize=name.split('/')[-1][0].isdigit())
         print(f'{name:28s} frames={n:4d} atlas=2048x{h} ref={ref}')

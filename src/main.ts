@@ -1,13 +1,13 @@
 import * as THREE from 'three';
 import { Atlas } from './assets/atlas.ts';
 import { World } from './game/world.ts';
-import { ActorSprite, screenDir } from './game/actor.ts';
+import { Game, type GameData } from './game/game.ts';
+import type { AnimData } from './game/anims.ts';
 import { gunzip, parseMap } from './formats/map.ts';
-import { cellToWorld, worldToCell, depthOf } from './iso.ts';
+import { cellToWorld, worldToCell } from './iso.ts';
 
 const BASE = `${import.meta.env.BASE_URL}assets/`;
 const VIEW_H = 480; // the original ran at 640x480; we keep that logical height and scale to the window
-const SPEED = 3.2; // cells per second
 
 const canvas = document.getElementById('game') as HTMLCanvasElement;
 const hud = document.getElementById('hud') as HTMLDivElement;
@@ -30,33 +30,40 @@ resize();
 
 async function boot() {
   hud.textContent = 'Loading original map and sprite data…';
-  const [tiles, packCell, pack1, pack2, pack3, barbarian, mapBytes] = await Promise.all([
+  const [tiles, packCell, pack1, pack2, pack3, mapBytes] = await Promise.all([
     Atlas.load(BASE, 'atlas/scenary/outside/vtiles.json'),
     Atlas.load(BASE, 'p16/scenary/outside/packcell.json'),
     Atlas.load(BASE, 'p16/scenary/outside/pack1.json'),
     Atlas.load(BASE, 'p16/scenary/outside/pack2.json'),
     Atlas.load(BASE, 'p16/scenary/outside/pack3.json'),
-    Atlas.load(BASE, 'p16/actors/barbarian0.json'),
     fetch(`${BASE}maps/lost_forrest.map`).then((r) => r.arrayBuffer()).then(gunzip),
   ]);
   const map = parseMap(mapBytes);
   const world = new World(map, tiles, [packCell, pack1, pack2, pack3]);
   scene.add(world.group);
 
-  // The Barbarian walk cycle: 8 directions x 12 frames (P16 ids 1..96).
-  const hero = new ActorSprite(barbarian);
-  let heroDir = 5; // facing the camera (S)
-  hero.setWalkFrame(heroDir, 0);
-  scene.add(hero);
+  const animData = (await (await fetch(`${BASE}data/anims.json`)).json()) as AnimData;
+  const actorsIni = (await (await fetch(`${BASE}data/actors.json`)).json()) as GameData['actors'];
+  const names: Record<string, string> = {};
+  for (const [k, v] of Object.entries((await (await fetch(`${BASE}text/idioma.json`)).json()) as Record<string, string>)) {
+    const m = /^ACTORS\\ID-(\d+)$/.exec(k);
+    if (m) names[m[1]!] = v;
+  }
+  // Hero + the monster kinds that Game.populate() spawns.
+  const atlases = new Map<string, Atlas>();
+  await Promise.all(['100', '1', '2', '3', '5'].map(async (id) => {
+    const pack = animData.actors[id]!.pack;
+    if (!atlases.has(pack)) atlases.set(pack, await Atlas.load(BASE, `p16/actors/${pack.toLowerCase()}.json`));
+  }));
 
   // Start in the camp area of the map (the real spawn point lives in the adventure file, not decoded yet).
   const spawn = world.findOpenCell(152, 78);
-  const pos = { cx: spawn.cx, cy: spawn.cy };
-  world.update(pos.cx, pos.cy);
-  const startW = cellToWorld(pos.cx, pos.cy);
+  const game = new Game(world, { anims: animData, actors: actorsIni, names, atlases }, spawn);
+  scene.add(game.group);
+  const hero = game.hero;
+  world.update(hero.cx, hero.cy);
+  const startW = cellToWorld(hero.cx, hero.cy);
   camera.position.x = startW.x; camera.position.y = startW.y;
-  let target: { cx: number; cy: number } | null = null;
-
   const pointerToCell = (ev: PointerEvent) => {
     const r = canvas.getBoundingClientRect();
     const nx = (ev.clientX - r.left) / r.width, ny = (ev.clientY - r.top) / r.height;
@@ -65,13 +72,19 @@ async function boot() {
     return worldToCell(wx, wy);
   };
   let held = false;
-  canvas.addEventListener('pointerdown', (e) => { held = true; target = pointerToCell(e); startAudio(); });
-  canvas.addEventListener('pointermove', (e) => { if (held) target = pointerToCell(e); });
+  let last: { cx: number; cy: number } | null = null;
+  canvas.addEventListener('pointerdown', (e) => { held = true; last = pointerToCell(e); game.click(last.cx, last.cy); startAudio(); });
+  canvas.addEventListener('pointermove', (e) => { last = pointerToCell(e); if (held) game.click(last.cx, last.cy); });
   window.addEventListener('pointerup', () => { held = false; });
 
-  // Keyboard: arrows/WASD move along the screen axes (up = towards the top of the screen).
+  // Keyboard: arrows/WASD move along the screen axes (up = towards the top of the screen); space swings.
   const keys = new Set<string>();
-  window.addEventListener('keydown', (e) => { keys.add(e.key.toLowerCase()); startAudio(); });
+  window.addEventListener('keydown', (e) => {
+    keys.add(e.key.toLowerCase());
+    if (e.key === ' ') { game.swing(); e.preventDefault(); }
+    if (e.key.toLowerCase() === 'r' && !game.hero.alive) location.reload();
+    startAudio();
+  });
   window.addEventListener('keyup', (e) => keys.delete(e.key.toLowerCase()));
 
   let audioOn = false;
@@ -84,7 +97,16 @@ async function boot() {
     void wind.play().catch(() => undefined);
   }
 
-  let walkT = 0;
+  // HUD: hero health bar + kill counter (plain DOM over the canvas)
+  const bar = document.createElement('div');
+  bar.style.cssText = 'position:fixed;left:8px;top:8px;font:12px ui-monospace,Menlo,monospace;color:#e9dfb8;text-shadow:0 1px 2px #000;pointer-events:none';
+  bar.innerHTML = '<div id="hpname"></div><div style="width:180px;height:10px;background:#2a0d0d;border:1px solid #000"><div id="hpfill" style="height:100%;background:#b32020"></div></div><div id="hpinfo"></div>';
+  document.body.appendChild(bar);
+  const hpname = bar.querySelector('#hpname') as HTMLDivElement, hpfill = bar.querySelector('#hpfill') as HTMLDivElement, hpinfo = bar.querySelector('#hpinfo') as HTMLDivElement;
+  const banner = document.createElement('div');
+  banner.style.cssText = 'position:fixed;left:0;right:0;top:40%;text-align:center;font:24px ui-monospace,Menlo,monospace;color:#e9c27a;text-shadow:0 2px 4px #000;pointer-events:none;display:none';
+  document.body.appendChild(banner);
+
   const clock = new THREE.Clock();
   function frame() {
     const dt = Math.min(clock.getDelta(), 0.1);
@@ -93,42 +115,27 @@ async function boot() {
     if (keys.has('arrowright') || keys.has('d')) dx += 1;
     if (keys.has('arrowup') || keys.has('w')) dy += 1;
     if (keys.has('arrowdown') || keys.has('s')) dy -= 1;
-    let vx = 0, vy = 0; // cell-space velocity
+    let move: { x: number; y: number } | null = null;
     if (dx || dy) {
-      target = null;
       const c = worldToCell(dx * 32, dy * 16); // one screen unit expressed in cell space
       const l = Math.hypot(c.cx, c.cy) || 1;
-      vx = c.cx / l; vy = c.cy / l;
-    } else if (target) {
-      const ex = target.cx - pos.cx, ey = target.cy - pos.cy, d = Math.hypot(ex, ey);
-      if (d < 0.08) target = null;
-      else { vx = ex / d; vy = ey / d; }
+      move = { x: c.cx / l, y: c.cy / l };
     }
-    if (vx || vy) {
-      const step = Math.min(SPEED * dt, target ? Math.hypot(target.cx - pos.cx, target.cy - pos.cy) : SPEED * dt);
-      const nx = pos.cx + vx * step, ny = pos.cy + vy * step;
-      // slide along obstacles: try the full move, then each axis on its own
-      if (world.isWalkable(nx, ny)) { pos.cx = nx; pos.cy = ny; }
-      else if (world.isWalkable(nx, pos.cy)) pos.cx = nx;
-      else if (world.isWalkable(pos.cx, ny)) pos.cy = ny;
-      else target = null;
-      pos.cx = Math.min(Math.max(pos.cx, 0), world.dim - 1);
-      pos.cy = Math.min(Math.max(pos.cy, 0), world.dim - 1);
-      // face the screen-space direction of travel and advance the walk cycle
-      const sx = (vx - vy) * 32, sy = -(vx + vy) * 16;
-      heroDir = screenDir(sx, sy);
-      walkT += dt * 14;
-    } else walkT = 0;
-    hero.setWalkFrame(heroDir, Math.floor(walkT));
-    const w = cellToWorld(pos.cx, pos.cy);
-    hero.position.set(w.x, w.y, depthOf(pos.cx, pos.cy) + 0.3);
-    world.update(pos.cx, pos.cy);
+    game.update(dt, move);
+    world.update(hero.cx, hero.cy);
+    const w = cellToWorld(hero.cx, hero.cy);
     camera.position.x += (w.x - camera.position.x) * Math.min(1, dt * 6);
     camera.position.y += (w.y - camera.position.y) * Math.min(1, dt * 6);
+    hpname.textContent = hero.stats.name;
+    hpfill.style.width = `${(100 * hero.hp) / hero.stats.hp}%`;
+    hpinfo.textContent = `HP ${hero.hp}/${hero.stats.hp}  kills ${game.kills}  xp ${game.xp}`;
+    const left = game.monsters.filter((m) => m.alive).length;
+    banner.style.display = !hero.alive || left === 0 ? 'block' : 'none';
+    banner.textContent = !hero.alive ? 'You have fallen — press R to restart' : 'The camp is clear!';
     renderer.render(scene, camera);
     requestAnimationFrame(frame);
   }
-  hud.textContent = 'NightStone remake · milestone 1 · real Lost Forrest terrain + scenery · Barbarian · click / hold to walk, or WASD';
+  hud.textContent = 'NightStone remake · milestone 2 · click ground to walk, click a monster (or Space) to fight · WASD also moves';
   frame();
 }
 

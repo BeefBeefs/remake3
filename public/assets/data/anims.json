@@ -1,0 +1,1264 @@
+{
+ "dirs": [
+  "W",
+  "NW",
+  "N",
+  "NE",
+  "E",
+  "SE",
+  "S",
+  "SW"
+ ],
+ "actors": {
+  "1": {
+   "title": "GOBLIN",
+   "pack": "1E",
+   "frames": 400,
+   "verified": false,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 8,
+     "speed": 6
+    },
+    "Respirar": {
+     "start": 65,
+     "frames": 8,
+     "speed": 7
+    },
+    "Atacar": {
+     "start": 129,
+     "frames": 8,
+     "speed": 3
+    },
+    "Recibir": {
+     "start": 193,
+     "frames": 3,
+     "speed": 7
+    },
+    "Morir": {
+     "start": 217,
+     "frames": 10,
+     "speed": 5
+    },
+    "Alarma": {
+     "start": 297,
+     "frames": 13,
+     "speed": 5
+    }
+   },
+   "foot": [
+    -129.0,
+    -52.0
+   ]
+  },
+  "2": {
+   "title": "GOBLIN RATA",
+   "pack": "2E",
+   "frames": 408,
+   "verified": false,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 8,
+     "speed": 7
+    },
+    "Respirar": {
+     "start": 65,
+     "frames": 8,
+     "speed": 7
+    },
+    "Atacar": {
+     "start": 129,
+     "frames": 8,
+     "speed": 3
+    },
+    "Recibir": {
+     "start": 193,
+     "frames": 3,
+     "speed": 7
+    },
+    "Morir": {
+     "start": 217,
+     "frames": 10,
+     "speed": 4
+    },
+    "Alarma": {
+     "start": 297,
+     "frames": 14,
+     "speed": 5
+    }
+   },
+   "foot": [
+    -131.0,
+    -61.0
+   ]
+  },
+  "3": {
+   "title": "GOBLIN INFERNAL",
+   "pack": "3E",
+   "frames": 368,
+   "verified": false,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 8,
+     "speed": 7
+    },
+    "Respirar": {
+     "start": 65,
+     "frames": 8,
+     "speed": 7
+    },
+    "Atacar": {
+     "start": 129,
+     "frames": 8,
+     "speed": 3
+    },
+    "Recibir": {
+     "start": 193,
+     "frames": 3,
+     "speed": 7
+    },
+    "Morir": {
+     "start": 217,
+     "frames": 10,
+     "speed": 5
+    },
+    "Alarma": {
+     "start": 297,
+     "frames": 9,
+     "speed": 5
+    }
+   },
+   "foot": [
+    -123.5,
+    -52.0
+   ]
+  },
+  "4": {
+   "title": "GOBLIN MAESTRO",
+   "pack": "4E",
+   "frames": 392,
+   "verified": false,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 8,
+     "speed": 7
+    },
+    "Respirar": {
+     "start": 65,
+     "frames": 8,
+     "speed": 7
+    },
+    "Atacar": {
+     "start": 129,
+     "frames": 8,
+     "speed": 3
+    },
+    "Recibir": {
+     "start": 193,
+     "frames": 3,
+     "speed": 7
+    },
+    "Morir": {
+     "start": 217,
+     "frames": 10,
+     "speed": 5
+    },
+    "Alarma": {
+     "start": 297,
+     "frames": 12,
+     "speed": 5
+    }
+   },
+   "foot": [
+    -126.0,
+    -52.0
+   ]
+  },
+  "5": {
+   "title": "ORCO COM\u00daN",
+   "pack": "5E",
+   "frames": 296,
+   "verified": false,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 8,
+     "speed": 6
+    },
+    "Respirar": {
+     "start": 65,
+     "frames": 8,
+     "speed": 7
+    },
+    "Atacar": {
+     "start": 129,
+     "frames": 8,
+     "speed": 4
+    },
+    "Recibir": {
+     "start": 193,
+     "frames": 3,
+     "speed": 7
+    },
+    "Morir": {
+     "start": 217,
+     "frames": 10,
+     "speed": 6
+    }
+   },
+   "foot": [
+    -121.5,
+    -33.0
+   ]
+  },
+  "6": {
+   "title": "ORCO APLASTAHUESOS",
+   "pack": "6E",
+   "frames": 296,
+   "verified": false,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 8,
+     "speed": 6
+    },
+    "Respirar": {
+     "start": 65,
+     "frames": 8,
+     "speed": 7
+    },
+    "Atacar": {
+     "start": 129,
+     "frames": 8,
+     "speed": 3
+    },
+    "Recibir": {
+     "start": 193,
+     "frames": 3,
+     "speed": 7
+    },
+    "Morir": {
+     "start": 217,
+     "frames": 10,
+     "speed": 6
+    }
+   },
+   "foot": [
+    -114.0,
+    -33.0
+   ]
+  },
+  "7": {
+   "title": "ORCO BRUTAL",
+   "pack": "7E",
+   "frames": 296,
+   "verified": false,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 8,
+     "speed": 6
+    },
+    "Respirar": {
+     "start": 65,
+     "frames": 8,
+     "speed": 7
+    },
+    "Atacar": {
+     "start": 129,
+     "frames": 8,
+     "speed": 3
+    },
+    "Recibir": {
+     "start": 193,
+     "frames": 3,
+     "speed": 7
+    },
+    "Morir": {
+     "start": 217,
+     "frames": 10,
+     "speed": 6
+    }
+   },
+   "foot": [
+    -114.0,
+    -26.0
+   ]
+  },
+  "8": {
+   "title": "ORCO CAPITAN",
+   "pack": "8E",
+   "frames": 568,
+   "verified": false,
+   "partial": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 10,
+     "speed": 6
+    },
+    "Respirar": {
+     "start": 81,
+     "frames": 8,
+     "speed": 8
+    },
+    "Atacar": {
+     "start": 145,
+     "frames": 9,
+     "speed": 3
+    }
+   },
+   "foot": [
+    -103.5,
+    -8.0
+   ]
+  },
+  "9": {
+   "title": "ESQUELETO COM\u00daN",
+   "pack": "9E",
+   "frames": 552,
+   "verified": false,
+   "partial": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 8,
+     "speed": 7
+    },
+    "Respirar": {
+     "start": 65,
+     "frames": 8,
+     "speed": 9
+    },
+    "Atacar": {
+     "start": 129,
+     "frames": 8,
+     "speed": 3
+    }
+   },
+   "foot": [
+    -123.5,
+    -25.0
+   ]
+  },
+  "10": {
+   "title": "ESQUELETO INFERNAL",
+   "pack": "10E",
+   "frames": 552,
+   "verified": false,
+   "partial": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 8,
+     "speed": 7
+    },
+    "Respirar": {
+     "start": 65,
+     "frames": 8,
+     "speed": 9
+    },
+    "Atacar": {
+     "start": 129,
+     "frames": 8,
+     "speed": 3
+    }
+   },
+   "foot": [
+    -123.5,
+    -25.0
+   ]
+  },
+  "11": {
+   "title": "ESQUELETO MAESTRO",
+   "pack": "11E",
+   "frames": 416,
+   "verified": false,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 8,
+     "speed": 7
+    },
+    "Respirar": {
+     "start": 65,
+     "frames": 8,
+     "speed": 9
+    },
+    "Atacar": {
+     "start": 129,
+     "frames": 8,
+     "speed": 3
+    },
+    "Recibir": {
+     "start": 193,
+     "frames": 3,
+     "speed": 7
+    },
+    "Morir": {
+     "start": 217,
+     "frames": 10,
+     "speed": 6
+    },
+    "Alarma": {
+     "start": 297,
+     "frames": 9,
+     "speed": 7
+    },
+    "Vigilar": {
+     "start": 369,
+     "frames": 6,
+     "speed": 7
+    }
+   },
+   "foot": [
+    -125.5,
+    0.0
+   ]
+  },
+  "12": {
+   "title": "ESQUELETO GUARDIAN",
+   "pack": "12E",
+   "frames": 424,
+   "verified": false,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 8,
+     "speed": 7
+    },
+    "Respirar": {
+     "start": 65,
+     "frames": 8,
+     "speed": 8
+    },
+    "Atacar": {
+     "start": 129,
+     "frames": 8,
+     "speed": 3
+    },
+    "Recibir": {
+     "start": 193,
+     "frames": 3,
+     "speed": 7
+    },
+    "Morir": {
+     "start": 217,
+     "frames": 10,
+     "speed": 6
+    },
+    "Alarma": {
+     "start": 297,
+     "frames": 10,
+     "speed": 7
+    },
+    "Vigilar": {
+     "start": 377,
+     "frames": 6,
+     "speed": 7
+    }
+   },
+   "foot": [
+    -110.5,
+    4.0
+   ]
+  },
+  "13": {
+   "title": "GROAK",
+   "pack": "13E",
+   "frames": 280,
+   "verified": false,
+   "partial": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 8,
+     "speed": 5
+    },
+    "Respirar": {
+     "start": 65,
+     "frames": 8,
+     "speed": 7
+    },
+    "Atacar": {
+     "start": 129,
+     "frames": 8,
+     "speed": 3
+    }
+   },
+   "foot": [
+    -128.0,
+    -65.0
+   ]
+  },
+  "14": {
+   "title": "LEHCIM",
+   "pack": "14E",
+   "frames": 284,
+   "verified": false,
+   "partial": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 10,
+     "speed": 2
+    },
+    "Respirar": {
+     "start": 81,
+     "frames": 10,
+     "speed": 9
+    },
+    "Atacar": {
+     "start": 161,
+     "frames": 8,
+     "speed": 3
+    }
+   },
+   "foot": [
+    -93.0,
+    -42.0
+   ]
+  },
+  "15": {
+   "title": "OPAHC",
+   "pack": "15E",
+   "frames": 280,
+   "verified": false,
+   "partial": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 10,
+     "speed": 1
+    },
+    "Respirar": {
+     "start": 81,
+     "frames": 10,
+     "speed": 14
+    },
+    "Atacar": {
+     "start": 161,
+     "frames": 9,
+     "speed": 3
+    }
+   },
+   "foot": [
+    -100.0,
+    -44.0
+   ]
+  },
+  "16": {
+   "title": "ZOMBIE",
+   "pack": "16E",
+   "frames": 320,
+   "verified": false,
+   "partial": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 12,
+     "speed": 6
+    },
+    "Respirar": {
+     "start": 97,
+     "frames": 8,
+     "speed": 9
+    },
+    "Atacar": {
+     "start": 161,
+     "frames": 9,
+     "speed": 6
+    }
+   },
+   "foot": [
+    -127.5,
+    -10.0
+   ]
+  },
+  "17": {
+   "title": "TROLL COM\u00daN",
+   "pack": "17E",
+   "frames": 400,
+   "verified": false,
+   "partial": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 10,
+     "speed": 8
+    },
+    "Respirar": {
+     "start": 81,
+     "frames": 8,
+     "speed": 10
+    },
+    "Atacar": {
+     "start": 145,
+     "frames": 9,
+     "speed": 6
+    }
+   },
+   "foot": [
+    -94.5,
+    33.0
+   ]
+  },
+  "18": {
+   "title": "TROLL GUERRERO",
+   "pack": "18E",
+   "frames": 488,
+   "verified": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 10,
+     "speed": 7
+    },
+    "Respirar": {
+     "start": 81,
+     "frames": 8,
+     "speed": 10
+    },
+    "Atacar": {
+     "start": 145,
+     "frames": 9,
+     "speed": 7
+    },
+    "Morir": {
+     "start": 217,
+     "frames": 8,
+     "speed": 9
+    },
+    "Extra": {
+     "start": 281,
+     "frames": 13,
+     "speed": 8
+    },
+    "Alarma": {
+     "start": 385,
+     "frames": 13,
+     "speed": 6
+    }
+   },
+   "foot": [
+    -78.0,
+    45.0
+   ]
+  },
+  "19": {
+   "title": "DEMONIO",
+   "pack": "19E",
+   "frames": 480,
+   "verified": false,
+   "partial": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 10,
+     "speed": 4
+    },
+    "Respirar": {
+     "start": 81,
+     "frames": 10,
+     "speed": 8
+    },
+    "Atacar": {
+     "start": 161,
+     "frames": 10,
+     "speed": 3
+    }
+   },
+   "foot": [
+    -111.5,
+    -25.0
+   ]
+  },
+  "20": {
+   "title": "DEMONIO INFERNAL",
+   "pack": "20E",
+   "frames": 536,
+   "verified": false,
+   "partial": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 10,
+     "speed": 4
+    },
+    "Respirar": {
+     "start": 81,
+     "frames": 10,
+     "speed": 8
+    },
+    "Atacar": {
+     "start": 161,
+     "frames": 10,
+     "speed": 3
+    }
+   },
+   "foot": [
+    -96.5,
+    12.0
+   ]
+  },
+  "21": {
+   "title": "AMAZONA",
+   "pack": "21E",
+   "frames": 484,
+   "verified": false,
+   "partial": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 11,
+     "speed": 4
+    },
+    "Respirar": {
+     "start": 89,
+     "frames": 8,
+     "speed": 8
+    },
+    "Atacar": {
+     "start": 153,
+     "frames": 10,
+     "speed": 3
+    }
+   },
+   "foot": [
+    -127.5,
+    -26.0
+   ]
+  },
+  "22": {
+   "title": "AMAZONA DIABOLICA",
+   "pack": "22E",
+   "frames": 484,
+   "verified": false,
+   "partial": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 11,
+     "speed": 4
+    },
+    "Respirar": {
+     "start": 89,
+     "frames": 8,
+     "speed": 8
+    },
+    "Atacar": {
+     "start": 153,
+     "frames": 10,
+     "speed": 3
+    }
+   },
+   "foot": [
+    -127.5,
+    -26.0
+   ]
+  },
+  "23": {
+   "title": "ARQUERO",
+   "pack": "23E",
+   "frames": 348,
+   "verified": false,
+   "partial": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 10,
+     "speed": 6
+    },
+    "Respirar": {
+     "start": 81,
+     "frames": 8,
+     "speed": 9
+    },
+    "Atacar": {
+     "start": 145,
+     "frames": 14,
+     "speed": 3
+    }
+   },
+   "foot": [
+    -121.0,
+    5.0
+   ]
+  },
+  "24": {
+   "title": "CABALLERO",
+   "pack": "24E",
+   "frames": 464,
+   "verified": false,
+   "partial": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 8,
+     "speed": 8
+    },
+    "Respirar": {
+     "start": 65,
+     "frames": 8,
+     "speed": 8
+    },
+    "Atacar": {
+     "start": 129,
+     "frames": 10,
+     "speed": 4
+    }
+   },
+   "foot": [
+    -99.0,
+    13.0
+   ]
+  },
+  "25": {
+   "title": "MAGO",
+   "pack": "25E",
+   "frames": 364,
+   "verified": false,
+   "partial": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 10,
+     "speed": 8
+    },
+    "Respirar": {
+     "start": 81,
+     "frames": 8,
+     "speed": 8
+    },
+    "Atacar": {
+     "start": 145,
+     "frames": 10,
+     "speed": 4
+    }
+   },
+   "foot": [
+    -121.5,
+    11.0
+   ]
+  },
+  "39": {
+   "title": "LIDER GOBLIN(FASE 3)",
+   "pack": "39E",
+   "frames": 392,
+   "verified": false,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 8,
+     "speed": 7
+    },
+    "Respirar": {
+     "start": 65,
+     "frames": 8,
+     "speed": 7
+    },
+    "Atacar": {
+     "start": 129,
+     "frames": 8,
+     "speed": 3
+    },
+    "Recibir": {
+     "start": 193,
+     "frames": 3,
+     "speed": 7
+    },
+    "Morir": {
+     "start": 217,
+     "frames": 10,
+     "speed": 6
+    },
+    "Alarma": {
+     "start": 297,
+     "frames": 12,
+     "speed": 7
+    }
+   },
+   "foot": [
+    -126.0,
+    -52.0
+   ]
+  },
+  "40": {
+   "title": "SE\u00d1OR DE FEARM",
+   "pack": "40E",
+   "frames": 464,
+   "verified": false,
+   "partial": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 8,
+     "speed": 8
+    },
+    "Respirar": {
+     "start": 65,
+     "frames": 8,
+     "speed": 8
+    },
+    "Atacar": {
+     "start": 129,
+     "frames": 10,
+     "speed": 4
+    }
+   },
+   "foot": [
+    -99.0,
+    13.0
+   ]
+  },
+  "43": {
+   "title": "LIDER GOBLIN(FASE 6)",
+   "pack": "43E",
+   "frames": 392,
+   "verified": false,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 8,
+     "speed": 7
+    },
+    "Respirar": {
+     "start": 65,
+     "frames": 8,
+     "speed": 7
+    },
+    "Atacar": {
+     "start": 129,
+     "frames": 8,
+     "speed": 3
+    },
+    "Recibir": {
+     "start": 193,
+     "frames": 3,
+     "speed": 7
+    },
+    "Morir": {
+     "start": 217,
+     "frames": 10,
+     "speed": 6
+    },
+    "Alarma": {
+     "start": 297,
+     "frames": 12,
+     "speed": 7
+    }
+   },
+   "foot": [
+    -126.0,
+    -52.0
+   ]
+  },
+  "45": {
+   "title": "ORCO MASTER (ORCO CAPITAN MEJORADO) FASE 8",
+   "pack": "45E",
+   "frames": 296,
+   "verified": false,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 8,
+     "speed": 6
+    },
+    "Respirar": {
+     "start": 65,
+     "frames": 8,
+     "speed": 7
+    },
+    "Atacar": {
+     "start": 129,
+     "frames": 8,
+     "speed": 3
+    },
+    "Recibir": {
+     "start": 193,
+     "frames": 3,
+     "speed": 7
+    },
+    "Morir": {
+     "start": 217,
+     "frames": 10,
+     "speed": 6
+    }
+   },
+   "foot": [
+    -114.0,
+    -26.0
+   ]
+  },
+  "48": {
+   "title": "TROLL GUERRERO MAESTRO",
+   "pack": "48E",
+   "frames": 488,
+   "verified": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 10,
+     "speed": 8
+    },
+    "Respirar": {
+     "start": 81,
+     "frames": 8,
+     "speed": 10
+    },
+    "Atacar": {
+     "start": 145,
+     "frames": 9,
+     "speed": 7
+    },
+    "Morir": {
+     "start": 217,
+     "frames": 8,
+     "speed": 9
+    },
+    "Extra": {
+     "start": 281,
+     "frames": 13,
+     "speed": 8
+    },
+    "Alarma": {
+     "start": 385,
+     "frames": 13,
+     "speed": 6
+    }
+   },
+   "foot": [
+    -78.0,
+    45.0
+   ]
+  },
+  "51": {
+   "title": "SE\u00d1OR DE AILM",
+   "pack": "51E",
+   "frames": 464,
+   "verified": false,
+   "partial": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 8,
+     "speed": 7
+    },
+    "Respirar": {
+     "start": 65,
+     "frames": 8,
+     "speed": 8
+    },
+    "Atacar": {
+     "start": 129,
+     "frames": 10,
+     "speed": 4
+    }
+   },
+   "foot": [
+    -99.0,
+    13.0
+   ]
+  },
+  "52": {
+   "title": "ORCO MASTER (ORCO CAPITAN MEJORADO) FASE 18",
+   "pack": "52E",
+   "frames": 568,
+   "verified": false,
+   "partial": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 10,
+     "speed": 5
+    },
+    "Respirar": {
+     "start": 81,
+     "frames": 8,
+     "speed": 8
+    },
+    "Atacar": {
+     "start": 145,
+     "frames": 9,
+     "speed": 3
+    }
+   },
+   "foot": [
+    -103.5,
+    -8.0
+   ]
+  },
+  "55": {
+   "title": "ZELOS",
+   "pack": "55E",
+   "frames": 364,
+   "verified": false,
+   "partial": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 10,
+     "speed": 8
+    },
+    "Respirar": {
+     "start": 81,
+     "frames": 8,
+     "speed": 8
+    },
+    "Atacar": {
+     "start": 145,
+     "frames": 10,
+     "speed": 4
+    }
+   },
+   "foot": [
+    -121.5,
+    11.0
+   ]
+  },
+  "58": {
+   "title": "ORCO MASTER (ORCO CAPITAN MEJORADO) FASE 25",
+   "pack": "58E",
+   "frames": 296,
+   "verified": false,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 8,
+     "speed": 6
+    },
+    "Respirar": {
+     "start": 65,
+     "frames": 8,
+     "speed": 7
+    },
+    "Atacar": {
+     "start": 129,
+     "frames": 8,
+     "speed": 3
+    },
+    "Recibir": {
+     "start": 193,
+     "frames": 3,
+     "speed": 7
+    },
+    "Morir": {
+     "start": 217,
+     "frames": 10,
+     "speed": 6
+    }
+   },
+   "foot": [
+    -114.0,
+    -26.0
+   ]
+  },
+  "61": {
+   "title": "ORCO GENERAL DE TODOS LOS EJERCITOS",
+   "pack": "61E",
+   "frames": 568,
+   "verified": false,
+   "partial": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 10,
+     "speed": 5
+    },
+    "Respirar": {
+     "start": 81,
+     "frames": 8,
+     "speed": 8
+    },
+    "Atacar": {
+     "start": 145,
+     "frames": 9,
+     "speed": 3
+    }
+   },
+   "foot": [
+    -103.5,
+    -8.0
+   ]
+  },
+  "63": {
+   "title": "Naya",
+   "pack": "63E",
+   "frames": 504,
+   "verified": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 10,
+     "speed": 8
+    },
+    "Respirar": {
+     "start": 81,
+     "frames": 10,
+     "speed": 8
+    },
+    "Atacar": {
+     "start": 161,
+     "frames": 11,
+     "speed": 4
+    },
+    "Recibir": {
+     "start": 249,
+     "frames": 3,
+     "speed": 7
+    },
+    "Morir": {
+     "start": 273,
+     "frames": 10,
+     "speed": 6
+    },
+    "Recibir2": {
+     "start": 353,
+     "frames": 3,
+     "speed": 8
+    },
+    "Atacar2": {
+     "start": 377,
+     "frames": 16,
+     "speed": 4
+    }
+   },
+   "foot": [
+    -125.5,
+    7.0
+   ]
+  },
+  "100": {
+   "title": "BARBARO - B\u00c1SICO",
+   "pack": "barbarian2",
+   "frames": 564,
+   "verified": false,
+   "partial": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 10,
+     "speed": 7
+    },
+    "Respirar": {
+     "start": 81,
+     "frames": 8,
+     "speed": 8
+    },
+    "Atacar": {
+     "start": 145,
+     "frames": 9,
+     "speed": 4
+    }
+   },
+   "foot": [
+    -128.0,
+    -15.0
+   ]
+  }
+ }
+}

@@ -9,7 +9,7 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test tests/*.test.ts",
+    "test": "node --experimental-transform-types --import ./tests/support/register.mjs --test tests/*.test.ts",
     "test:p16": "python3 -I tests/test_p16.py",
     "extract": "python3 tools/extract_nst.py",
     "convert": "python3 tools/convert_assets.py"

@@ -14,8 +14,10 @@ Each working session appends an entry below (newest first). Format knowledge liv
 | Audio, text (`Idioma.bdt`) | ✅ decoded |
 | Character / enemy / scenery sprites (`.P16`) | ✅ decoded (51,448 frames); animation blocks beyond the walk cycle not mapped |
 | Map layout (`.map`) | 🟡 terrain grid + object layer decoded; other layers, spawn/triggers (`.adv`) open |
-| Renderer (iso, three.js) | 🟡 real Lost Forrest, chunked, Barbarian walking (milestone 1) — **never run in a browser** |
-| Combat, AI, items, inventory, UI, multiplayer, editor | ⬜ not started |
+| Renderer + game loop (three.js) | 🟡 real Lost Forrest, Barbarian, monsters, melee combat (milestone 2) — **never run in a browser** |
+| NHS data / animation layouts | ✅ 72 actors, 141 items; 17 monsters fully or ambiguously mapped, 20 partial |
+| Items, inventory, skills, dialogue, quests (`.adv`), sound effects, multiplayer, editor | ⬜ not started |
+| Combat + monster AI | 🟡 first pass (placeholder numbers) |
 
 ## Turn 3 — 2026-11-24 · game data, animations, enemies (steps logged as they finish)
 
@@ -30,6 +32,32 @@ Each working session appends an entry below (newest first). Format knowledge liv
   per direction)`, which is the key to segmenting the P16 packs (step 2). Item INIs give type, graphic, damage
   range, durability, requirements and bonuses. Names are Spanish (e.g. `Raza`, `Vida`, `Fuerza`); in-game English names
   come from `Idioma.bdt`.
+
+### Step 2 ✅ Animation layouts for actors
+- Found that each P16 pack stores animations back to back, 8 directions each, dir-major, and that the actor INI lists the
+  per-animation `(speed, frames)`; matching the INI against pack frame counts gives the layout. Goblin (`1E`, 400
+  frames) matches exactly and its idle / hit / death / taunt rows were checked on contact sheets.
+  `tools/build_anims.py` → `data/anims.json` (36 monsters + the Barbarian).
+- Direction order corrected to **W, NW, N, NE, E, SE, S, SW** (my Turn 2 guess was rotated, and the Barbarian walk
+  cycle is 10 frames per direction, not 12).
+- Player characters turned out to be **layered equipment sets** (000 bare, 002 sword, 010 shield, 100/200 armour…), all
+  with the same frame numbering. The hero now draws pack 002 (sword).
+- Per-actor `foot` anchors (hotspot origins differ between packs). Monster atlases converted with a 256-colour palette
+  (43 MB → 16 MB).
+- Partial: 20 monsters (Orc captain, skeletons, trolls, demons …) don't match any subset of their INI animations, so they
+  only get walk / idle / attack. Hero hit/death/block animations are not mapped.
+
+### Step 3 ✅ Monsters, AI and melee combat (headless-tested, not browser-run)
+- `src/game/{anims,creature,game}.ts`: creature state machine (idle / walk / attack / hit / dead) driven by the
+  INI timings; monsters spawn around the camp (goblins, goblin rats, hell goblins, an orc), hear the hero within
+  `Oido + 3` cells, chase, strike on 55 % of the swing with `Fuerza` damage and the INI cooldown; the hero fights by
+  clicking a monster (walks up and keeps swinging) or Space; XP and kills are tracked; HUD with health bar; game-over
+  banner (R restarts).
+- **Tests now cover the simulation**: `tests/game.test.ts` runs the real `Game` against a tiny stub of three.js
+  (`tests/support/`) — hero walks to a click target, kills a clicked goblin, is hurt by chasing monsters, and a dead hero
+  stops reacting. 16 tests pass (`npm test`, needs Node ≥ 22.7 for `--experimental-transform-types`).
+- Placeholder numbers: hero HP 60 and damage 3–7 (the real player stats come from the character tables, not decoded),
+  monster speed 1.7 cells/s, spawn positions (real ones are in the `.adv` file).
 
 ## Turn 2 — 2026-11-24 · sprites and the real map
 

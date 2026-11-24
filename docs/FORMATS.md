@@ -101,10 +101,33 @@ up the Lost Forrest camp (barrels, fires, tents, flags) and the walk cycle corre
 Cliff/forest *wall slices* (Pack2 ids 611–616, 32 px wide) carry offsets of −200…−270 px and render high above their
 cell with this rule — probably intended as a tall backdrop, not verified.
 
-**Animation layout** (Barbarian `000-Barbarian.P16`, 564 frames = 47 × 12): walk cycle = ids `dir*12 + 1 .. 12` for
-`dir` 0..7, order **NW, N, NE, E, SE, S, SW, W** (by eye). Other animation blocks (idle, run, attack, death…) are not
-mapped yet. Packs: `Actors/<id>-<Class>.P16` (player skins/animations), `Actors/<n>E|X.P16` (monsters/NPCs),
-`Actors/Rat|Spider|Stone.P16`, `Scenary/<tileset>/Pack1|2|3|Cell.P16`, `GDI/Graphics/Magic*.P16`, `ActorOverlay.P16`.
+**Animation layout.** Actor packs hold animations back to back, each as 8 direction blocks, *dir-major*
+(`start + dir*frames + step`). The per-animation `(speed, frames-per-direction)` pairs are in the actor INI
+(`[Animaciones]`: Andar = walk, Respirar = idle, Atacar = attack, Cubrir = block, Recibir/Recibir2 = hit, Morir = die,
+Alarma = taunt, Extra/Atacar2/Vigilar/Aburrido/Aparecer = misc). A pack only contains a subset, in this order:
+`Andar, Respirar, Atacar, Cubrir, Recibir, Morir, Recibir2, Extra, Atacar2, Alarma, Vigilar`.
+`tools/build_anims.py` finds the subset whose frame total matches the pack: goblin `1E` = 8·(8+8+8+3+10+13) = 400 ✓
+(Cubrir and Recibir2 absent). 3 monsters match uniquely, 13 are ambiguous (Recibir vs Recibir2 – same size – and a
+few others, resolved by a preference rule), 20 do not match any subset and only get Andar/Respirar/Atacar
+(`partial`). Direction blocks, by eye on the Barbarian idle cycle: **W, NW, N, NE, E, SE, S, SW**.
+Frame time is `speed × tick`; the tick length is a guess (1/60 s looks right).
+
+**Player characters are layered pre-rendered sets.** `Actors/<a><b><c>-<Class>.P16` are complete figures with identical
+frame numbering (564 frames; plate armour 548): `000` bare hands, `001` dagger, `002` sword, `005` two-handed sword,
+`010` shield, `020` heavier shield, `100`/`101` leather armour, `200`/`201` plate… The remake draws one pack (002).
+Only the first three blocks of the Barbarian's table (Andar 10, Respirar 8, Atacar 9) are mapped; the 564 frames do
+not divide into 8 directions (70.5 per direction), so some later animation uses fewer directions.
+
+**Feet anchor.** Hotspot origins differ per pack (hero bottoms ≈ −12, goblins ≈ −52, troll ≈ +24), so each actor's
+`foot` point = median bottom-centre of its idle frames (`anims.json`). Scenery uses the fixed (128, 16) rule above.
+
+### INI data (`AData.Nhs` → `data/actors.json`, `WData.Nhs` → `data/items.json`)
+Actor INI (`IA-<n>.INI`): `[General] Tipo_IA (1 monster, 2 NPC, 3 boss/ranged), Raza, Vel_Ataque (min,max cooldown ticks),
+Rnd_Bloqueo, Centrado, Altura`; `[HDP] Vida, Fuerza (damage min,max), Armadura, Aturdirse, Pts_Experiencia (min,max),
+Velocidad`; `[IA] Oido, Radio_Busqueda` (tiles); `[Animaciones]`; `[Items] IDItem/PItem` (drop table: item id,
+weight); `[Sonidos]`. Item INI (`ID-<n>.INI`): `Tipo` (1 sword, 32 bow, 512 scroll …), `Grafico`, `Potencia` (damage),
+`Durabilidad`, `CofreLv`, `Precio`, `[Requerimientos]` (Character 100 Barbarian / 101 Amazon / 102 Sorceress, R_*),
+`[Bonificadores]` (B_*).
 
 ### `GDI/3D/**/*.bmp`, `Scenary/*/3D/*.BMP` ✅
 Ordinary 24-bit BMPs, 16–256 px: Direct3D textures (spell effects, menu/logo art, score icons).
