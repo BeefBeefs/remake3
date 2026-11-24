@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { frameId } from '../src/game/anims.ts';
-import { Game, type GameData, type GameOptions } from '../src/game/game.ts';
+import { Game, type GameData, type GameOptions, xpForLevel } from '../src/game/game.ts';
 import { World } from '../src/game/world.ts';
 import type { Atlas } from '../src/assets/atlas.ts';
 import type { GameMap } from '../src/formats/map.ts';
@@ -229,4 +229,51 @@ test('a hero hit by a monster plays Recibir and a killed hero stays dead', () =>
   run(g, 3);
   assert.equal(g.hero.state, 'dead');
   assert.ok(!g.hero.alive);
+});
+
+test('walking plays alternating footstep sounds', () => {
+  const g = makeGame();
+  const heard: number[] = [];
+  g.onSound = (id) => heard.push(id);
+  g.click(g.hero.cx + 8, g.hero.cy);
+  run(g, 3);
+  const steps = heard.filter((id) => id === 160 || id === 161);
+  assert.ok(steps.length >= 4 && steps.length <= 6, `steps=${steps.length}`);
+  assert.deepEqual(steps.slice(0, 2).sort(), [160, 161]);
+  heard.length = 0;
+  run(g, 1);
+  assert.equal(heard.filter((id) => id === 160 || id === 161).length, 0, 'standing still is silent');
+});
+
+test('a kill that crosses XP thresholds raises the level, heals and plays the class level-up sound per level', () => {
+  const g = makeGame({ classId: 101, spawns: [{ id: '1', cx: 129, cy: 128 }] });
+  const heard: number[] = [];
+  g.onSound = (id) => heard.push(id);
+  assert.equal(g.level, 1);
+  const hp0 = g.hero.stats.hp;
+  g.xp = xpForLevel(3) - 1;
+  const gob = g.monsters[0]!;
+  gob.hp = 1;
+  g.click(gob.cx, gob.cy);
+  run(g, 10);
+  assert.equal(g.level, 3);
+  assert.equal(g.hero.hp, g.hero.stats.hp);
+  assert.ok(g.hero.stats.hp > hp0);
+  assert.equal(heard.filter((id) => id === 123).length, 2, 'one amazon level-up sound per level');
+});
+
+test('reaching the goal cell (named script without loot) completes the quest once', () => {
+  const dim = 256;
+  const map: GameMap = { dim, tileset: 'Outside', terrain: new Uint16Array(dim * dim).fill(340), objects: new Uint32Array(dim * dim), markers: [],
+    scripts: [{ index: 11, name: 'Tomb', commands: [{ id: 5, args: [0, 0, 0, 0] }] }], scriptAt: new Int8Array(dim * dim).fill(-1) };
+  map.scriptAt[128 * dim + 140] = 11;
+  const g = new Game(new World(map, fakeAtlas, []), (() => { const x = makeGame() as unknown as { data: GameData }; return x.data; })(), { cx: 128, cy: 128 }, { spawns: [], finalText: 'You win' });
+  assert.equal(g.goalReached, false);
+  g.click(138, 128);
+  run(g, 5);
+  assert.equal(g.goalReached, true);
+  assert.equal(g.log.at(-1), 'You win');
+  const n = g.log.length;
+  run(g, 2);
+  assert.equal(g.log.length, n, 'announced once');
 });

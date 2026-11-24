@@ -126,6 +126,7 @@ async function boot() {
   document.body.appendChild(banner);
 
   const clock = new THREE.Clock();
+  let won = false;
   function frame() {
     const dt = Math.min(clock.getDelta(), 0.1);
     let dx = 0, dy = 0; // screen-space direction
@@ -151,6 +152,7 @@ async function boot() {
     const left = game.monsters.filter((m) => m.alive).length;
     banner.style.display = !hero.alive || left === 0 ? 'block' : 'none';
     banner.textContent = !hero.alive ? 'You have fallen — press R to restart' : 'The camp is clear!';
+    if (game.goalReached && !won) { won = true; showVictory(game, hero.stats.name); }
     renderer.render(scene, camera);
     requestAnimationFrame(frame);
   }
@@ -179,4 +181,24 @@ function chooseClass(heroes: { strength: number; skill: number; resistance: numb
     root.appendChild(row);
     document.body.appendChild(root);
   });
+}
+
+/** End-of-quest card shown when the hero reaches the tomb. */
+function showVictory(game: Game, name: string): void {
+  const root = document.createElement('div');
+  root.style.cssText = 'position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:rgba(10,7,4,.88);color:#e9dfb8;font:15px ui-monospace,Menlo,monospace;z-index:10;text-align:center;padding:24px';
+  const text = document.createElement('div');
+  text.style.cssText = 'max-width:520px;line-height:1.6;white-space:pre-wrap';
+  text.textContent = `QUEST COMPLETE\n\n${game.log.at(-1) ?? ''}\n\n${name} · level ${game.level} · ${game.kills} kills · ${game.xp} xp · ${game.inventory.gold} gold`;
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:10px';
+  for (const [label, fn] of [['Keep exploring', () => root.remove()], ['New game', () => location.reload()]] as const) {
+    const b = document.createElement('button');
+    b.textContent = label;
+    b.style.cssText = 'padding:8px 16px;background:#241a0e;color:#e9dfb8;border:2px solid #6b5426;font:inherit;cursor:pointer';
+    b.onclick = fn;
+    row.appendChild(b);
+  }
+  root.append(text, row);
+  document.body.appendChild(root);
 }

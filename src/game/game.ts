@@ -58,6 +58,10 @@ export const CLASSES = {
   102: { name: 'Sorceress', weapon: 56, sound: 140 },
 } as const;
 export type ClassId = keyof typeof CLASSES;
+/** Total XP needed to reach `level` (placeholder curve). */
+export const xpForLevel = (level: number): number => 25 * (level - 1) * level;
+/** Seconds of walking between footsteps (the walk cycle is ~1.2 s with two steps). */
+const STEP_EVERY = 0.58;
 /** Bows shoot: the swing hits the nearest monster in front within this many cells (no projectile is drawn yet). */
 const BOW_RANGE = 7;
 const HERO_SPEED = 3.2; // cells per second
@@ -86,6 +90,8 @@ export class Game {
   readonly group = new THREE.Group();
   kills = 0;
   xp = 0;
+  /** Hero level (guess: the real XP table is not decoded; level n+1 needs `xpForLevel(n+1)` total points). */
+  level = 1;
   readonly inventory: Inventory;
   readonly ground: GroundItem[] = [];
   /** most recent messages, newest last (for the HUD) */
@@ -106,6 +112,8 @@ export class Game {
   private readonly finalText: string;
   /** true once the hero has reached the goal object of the map (script "Tumba de Domnir" in Lost Forrest) */
   goalReached = false;
+  private stepClock = 0;
+  private stepFoot = 0;
   /** Sound hook: numeric id of a GDI/Audio file (see data/sfx.json). Set by the front end. */
   onSound?: (id: number) => void;
   /** wander routes of unaware monsters (the map's zone records) */
@@ -391,6 +399,7 @@ export class Game {
         this.dropLoot(m, this.idOf.get(m) ?? '');
         this.kills++;
         this.xp += m.stats.xp[0] + Math.floor(this.rnd() * (m.stats.xp[1] - m.stats.xp[0] + 1));
+        this.checkLevel();
       }
     }
     for (const b of [...this.boxes]) {
@@ -424,6 +433,18 @@ export class Game {
     for (const m of this.monsters) this.updateMonster(m, dt);
     h.update(dt);
     for (const m of this.monsters) m.update(dt);
+  }
+
+  private checkLevel(): void {
+    while (this.xp >= xpForLevel(this.level + 1)) {
+      this.level++;
+      const st = this.hero.stats;
+      st.hp += 6; // placeholder growth
+      this.hero.hp = st.hp;
+      this.snd(CLASSES[this.classId].sound + 3); // <class>_nivel
+      this.say(`${st.name} reached level ${this.level}`);
+      this.version++;
+    }
   }
 
   private checkGoal(): void {
@@ -470,11 +491,13 @@ export class Game {
       this.facing = { x: vx, y: vy };
       h.face(vx, vy);
       h.setState('walk');
+      this.stepClock += dt;
+      if (this.stepClock >= STEP_EVERY) { this.stepClock -= STEP_EVERY; this.snd(160 + (this.stepFoot ^= 1)); } // j_andar_hierba (grass; stone/wood not told apart yet)
       const before = { x: h.cx, y: h.cy };
       this.step(h, vx, vy, h.stats.speed, dt);
       if (!this.target && !this.targetBox && Math.hypot(h.cx - before.x, h.cy - before.y) < 1e-4) this.walkTarget = null; // blocked
       else if (this.targetBox && Math.hypot(h.cx - before.x, h.cy - before.y) < 1e-4) this.targetBox = null;
-    } else if (h.state === 'walk') h.setState('idle');
+    } else { this.stepClock = 0; if (h.state === 'walk') h.setState('idle'); }
   }
 
   /** Unaware monsters stroll between their route points, pausing at each. */

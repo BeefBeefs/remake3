@@ -21,6 +21,17 @@ Each working session appends an entry below (newest first). Format knowledge liv
 | Skills/magic, dialogue, quests (`.adv`), sound effects, shops, multiplayer, editor | ⬜ not started |
 | Combat + monster AI | 🟡 first pass (placeholder numbers) |
 
+### Turn 7, continued — footsteps, levels and the tomb ending
+
+- **Footsteps**: while the hero walks, `j_andar_hierba` 160/161 alternate every 0.58 s (two steps per walk cycle, a guess). Stone (168/169) and wood
+  (164/165) variants exist but tiles are not yet classified by surface; running variants (162…171) are unused.
+- **Levels**: kills add XP; `xpForLevel(n) = 25·(n−1)·n` is a **placeholder curve** (the real table is not decoded). Each level gives +6 max HP, a full heal, the class
+  level-up sound (103 / 123 / 143) and a log line; the inventory header shows `L<level>`. Attributes do not grow yet.
+- **Tomb ending**: reaching the goal shows a “QUEST COMPLETE” card (hero, level, kills, xp, gold) with *Keep exploring* / *New game*.
+  The final text is still the placeholder (`adventure.json` holds the editor's default text).
+- Tests: 44 passing (alternating footsteps, silence when idle, multi-level XP from one kill, goal announced once).
+- Unverified: nothing run in a browser; step timing and XP curve are guesses.
+
 ### Turn 7 — hero hit and death animations
 
 - **Layout solved for all three heroes.** The 564/516/536-frame packs are not multiples of 8 because Morir is stored for only
