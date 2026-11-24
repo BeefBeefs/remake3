@@ -5,11 +5,14 @@
  */
 import type { Skin } from './skin.ts';
 import type { Prefs } from './prefs.ts';
+import type { Career, SaveStore } from '../game/career.ts';
+import { pickSlot } from './saveslots.ts';
 
 export type Difficulty = 0 | 1 | 2;
 export const DIFFICULTY_NAMES = ['Apprentice', 'Expert', 'Hero'] as const;
 
-export interface MenuResult { hero: number; difficulty: Difficulty }
+/** A new game (hero + difficulty) or a saved career picked with Load game. */
+export interface MenuResult { hero: number; difficulty: Difficulty; load?: Career }
 
 export class TitleMenu {
   private readonly root = document.createElement('div');
@@ -17,7 +20,7 @@ export class TitleMenu {
   private done: ((r: MenuResult) => void) | null = null;
   private hero = 0;
 
-  constructor(private readonly skin: Skin, private readonly prefs: Prefs, private readonly onPrefs: (p: Prefs) => void, private readonly heroNames: string[]) {
+  constructor(private readonly skin: Skin, private readonly prefs: Prefs, private readonly onPrefs: (p: Prefs) => void, private readonly heroNames: string[], private readonly store?: SaveStore) {
     this.root.style.cssText = 'position:fixed;inset:0;background:#000;z-index:20;display:flex;align-items:center;justify-content:center;user-select:none;overflow:hidden';
     this.stage.style.cssText = 'position:relative;width:640px;height:480px;flex:none;transform-origin:center center';
     this.root.appendChild(this.stage);
@@ -61,7 +64,12 @@ export class TitleMenu {
     this.clear();
     this.button('menu', 2, 0, 251, () => this.newGame());
     this.button('menu', 3, 0, 301, () => undefined, false, 'Multiplayer comes later');
-    this.button('menu', 4, 0, 351, () => undefined, false, 'There is no saved game yet');
+    this.button('menu', 4, 0, 351, () => {
+      void pickSlot(this.skin, this.store!, 'load', this.stage).then((slot) => {
+        const c = slot === null ? null : this.store!.read(slot);
+        if (c) this.done?.({ hero: c.classId - 100, difficulty: c.difficulty, load: c });
+      });
+    }, !!this.store?.any, 'There is no saved game yet');
     this.button('menu', 5, 338, 251, () => this.controls());
     this.button('menu', 6, 338, 301, () => this.credits());
     this.button('menu', 7, 338, 351, () => { location.href = 'https://github.com/BeefBeefs/remake3'; });

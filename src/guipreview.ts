@@ -10,14 +10,32 @@ import type { Game } from './game/game.ts';
 import { InventoryPanel } from './ui/inventory.ts';
 import { CharacterPanel } from './ui/character.ts';
 import { ShopWindow } from './ui/shop.ts';
+import { WorldMap } from './ui/worldmap.ts';
+import { pickSlot } from './ui/saveslots.ts';
+import { SaveStore, newCareer } from './game/career.ts';
 
 const BASE = `${import.meta.env.BASE_URL}assets/`;
 const q = new URLSearchParams(location.search);
 const screen = q.get('screen') ?? 'title';
 const skin = await Skin.load(BASE);
 
-if (screen === 'title') {
-  const menu = new TitleMenu(skin, { ...DEFAULT_PREFS }, () => undefined, ['Barbarian', 'Amazon', 'Sorceress']);
+// a throw-away store with two saves, so the Load game button and the slot list can be seen
+const mem = new Map<string, string>();
+const demoStore = new SaveStore({ getItem: (k) => mem.get(k) ?? null, setItem: (k, v) => { mem.set(k, v); } });
+const demoHero = { attrs: { strength: 32, skill: 24, resistance: 30, magic: 11 }, level: 3, xp: 240, points: 4, gold: 1234 };
+demoStore.write(0, { ...newCareer(100, 1, demoHero), done: ['lost_forrest'] });
+demoStore.write(2, newCareer(102, 2, { ...demoHero, level: 7, gold: 90 }));
+
+if (screen === 'worldmap') {
+  const wm = new WorldMap(skin, demoStore);
+  const done = q.has('done') ? ['lost_forrest'] : [];
+  const r = await wm.run({ ...newCareer(100, 1, demoHero), done }, 'Terak');
+  document.body.append(`chose ${JSON.stringify(r)}`);
+} else if (screen === 'slots') {
+  const r = await pickSlot(skin, demoStore, (q.get('mode') as 'save' | 'load' | null) ?? 'load');
+  document.body.append(`picked ${r}`);
+} else if (screen === 'title') {
+  const menu = new TitleMenu(skin, { ...DEFAULT_PREFS }, () => undefined, ['Barbarian', 'Amazon', 'Sorceress'], demoStore);
   const r = await menu.run((q.get('at') as Parameters<TitleMenu['run']>[0] | null) ?? 'main');
   document.body.append(`chose hero ${r.hero}, difficulty ${r.difficulty}`);
 } else if (screen === 'inventory' || screen === 'character' || screen === 'shop') {

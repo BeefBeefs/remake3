@@ -22,8 +22,8 @@ export class GameMenu {
       } else z.style.background = 'rgba(0,0,0,.45)';
       box.appendChild(z);
     };
-    zone(40, 'Load: there is no saved game yet');
-    zone(70, 'Save: you cannot save while playing a mission');
+    zone(40, 'Load: saved games are loaded from the main menu');
+    zone(70, 'Save: you cannot save whilst playing a mission; save between missions, on the map');
     zone(100, 'Return to the game', () => this.close());
     zone(131, 'Exit to the main menu', onExit);
     this.root.appendChild(box);

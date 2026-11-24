@@ -51,7 +51,12 @@ export interface GameOptions {
 export const DIFFICULTY = [{ hp: 0.7, damage: 0.7 }, { hp: 1, damage: 1 }, { hp: 1.4, damage: 1.3 }] as const;
 
 /** What survives from one attempt to the next: the hero's growth (manual: dying costs the items and one point of each ability). */
-export interface HeroSave { attrs: { strength: number; skill: number; resistance: number; magic: number }; level: number; xp: number; points: number; gold: number }
+export interface HeroSave {
+  attrs: { strength: number; skill: number; resistance: number; magic: number };
+  level: number; xp: number; points: number; gold: number;
+  /** backpack and worn gear: present when the hero moves on to another mission or is saved (not after dying) */
+  inv?: { slots: number[]; equipped: Partial<Record<'weapon' | 'shield' | 'armor' | 'ring' | 'amulet', number>> };
+}
 
 /** A non-hostile character (innkeeper, villagers…): single-view sprite strip, talks when clicked. */
 export interface Npc { id: string; name: string; creature: Creature }
@@ -207,6 +212,14 @@ export class Game {
     this.inventory.add(cls.weapon); this.inventory.equip(0);
     this.inventory.add(104); this.inventory.add(104);
     if (opts.save) this.inventory.gold = opts.save.gold;
+    if (opts.save?.inv) {
+      // a hero who moves on keeps his things: replace the starting kit with what he carried (unknown ids are dropped)
+      const known = (id: number) => id > 0 && data.items.has(id);
+      this.inventory.slots.fill(0);
+      opts.save.inv.slots.forEach((id, i) => { if (known(id) && i < this.inventory.slots.length) this.inventory.slots[i] = id; });
+      for (const k of Object.keys(this.inventory.equipped) as (keyof typeof this.inventory.equipped)[]) delete this.inventory.equipped[k];
+      for (const [k, id] of Object.entries(opts.save.inv.equipped)) if (id && known(id)) this.inventory.equipped[k as 'weapon'] = id;
+    }
     this.hero = this.make(String(this.classId), start.cx, start.cy, { hp: this.attrs.resistance * HP_PER_RESISTANCE, damage: [2, 4], speed: HERO_SPEED, name: data.names[String(this.classId)] ?? cls.name });
     this.stamina = this.maxStamina;
     this.mana = this.maxMana;
@@ -694,6 +707,11 @@ export class Game {
   /** The hero as the next attempt starts with it. */
   save(): HeroSave {
     return { attrs: { ...this.attrs }, level: this.level, xp: this.xp, points: this.points, gold: this.inventory.gold };
+  }
+
+  /** The hero as he walks out of a mission: everything he has, at full strength (saving happens between missions only). */
+  carry(): HeroSave {
+    return { ...this.save(), inv: { slots: [...this.inventory.slots], equipped: { ...this.inventory.equipped } } };
   }
 
   /** @param move cell-space unit vector from the keyboard, or null */

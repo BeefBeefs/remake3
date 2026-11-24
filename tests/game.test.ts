@@ -836,3 +836,26 @@ test('earth shakes the screen; level-up and potions glow', () => {
   assert.equal(lv.level, 2);
   assert.ok(lv.fx.some((f) => f.tex === 119), 'level-up flare');
 });
+
+test('a hero who finishes a mission carries everything into the next one; dying carries only growth', () => {
+  const g = makeGame({ classId: 100 });
+  g.inventory.add(86); g.inventory.add(5);
+  g.inventory.gold = 777; g.xp = 30; g.points = 3;
+  g.inventory.equip(g.inventory.slots.indexOf(5));
+  const c = g.carry();
+  assert.deepEqual(c.inv!.equipped.weapon, 5);
+  assert.ok(c.inv!.slots.includes(86));
+  assert.equal(c.gold, 777);
+  const next = makeGame({ classId: 100, save: c });
+  assert.equal(next.inventory.equipped.weapon, 5);
+  assert.ok(next.inventory.slots.includes(86));
+  assert.equal(next.inventory.gold, 777);
+  assert.equal(next.points, 3);
+  assert.ok(next.hero.stats.damage[1] >= 7, 'the carried sabre is wielded');
+  assert.equal(next.save().inv, undefined, 'dying loses the items');
+  const poor = makeGame({ classId: 100, save: g.save() });
+  assert.ok(poor.inventory.slots.includes(104) && !poor.inventory.slots.includes(86), 'a retry starts with the basic kit');
+  const junk = makeGame({ classId: 100, save: { ...c, inv: { slots: [999999, 86, -3], equipped: { weapon: 424242 } } } });
+  assert.deepEqual(junk.inventory.slots.filter((x) => x), [86], 'unknown items in a save are dropped');
+  assert.equal(junk.inventory.equipped.weapon, undefined);
+});

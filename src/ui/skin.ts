@@ -79,6 +79,22 @@ export class Skin {
     return d;
   }
 
+  /** A button in the panel style: the stone texture, a bronze edge and a centred label; `onClick` makes it live. */
+  plate(label: string, w: number, h = 20, onClick?: () => void, o: { active?: boolean; color?: string } = {}): HTMLDivElement {
+    const b = document.createElement('div');
+    b.style.cssText = `position:relative;width:${w}px;height:${h}px;box-sizing:border-box;border:1px solid ${o.active ? '#e8c85a' : '#9c7e48'};overflow:hidden;box-shadow:inset 0 0 0 1px #000a;flex:none;cursor:${onClick ? 'pointer' : 'default'}`;
+    b.appendChild(this.fill('overlay', 66, w, h));
+    const t = this.text(label, { color: o.color ?? (o.active ? '#f6e49a' : '#d8caa0') });
+    t.style.cssText += `;position:absolute;left:${Math.max(0, (w - 2 - this.textWidth(label)) / 2)}px;top:${(h - 2 - 16) / 2 - 1}px;pointer-events:none`;
+    b.appendChild(t);
+    if (onClick) {
+      b.addEventListener('click', onClick);
+      b.addEventListener('pointerenter', () => { b.style.filter = 'brightness(1.3)'; });
+      b.addEventListener('pointerleave', () => { b.style.filter = ''; });
+    } else b.style.opacity = '0.5';
+    return b;
+  }
+
   /** Pixel width of a string in the bitmap font. */
   textWidth(s: string): number {
     let w = 0;

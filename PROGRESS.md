@@ -299,3 +299,27 @@ map exercises them, so none is implemented; nothing has been seen in a browser.
 - Preview pages: `gui.html?screen=inventory|character|shop`. 86 tests green, CI green.
 - **Fortuity / Knowledge potions** (ids 111/112) now do something (guesses, flagged in RULES.md): +1 attribute point; two random items drop at the hero's feet. 87 tests.
 - Still guesses: all numbers noted earlier. Next up: spell visual effects, stance icons, remaining monsters.
+
+
+## Turn 13 — monsters complete, spell effects, saving between missions
+
+- **All 20 remaining monsters mapped.** Their packs follow the hero rule — every INI animation in INI order, 8
+  directions each, but **Morir for only 4 directions** — which matches uniquely (the old ORDER list lacked
+  `Aparecer`/`Aburrido`, and I had put Morir last for monsters, which is why the earlier try showed standing poses).
+  Contact sheets: zombie, troll, amazon, groak fall over; skeletons collapse into bones and *rise* from a bone pile;
+  the infernal demon forms out of fire and burns out. No actor is `partial` any more (tests + `docs/FORMATS.md`).
+  In the game: skeletons / infernal demons lie dormant until the hero is within hearing range, then play Aparecer;
+  monsters roar (Alarma) before chasing; idle ones occasionally play Aburrido; demons use Atacar2 half the time.
+- **Spell effects** (`effects.ts`, `effectsview.ts`): additive sprites from `GDI/3D` — flame frames, rings, flares,
+  glows, the 14-frame ice spirit (not smoke). Every parchment has its own look; the earth parchment shakes the screen;
+  level-ups and potions glow. Effects are pure data in `Game.fx`, so they are tested.
+- **Saving between missions** (`career.ts`, `worldmap.ts`, `saveslots.ts`): the manual says saving is only possible
+  between missions, so that is what exists: after a mission, Save game / Return to the map; the world map (MapGFX 1)
+  with the Lost Forest banner and a Save button; Load game on the title menu; 8 slots in localStorage with validation
+  of whatever is read back. The hero carries backpack and worn gear into the next mission (dying still loses them).
+- **I can now run the game headlessly**: `tools/browser/` (esbuild bundle + SwiftShader Chrome + puppeteer-core, three.js
+  from a GitHub checkout). Used to look at the effects and to play the whole menu → map → mission → save → load flow.
+  `?debug` exposes `window.__nst.game`.
+- **Seen while doing that, not fixed:** the forest "wall slices" (Pack2 611-616) draw as tall dark panels that can
+  hide the hero; see Open items.
+- 107 tests.

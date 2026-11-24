@@ -1,5 +1,8 @@
 import * as THREE from 'three';
 import { Atlas } from './assets/atlas.ts';
+import { MISSIONS, SaveStore, newCareer, parseCareer, type Career } from './game/career.ts';
+import { WorldMap } from './ui/worldmap.ts';
+import { pickSlot } from './ui/saveslots.ts';
 import { EffectsView } from './game/effectsview.ts';
 import { World } from './game/world.ts';
 import { Sfx } from './audio/sfx.ts';
@@ -48,33 +51,54 @@ async function boot() {
   const prefs = loadPrefs();
   const applyGamma = (p: Prefs) => { canvas.style.filter = p.gamma === 1 ? '' : `brightness(${p.gamma})`; };
   applyGamma(prefs);
-  // Who plays? After dying, R comes back with the hero's growth in sessionStorage; ?class=amazon skips the menu; otherwise the title menu asks.
+  // Who plays? After dying, R comes back with the hero's growth in sessionStorage; returning from a finished mission
+  // brings the career back to the world map; ?class=amazon skips the menus; otherwise the title menu asks (new game or Load game).
   const byName: Record<string, ClassId> = { barbarian: 100, amazon: 101, sorceress: 102 };
-  let carried: { classId: ClassId; save: HeroSave; difficulty?: Difficulty } | null = null;
-  try {
-    const raw = sessionStorage.getItem('nst-save');
-    sessionStorage.removeItem('nst-save');
-    if (raw) carried = JSON.parse(raw) as { classId: ClassId; save: HeroSave; difficulty?: Difficulty };
-  } catch { /* storage unavailable: start fresh */ }
+  const takeSession = <T,>(key: string): T | null => {
+    try { const raw = sessionStorage.getItem(key); sessionStorage.removeItem(key); return raw ? (JSON.parse(raw) as T) : null; } catch { return null; }
+  };
+  const carried = takeSession<{ classId: ClassId; save: HeroSave; difficulty?: Difficulty; done?: string[] }>('nst-save');
+  const returning = parseCareer(takeSession<unknown>('nst-career'));
   hud.textContent = 'Loading…';
   const skin = await Skin.load(BASE);
-  let classId: ClassId | undefined = carried?.classId ?? byName[new URLSearchParams(location.search).get('class')?.toLowerCase() ?? ''];
-  let difficulty: Difficulty = carried?.difficulty ?? 1;
+  const adv = (await (await fetch(`${BASE}data/adventure.json`)).json()) as { mission_text: string; final: string; heroes: { strength: number; skill: number; resistance: number; magic: number }[] };
+  const store = new SaveStore((() => { try { return localStorage; } catch { return null; } })());
+  const freshHero = (id: number): HeroSave => ({ attrs: { ...adv.heroes[id - 100]! }, level: 1, xp: 0, points: 0, gold: 0 });
+  let career: Career | null = returning ?? (carried ? { v: 1, classId: carried.classId, difficulty: carried.difficulty ?? 1, hero: carried.save, done: carried.done ?? [], when: 0 } : null);
+  const byUrl = byName[new URLSearchParams(location.search).get('class')?.toLowerCase() ?? ''];
+  if (!career && byUrl) career = newCareer(byUrl, 1, freshHero(byUrl));
+  let showMap = !!returning;
   let menuMusic: HTMLAudioElement | null = null;
-  if (classId === undefined) {
+  const music0 = () => {
     menuMusic = new Audio(`${BASE}audio/system/menu.ogg`);
     menuMusic.loop = true;
     menuMusic.volume = prefs.music;
     const startMenuMusic = () => { void menuMusic?.play().catch(() => undefined); };
     window.addEventListener('pointerdown', startMenuMusic, { once: true });
+    return startMenuMusic;
+  };
+  let stopMenuMusic = () => undefined as void;
+  if (!career) {
+    const startMenuMusic = music0();
     const names = Object.values(CLASSES).map((c) => c.name);
-    const menu = new TitleMenu(skin, prefs, (p) => { savePrefs(p); if (menuMusic) menuMusic.volume = p.music; applyGamma(p); }, names);
+    const menu = new TitleMenu(skin, prefs, (p) => { savePrefs(p); if (menuMusic) menuMusic.volume = p.music; applyGamma(p); }, names, store);
     const r = await menu.run();
-    classId = (100 + r.hero) as ClassId;
-    difficulty = r.difficulty;
-    menuMusic.pause();
-    window.removeEventListener('pointerdown', startMenuMusic);
+    career = r.load ?? newCareer((100 + r.hero) as ClassId, r.difficulty, freshHero(100 + r.hero));
+    showMap = true;
+    stopMenuMusic = () => { menuMusic?.pause(); window.removeEventListener('pointerdown', startMenuMusic); };
+  } else if (showMap) {
+    const startMenuMusic = music0();
+    stopMenuMusic = () => { menuMusic?.pause(); window.removeEventListener('pointerdown', startMenuMusic); };
+    void startMenuMusic();
   }
+  if (showMap) {
+    const choice = await new WorldMap(skin, store).run(career, '');
+    stopMenuMusic();
+    if (choice.action === 'menu') { location.href = location.pathname; return; }
+  } else stopMenuMusic();
+  const classId = career.classId as ClassId;
+  const difficulty: Difficulty = career.difficulty;
+  const mission = MISSIONS[0]!;
   if (!glRenderer) { hud.textContent = 'This browser cannot create a WebGL context, which the game needs to draw the world.'; return; }
   hud.textContent = 'Loading original map and sprite data…';
   const [tiles, packCell, pack1, pack2, pack3, mapBytes] = await Promise.all([
@@ -99,7 +123,6 @@ async function boot() {
   }
   const items = buildItems((await (await fetch(`${BASE}data/items.json`)).json()) as Parameters<typeof buildItems>[0], itemNames);
   const icons = await Atlas.load(BASE, 'atlas/system/ilistdata.json');
-  const adv = (await (await fetch(`${BASE}data/adventure.json`)).json()) as { mission_text: string; final: string; heroes: { strength: number; skill: number; resistance: number; magic: number }[] };
   // Hero + every monster kind the map places (pack-0 markers).
   const spawns = map.markers.filter((m) => animData.actors[String(m.id)] && m.id < 100).map((m) => ({ id: String(m.id), cx: m.cx, cy: m.cy, route: m.route }));
   // ?npc=27,28 puts those NPCs next to the start (the Lost Forrest has none; the Inn map is not in this install).
@@ -116,7 +139,7 @@ async function boot() {
   const tileSurface = surfaceLookup((await (await fetch(`${BASE}data/tiles.json`)).json()) as TileTable, map.tileset);
   const surface = (cx: number, cy: number) => (map.terrain[Math.floor(cy) * map.dim + Math.floor(cx)] !== undefined ? tileSurface(map.terrain[Math.floor(cy) * map.dim + Math.floor(cx)]!) : 'grass');
   const npcSpawns = extraNpcs.map((id, k) => { const c = world.findOpenCell(spawn.cx + 3 + 2 * k, spawn.cy + 2); return { id, cx: c.cx, cy: c.cy }; });
-  const game = new Game(world, { anims: animData, actors: actorsIni, names, atlases, items, icons }, spawn, { spawns: [...spawns, ...npcSpawns], surface, attrs: adv.heroes[classId - 100], classId, save: carried?.save, difficulty, finalText: adv.final.startsWith('Enter the final text') ? 'You have found the Tomb of Donmir!' : adv.final });
+  const game = new Game(world, { anims: animData, actors: actorsIni, names, atlases, items, icons }, spawn, { spawns: [...spawns, ...npcSpawns], surface, attrs: adv.heroes[classId - 100], classId, save: career.hero, difficulty, finalText: adv.final.startsWith('Enter the final text') ? 'You have found the Tomb of Donmir!' : adv.final });
   game.say(adv.mission_text);
   if (new URLSearchParams(location.search).has('debug')) (window as unknown as { __nst: unknown }).__nst = { game }; // for scripted browser checks
   const panel = new InventoryPanel(game, icons, BASE, skin);
@@ -165,7 +188,7 @@ async function boot() {
     if (e.key.toLowerCase() === 'i') panel.toggle();
     if (e.key.toLowerCase() === 'c') charPanel.toggle();
     if (e.key.toLowerCase() === 'r' && !game.hero.alive) {
-      try { sessionStorage.setItem('nst-save', JSON.stringify({ classId: game.classId, save: game.save(), difficulty })); } catch { /* start fresh */ }
+      try { sessionStorage.setItem('nst-save', JSON.stringify({ classId: game.classId, save: game.save(), difficulty, done: career!.done })); } catch { /* start fresh */ }
       location.reload();
     }
     startAudio();
@@ -234,7 +257,11 @@ async function boot() {
     const left = game.monsters.filter((m) => m.alive).length;
     banner.style.display = !hero.alive || left === 0 ? 'block' : 'none';
     banner.textContent = !hero.alive ? 'You have fallen — press R to try again (items and one point of each ability are lost)' : 'The camp is clear!';
-    if (game.goalReached && !won) { won = true; showVictory(game, hero.stats.name); }
+    if (game.goalReached && !won) {
+      won = true;
+      const done = career!.done.includes(mission.id) ? career!.done : [...career!.done, mission.id];
+      showVictory(game, hero.stats.name, { ...career!, hero: game.carry(), done, when: Date.now() }, skin, store);
+    }
     fxView.sync(game.fx);
     // earthquake: shake the picture for a moment
     const sh = Math.min(1, game.shake) * 7, ox = (Math.random() - 0.5) * 2 * sh, oy = (Math.random() - 0.5) * 2 * sh;
@@ -251,22 +278,36 @@ async function boot() {
 
 boot().catch((err) => { hud.textContent = `Failed to start: ${String(err)}`; console.error(err); });
 
-/** End-of-quest card shown when the hero reaches the tomb. */
-function showVictory(game: Game, name: string): void {
+/** End-of-quest card shown when the hero reaches the tomb: save, go back to the map of the land, or carry on exploring. */
+function showVictory(game: Game, name: string, next: Career, skin: Skin, store: SaveStore): void {
   const root = document.createElement('div');
   root.style.cssText = 'position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:rgba(10,7,4,.88);color:#e9dfb8;font:15px ui-monospace,Menlo,monospace;z-index:10;text-align:center;padding:24px';
   const text = document.createElement('div');
   text.style.cssText = 'max-width:520px;line-height:1.6;white-space:pre-wrap';
   text.textContent = `QUEST COMPLETE\n\n${game.log.at(-1) ?? ''}\n\n${name} · level ${game.level} · ${game.kills} kills · ${game.xp} xp · ${game.inventory.gold} gold`;
+  const note = document.createElement('div');
+  note.style.cssText = 'min-height:1.4em;color:#d8caa0';
   const row = document.createElement('div');
-  row.style.cssText = 'display:flex;gap:10px';
-  for (const [label, fn] of [['Keep exploring', () => root.remove()], ['New game', () => location.reload()]] as const) {
+  row.style.cssText = 'display:flex;gap:10px;flex-wrap:wrap;justify-content:center';
+  const act = (label: string, fn: () => void) => {
     const b = document.createElement('button');
     b.textContent = label;
     b.style.cssText = 'padding:8px 16px;background:#241a0e;color:#e9dfb8;border:2px solid #6b5426;font:inherit;cursor:pointer';
     b.onclick = fn;
     row.appendChild(b);
-  }
-  root.append(text, row);
+  };
+  act('Save game', () => {
+    void pickSlot(skin, store, 'save', root).then((slot) => {
+      if (slot === null) return;
+      note.textContent = store.write(slot, next) ? `Saved in slot ${slot + 1}.` : 'The browser would not store the save.';
+    });
+  });
+  act('Return to the map', () => {
+    try { sessionStorage.setItem('nst-career', JSON.stringify(next)); } catch { /* the map starts from the title instead */ }
+    location.reload();
+  });
+  act('Keep exploring', () => root.remove());
+  act('Main menu', () => { location.href = location.pathname; });
+  root.append(text, row, note);
   document.body.appendChild(root);
 }
