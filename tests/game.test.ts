@@ -277,3 +277,18 @@ test('reaching the goal cell (named script without loot) completes the quest onc
   run(g, 2);
   assert.equal(g.log.length, n, 'announced once');
 });
+
+test('footsteps follow the surface underfoot', () => {
+  let surface: 'grass' | 'wood' | 'stone' = 'grass';
+  const g = makeGame({ surface: () => surface });
+  const heard: number[] = [];
+  g.onSound = (id) => heard.push(id);
+  const stepsOf = (lo: number) => heard.filter((id) => id === lo || id === lo + 1).length;
+  g.click(g.hero.cx + 20, g.hero.cy);
+  run(g, 1.5);
+  assert.ok(stepsOf(160) >= 2 && stepsOf(164) === 0 && stepsOf(168) === 0);
+  surface = 'wood'; heard.length = 0; run(g, 1.5);
+  assert.ok(stepsOf(164) >= 2 && stepsOf(160) === 0);
+  surface = 'stone'; heard.length = 0; run(g, 1.5);
+  assert.ok(stepsOf(168) >= 2 && stepsOf(164) === 0);
+});

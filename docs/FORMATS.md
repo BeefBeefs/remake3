@@ -128,6 +128,17 @@ Andar/Respirar/Atacar.
 **Feet anchor.** Hotspot origins differ per pack (hero bottoms ≈ −12, goblins ≈ −52, troll ≈ +24), so each actor's
 `foot` point = median bottom-centre of its idle frames (`anims.json`). Scenery uses the fixed (128, 16) rule above.
 
+### Tile surfaces (inferred) and `System/*.CDt`
+No per-tile property table (surface, collision) was found. `System/{Outside,Cave,Dungeon}.CDt` are **not** compressed and
+are the *map editor's brush catalogue*: 264-byte tree records (`name,iconId`, a u32 at +8, trailing i32; categories such as
+Suelos = floors, Arboles, Cofres, Estandartes, Piedras, Rios y pozo, Players, Scripts, Sonidos…) followed by ~2.2 KB
+records per multi-cell brush (`TIENDA1-3` = shops, `N_casa1-6` = houses, `Tomb01-18`, `Emp_*` fences, `Barril …`,
+`Cofre … D1/D2` = chest closed/open…). Footprint grids are stored as dwords of 0/1. Not decoded further.
+`tools/build_tiles.py` therefore **infers** the surface of every VTiles frame from its mean colour (Outside: grass / dirt /
+stone / wood / water / void; Cave and Dungeon: all stone) with overrides Outside 141–146 = planks (wood), 511 = water,
+0 = void → `data/tiles.json`. Lost Forrest: 64,028 grass, 667 dirt, 804 water, 12 plank cells.
+Footstep sounds: `GDI/Audio` 160/161 grass, 164/165 wood, 168/169 stone (dirt uses the grass pair — a guess).
+
 ### INI data (`AData.Nhs` → `data/actors.json`, `WData.Nhs` → `data/items.json`)
 Actor INI (`IA-<n>.INI`): `[General] Tipo_IA (1 monster, 2 NPC, 3 boss/ranged), Raza, Vel_Ataque (min,max cooldown ticks),
 Rnd_Bloqueo, Centrado, Altura`; `[HDP] Vida, Fuerza (damage min,max), Armadura, Aturdirse, Pts_Experiencia (min,max),

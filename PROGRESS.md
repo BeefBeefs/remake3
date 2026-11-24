@@ -18,8 +18,15 @@ Each working session appends an entry below (newest first). Format knowledge liv
 | Renderer + game loop (three.js) | 🟡 real Lost Forrest, all three heroes (Barbarian, Amazon, Sorceress), monsters, melee combat (milestone 2) — **never run in a browser** |
 | NHS data / animation layouts | ✅ 72 actors, 141 items; 17 monsters fully or ambiguously mapped, 20 partial |
 | Items, inventory, equipment | 🟡 working in code (drops, pickup, equip, potions); UI never browser-tested |
-| Skills/magic, dialogue, quests (`.adv`), sound effects, shops, multiplayer, editor | ⬜ not started |
+| Tile surfaces | 🟡 inferred from tile colour (footsteps) |
+| Skills/magic, dialogue, quests (`.adv`), shops, multiplayer, editor | ⬜ not started |
 | Combat + monster AI | 🟡 first pass (placeholder numbers) |
+
+### Turn 8 — tile surfaces, NPCs and shops
+
+**Step 1 ✅ Tile types.** `System/*.CDt` turned out to be the editor's brush catalogue (see FORMATS), so tile surfaces are *inferred* from tile colour
+(`tools/build_tiles.py` → `data/tiles.json`, all three tilesets, 160+ Outside ids). `Game` takes a `surface(cx, cy)` hook and footsteps use the grass/wood/stone
+sound pairs. 49 tests passing. Unverified: nothing run in a browser; colour-based classification is a heuristic and dirt = grass sound is a guess.
 
 ### Turn 7, continued — footsteps, levels and the tomb ending
 

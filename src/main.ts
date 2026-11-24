@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Atlas } from './assets/atlas.ts';
 import { World } from './game/world.ts';
 import { Sfx } from './audio/sfx.ts';
+import { surfaceLookup, type TileTable } from './game/surface.ts';
 import { CLASSES, type ClassId, Game, type GameData } from './game/game.ts';
 import type { AnimData } from './game/anims.ts';
 import { buildItems } from './game/items.ts';
@@ -70,7 +71,9 @@ async function boot() {
   // The chosen hero's start marker (100 Barbarian, 101 Amazon, 102 Sorceress) of the map; fall back to the old camp guess for maps without one.
   const st = startOf(map, classId);
   const spawn = world.findOpenCell(st?.cx ?? 152, st?.cy ?? 78);
-  const game = new Game(world, { anims: animData, actors: actorsIni, names, atlases, items, icons }, spawn, { spawns, attrs: adv.heroes[classId - 100], classId, finalText: adv.final.startsWith('Enter the final text') ? 'You have found the Tomb of Donmir!' : adv.final });
+  const tileSurface = surfaceLookup((await (await fetch(`${BASE}data/tiles.json`)).json()) as TileTable, map.tileset);
+  const surface = (cx: number, cy: number) => (map.terrain[Math.floor(cy) * map.dim + Math.floor(cx)] !== undefined ? tileSurface(map.terrain[Math.floor(cy) * map.dim + Math.floor(cx)]!) : 'grass');
+  const game = new Game(world, { anims: animData, actors: actorsIni, names, atlases, items, icons }, spawn, { spawns, surface, attrs: adv.heroes[classId - 100], classId, finalText: adv.final.startsWith('Enter the final text') ? 'You have found the Tomb of Donmir!' : adv.final });
   game.say(adv.mission_text);
   const panel = new InventoryPanel(game, icons, BASE);
   scene.add(game.group);

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Atlas } from '../assets/atlas.ts';
 import { type AnimData } from './anims.ts';
+import { STEP_SOUND, type Surface } from './surface.ts';
 import { Creature, type Stats } from './creature.ts';
 import { Inventory, rollByMask, rollDrop, type ItemDef } from './items.ts';
 import { cellToWorld, depthOf } from '../iso.ts';
@@ -32,6 +33,8 @@ export interface GameOptions {
   spawns?: { id: string; cx: number; cy: number; route?: { cx: number; cy: number }[] }[];
   /** hero attributes from the .adv file (strength, skill, resistance, magic) */
   attrs?: { strength: number; skill: number; resistance: number; magic: number };
+  /** Ground surface under a cell (for footstep sounds); default grass. */
+  surface?: (cx: number, cy: number) => Surface;
   /** which hero to play (default 100, the Barbarian) */
   classId?: ClassId;
   /** text shown when the mission's goal object is reached */
@@ -112,6 +115,7 @@ export class Game {
   private readonly finalText: string;
   /** true once the hero has reached the goal object of the map (script "Tumba de Domnir" in Lost Forrest) */
   goalReached = false;
+  private readonly surfaceAt: (cx: number, cy: number) => Surface;
   private stepClock = 0;
   private stepFoot = 0;
   /** Sound hook: numeric id of a GDI/Audio file (see data/sfx.json). Set by the front end. */
@@ -126,6 +130,7 @@ export class Game {
   constructor(private readonly world: World, private readonly data: GameData, start: { cx: number; cy: number }, opts: GameOptions = {}) {
     this.attrs = opts.attrs ?? { strength: 30, skill: 24, resistance: 30, magic: 11 };
     this.finalText = opts.finalText ?? 'Mission complete.';
+    this.surfaceAt = opts.surface ?? (() => 'grass');
     this.classId = opts.classId ?? 100;
     const cls = CLASSES[this.classId];
     this.inventory = new Inventory(data.items, this.classId);
@@ -492,7 +497,7 @@ export class Game {
       h.face(vx, vy);
       h.setState('walk');
       this.stepClock += dt;
-      if (this.stepClock >= STEP_EVERY) { this.stepClock -= STEP_EVERY; this.snd(160 + (this.stepFoot ^= 1)); } // j_andar_hierba (grass; stone/wood not told apart yet)
+      if (this.stepClock >= STEP_EVERY) { this.stepClock -= STEP_EVERY; this.snd(STEP_SOUND[this.surfaceAt(h.cx, h.cy)] + (this.stepFoot ^= 1)); }
       const before = { x: h.cx, y: h.cy };
       this.step(h, vx, vy, h.stats.speed, dt);
       if (!this.target && !this.targetBox && Math.hypot(h.cx - before.x, h.cy - before.y) < 1e-4) this.walkTarget = null; // blocked
