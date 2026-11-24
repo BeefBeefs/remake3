@@ -391,4 +391,8 @@ map exercises them, so none is implemented; nothing has been seen in a browser.
 - **Not done, and why:** multiplayer rules (needs networking), ally spells (no allies in single player), special-item effects and
   the `S` damage term (items with `Especial: 1` — 6, 13, 28, 30, 81–83, 111, 112 — have no readable effect), monster
   damage-received formula, state → stamina mapping, where the mission clock starts.
+- Follow-up: the HUD hint line follows the key assignments (checked in a browser: Esc → Controls → Run = X → hint reads "X run").
+  Looked for the monster damage-received routine in `Nightstone.exe` again (actor template layout found: +0x18 `Rnd_Bloqueo`,
+  +0x2c `SangreFX`, +0x44 `Vida`, +0x50 `Armadura`, +0x54 `Aturdirse`) but not the code that uses `Aturdirse` / `Rnd_Bloqueo`;
+  the game does not use those two fields yet.
 

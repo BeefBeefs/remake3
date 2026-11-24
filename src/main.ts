@@ -21,7 +21,7 @@ import { Hud } from './ui/hud.ts';
 import { GameMenu } from './ui/gamemenu.ts';
 import { TitleMenu, type Difficulty } from './ui/titlemenu.ts';
 import { loadPrefs, renderScale, savePrefs, type Prefs } from './ui/prefs.ts';
-import { keyInput, mouseInput } from './ui/bindings.ts';
+import { keyInput, labelOf, mouseInput } from './ui/bindings.ts';
 import { gunzip, parseMap } from './formats/map.ts';
 import { applyCampaignNames, findMap, mapStart, missionBriefing, missionFinalText, tilesetDir, type MapEntry } from './game/maplist.ts';
 import { cellToWorld, worldToCell } from './iso.ts';
@@ -270,6 +270,7 @@ async function boot() {
   music.loop = true;
   const wind = new Audio(`${BASE}audio/gdi/audio/ambsounds/05_viento2.ogg`);
   wind.loop = true;
+  let hintRefresh = () => {};
   const applyPrefs = (p: Prefs) => {
     music.volume = p.music;
     wind.volume = p.ambient && ts === 'outside' ? 0.4 : 0;
@@ -277,6 +278,7 @@ async function boot() {
     applyGamma(p);
     applyPicture(p);
     game.blood = p.blood;
+    hintRefresh();
   };
   applyPrefs(prefs);
   let audioOn = false;
@@ -342,7 +344,9 @@ async function boot() {
     camera.position.x -= ox; camera.position.y -= oy;
     requestAnimationFrame(frame);
   }
-  hud.textContent = 'click to walk or fight · WASD · Space swing · Ctrl run · Shift stealth · right button block / hold · I inventory · C character · Q objective · Esc menu';
+  const hint = (p: Prefs) => `${labelOf(p.keys.attack).toLowerCase()} to walk or fight · WASD · Space swing · ${labelOf(p.keys.run)} run · ${labelOf(p.keys.stealth)} stealth · ${labelOf(p.keys.block).toLowerCase()} block / hold · I inventory · C character · Q objective · Esc menu`;
+  hud.textContent = hint(prefs);
+  hintRefresh = () => { hud.textContent = hint(prefs); };
   hud.style.cssText += ';bottom:auto;top:6px;transition:opacity 2s;opacity:.8';
   setTimeout(() => { hud.style.opacity = '0'; }, 14000);
   frame();
