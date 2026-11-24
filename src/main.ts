@@ -22,6 +22,9 @@ const VIEW_H = 480; // the original ran at 640x480; we keep that logical height 
 
 const canvas = document.getElementById('game') as HTMLCanvasElement;
 const hud = document.getElementById('hud') as HTMLDivElement;
+// anything that goes wrong after start-up is shown instead of leaving the screen black
+window.addEventListener('error', (e) => { hud.textContent = `Error: ${e.message}`; hud.style.opacity = '1'; });
+window.addEventListener('unhandledrejection', (e) => { hud.textContent = `Error: ${String((e.reason as Error)?.message ?? e.reason)}`; hud.style.opacity = '1'; });
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: false });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 const scene = new THREE.Scene();
