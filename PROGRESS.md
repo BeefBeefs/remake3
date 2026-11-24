@@ -523,3 +523,6 @@ Read the use-item routine for type-512 items in `Nightstone.exe` (all 18 cases).
   deaths now end lying down in every direction. The HUD shows the target's name and a life bar (clicked target, or the monster struck in the
   last 4 s). The dark-grass patch tiles (109-124, 4x4 blocks that looked like crosses) joined the orientation fit of `tools/tile_orient.py`
   (8 of the 16 tiles mirrored). 159 tests.
+- **Tile orientation check by eye.** `tools/render_ground.py` (SET=outside|cave|dungeon) draws a map patch with or without `tile_orient.json`.
+  Dark patches changed from X crosses to rounded blobs, dirt/grass borders read as natural (slightly serrated), Cave and Dungeon floors show no
+  mismatched edges, so they need no orientation table. The Barbarian now alternates Atacar / Atacar2.

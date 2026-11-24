@@ -2,12 +2,14 @@
 """Debug: draw a patch of an Outside map's ground with the orientation of tile_orient.json applied. usage: render_ground.py map.map out.png [cx cy] [orient=1]"""
 import gzip, json, struct, sys
 from PIL import Image
+import os
 root = 'public/assets'
+SET = os.environ.get('SET', 'outside')
 d = gzip.open(sys.argv[1]).read()
 cx, cy = (int(sys.argv[3]), int(sys.argv[4])) if len(sys.argv) > 4 else (128, 128)
 orient = (sys.argv[5] != '0') if len(sys.argv) > 5 else True
-at = json.load(open(f'{root}/atlas/scenary/outside/vtiles.json'))['frames']
-png = Image.open(f'{root}/atlas/scenary/outside/vtiles.png').convert('RGBA')
+at = json.load(open(f'{root}/atlas/scenary/{SET}/vtiles.json'))['frames']
+png = Image.open(f'{root}/atlas/scenary/{SET}/vtiles.png').convert('RGBA')
 ori = json.load(open(f'{root}/data/tile_orient.json'))['outside'] if orient else {}
 R = 14
 out = Image.new('RGBA', (64 * R * 2 + 64, 32 * R * 2 + 64), (0, 0, 0, 255))
