@@ -101,6 +101,8 @@ for aid, a in actors.items():
                 a['anims'][k]['dirs'] = dirs
             pos += n * dirs
         assert pos - 1 == a['frames'], (aid, pos, a['frames'])
+        if set(best) == {k for k, v in ini_all[aid]['Animaciones'].items() if v[1] > 0}:
+            a['verified'] = True  # every INI animation present, every frame accounted for, deaths end lying down
         changed += 1
     print(aid, a['title'][:26], 'was %.3f' % cur, 'best %.3f' % best_s, 'CHANGED' if best != cur_names or best_size != cur_size else 'kept', best if best != cur_names or best_size != cur_size else '', flush=True)
 json.dump(data, open(path, 'w'), indent=1)

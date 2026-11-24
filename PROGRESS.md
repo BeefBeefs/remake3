@@ -526,3 +526,7 @@ Read the use-item routine for type-512 items in `Nightstone.exe` (all 18 cases).
 - **Tile orientation check by eye.** `tools/render_ground.py` (SET=outside|cave|dungeon) draws a map patch with or without `tile_orient.json`.
   Dark patches changed from X crosses to rounded blobs, dirt/grass borders read as natural (slightly serrated), Cave and Dungeon floors show no
   mismatched edges, so they need no orientation table. The Barbarian now alternates Atacar / Atacar2.
+- **Unverified layouts reviewed.** The 13 monsters reordered by `tools/fix_order.py` (goblins, orcs, skeleton masters, goblin leaders) are now flagged
+  verified: every INI animation present, every frame accounted for, deaths end lying down. Player-table NPCs 35 / 36 gained their Cubrir strip
+  (30+30+30+50 = 140). Still open: NPC 29 holds 40 frames beyond its two INI strips (a third, unnamed pose), 33 two spare frames, 42 holds
+  3 x 10 frames for one INI strip. Naya (63): no frame of her 504 is wider than tall, so her pack has no lying death at all; Morir is a slow sway.

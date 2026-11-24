@@ -149,7 +149,7 @@ if __name__ == '__main__':
         res[aid] = {'title': actors[aid]['title'], 'pack': pack, 'frames': total, 'verified': True, 'anims': anims}
         # feet from the bare body pack: weapons skew the bbox centre
         res[aid]['foot'] = foot(bp, res[aid]['anims'])
-    # NPCs (<id>X.P16) are single-view strips: Andar, Respirar, Atacar (the INI order) back to back, no directions.
+    # NPCs (<id>X.P16) are single-view strips: Andar, Respirar, Atacar, Cubrir (the INI order) back to back, no directions.
     for aid, a in actors.items():
         an = a.get('Animaciones')
         path = os.path.join(game, 'Actors', f'{aid}X.P16')
@@ -157,7 +157,7 @@ if __name__ == '__main__':
             continue
         p16 = P16(path)
         total = len(p16.ids())
-        names = [k for k in ('Andar', 'Respirar', 'Atacar') if an.get(k, [0, 0])[1] > 0]
+        names = [k for k in ('Andar', 'Respirar', 'Atacar', 'Cubrir') if an.get(k, [0, 0])[1] > 0]
         anims, pos = {}, 1
         for k in names:
             anims[k] = {'start': pos, 'frames': an[k][1], 'speed': an[k][0], 'dirs': 1}

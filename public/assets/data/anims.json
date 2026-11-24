@@ -14,7 +14,7 @@
    "title": "GOBLIN",
    "pack": "1E",
    "frames": 400,
-   "verified": false,
+   "verified": true,
    "anims": {
     "Andar": {
      "start": 1,
@@ -67,7 +67,7 @@
    "title": "GOBLIN RATA",
    "pack": "2E",
    "frames": 408,
-   "verified": false,
+   "verified": true,
    "anims": {
     "Andar": {
      "start": 1,
@@ -120,7 +120,7 @@
    "title": "GOBLIN INFERNAL",
    "pack": "3E",
    "frames": 368,
-   "verified": false,
+   "verified": true,
    "anims": {
     "Andar": {
      "start": 1,
@@ -173,7 +173,7 @@
    "title": "GOBLIN MAESTRO",
    "pack": "4E",
    "frames": 392,
-   "verified": false,
+   "verified": true,
    "anims": {
     "Andar": {
      "start": 1,
@@ -226,7 +226,7 @@
    "title": "ORCO COM\u00daN",
    "pack": "5E",
    "frames": 296,
-   "verified": false,
+   "verified": true,
    "anims": {
     "Andar": {
      "start": 1,
@@ -274,7 +274,7 @@
    "title": "ORCO APLASTAHUESOS",
    "pack": "6E",
    "frames": 296,
-   "verified": false,
+   "verified": true,
    "anims": {
     "Andar": {
      "start": 1,
@@ -322,7 +322,7 @@
    "title": "ORCO BRUTAL",
    "pack": "7E",
    "frames": 296,
-   "verified": false,
+   "verified": true,
    "anims": {
     "Andar": {
      "start": 1,
@@ -559,7 +559,7 @@
    "title": "ESQUELETO MAESTRO",
    "pack": "11E",
    "frames": 416,
-   "verified": false,
+   "verified": true,
    "anims": {
     "Andar": {
      "start": 1,
@@ -617,7 +617,7 @@
    "title": "ESQUELETO GUARDIAN",
    "pack": "12E",
    "frames": 424,
-   "verified": false,
+   "verified": true,
    "anims": {
     "Andar": {
      "start": 1,
@@ -1294,7 +1294,7 @@
    "title": "LIDER GOBLIN(FASE 3)",
    "pack": "39E",
    "frames": 392,
-   "verified": false,
+   "verified": true,
    "anims": {
     "Andar": {
      "start": 1,
@@ -1405,7 +1405,7 @@
    "title": "LIDER GOBLIN(FASE 6)",
    "pack": "43E",
    "frames": 392,
-   "verified": false,
+   "verified": true,
    "anims": {
     "Andar": {
      "start": 1,
@@ -1458,7 +1458,7 @@
    "title": "ORCO MASTER (ORCO CAPITAN MEJORADO) FASE 8",
    "pack": "45E",
    "frames": 296,
-   "verified": false,
+   "verified": true,
    "anims": {
     "Andar": {
      "start": 1,
@@ -1728,7 +1728,7 @@
    "title": "ORCO MASTER (ORCO CAPITAN MEJORADO) FASE 25",
    "pack": "58E",
    "frames": 296,
-   "verified": false,
+   "verified": true,
    "anims": {
     "Andar": {
      "start": 1,
@@ -2266,7 +2266,7 @@
    "title": "JUGADOR 1",
    "pack": "35X",
    "frames": 140,
-   "verified": false,
+   "verified": true,
    "npc": true,
    "anims": {
     "Andar": {
@@ -2284,6 +2284,12 @@
     "Atacar": {
      "start": 61,
      "frames": 30,
+     "speed": 4,
+     "dirs": 1
+    },
+    "Cubrir": {
+     "start": 91,
+     "frames": 50,
      "speed": 4,
      "dirs": 1
     }
@@ -2297,7 +2303,7 @@
    "title": "JUGADOR 2",
    "pack": "36X",
    "frames": 140,
-   "verified": false,
+   "verified": true,
    "npc": true,
    "anims": {
     "Andar": {
@@ -2315,6 +2321,12 @@
     "Atacar": {
      "start": 61,
      "frames": 30,
+     "speed": 4,
+     "dirs": 1
+    },
+    "Cubrir": {
+     "start": 91,
+     "frames": 50,
      "speed": 4,
      "dirs": 1
     }
