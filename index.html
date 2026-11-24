@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NightStone remake</title>
+    <style>
+      html, body { margin: 0; height: 100%; background: #05060a; overflow: hidden; }
+      #game { display: block; width: 100vw; height: 100vh; image-rendering: pixelated; touch-action: none; }
+      #hud { position: fixed; left: 8px; bottom: 6px; font: 12px/1.2 ui-monospace, Menlo, monospace; color: #cbb26a; text-shadow: 0 1px 2px #000; pointer-events: none; }
+      #links { position: fixed; right: 8px; bottom: 6px; font: 12px ui-monospace, Menlo, monospace; }
+      #links a { color: #8a8f9c; }
+    </style>
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+    <div id="hud">Loading…</div>
+    <div id="links"><a href="./viewer.html">asset viewer</a></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

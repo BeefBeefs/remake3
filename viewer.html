@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NightStone asset viewer</title>
+    <style>
+      body { margin: 0; background: #14151b; color: #d6d6d6; font: 13px ui-monospace, Menlo, monospace; }
+      header { position: sticky; top: 0; z-index: 2; display: flex; gap: 12px; align-items: center; padding: 8px 12px; background: #1d1f27; border-bottom: 1px solid #000; }
+      select, input { background: #0e0f13; color: #d6d6d6; border: 1px solid #333; padding: 3px 6px; font: inherit; }
+      #grid { padding: 12px; display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+      figure { margin: 0; text-align: center; }
+      figure div { background: #2a2c38 repeating-conic-gradient(#2a2c38 0% 25%, #23252f 0% 50%) 0 0 / 12px 12px; image-rendering: pixelated; }
+      figcaption { color: #e2c768; font-size: 11px; }
+      a { color: #8ab4ff; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <a href="./index.html">&larr; game</a>
+      <select id="sel"></select>
+      <label>zoom <input id="zoom" type="number" min="1" max="6" value="1" style="width:3em" /></label>
+      <span id="info"></span>
+    </header>
+    <div id="grid"></div>
+    <script type="module" src="/src/viewer.ts"></script>
+  </body>
+</html>

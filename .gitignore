@@ -1,0 +1,10 @@
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Original game data: reproduced from the installer by `npm run extract`, never committed raw.
+/game/
+/NST.zip
+/Install-NST.exe
+/nst_raw/
+/scratch/
