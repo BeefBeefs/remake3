@@ -456,3 +456,14 @@ Read the use-item routine for type-512 items in `Nightstone.exe` (all 18 cases).
   60 s for archers/mages) and `Espera` (pause chance) are understood but not modelled — the target-tracking state machine around
   them (states 0x65–0x6e, path requests) is large and was not decoded in full.
 - 150 tests.
+
+## Turn 20 (cont.) — stamina by state
+
+- **State → stamina mapping decoded.** The hero's speed routine (`0x42cc30`) sets state 0x78 for speed 0, 0x79 above the walking speed
+  (run), 0x7b at exactly the walking speed (1.0) and 0x7a below it (stealth); the per-frame routine gives each its own stamina change
+  and everything else (attack, cover, hit) none. So standing regains most, walking a bit less, **stealth walking drains**
+  (−3 / −5 / −3), running drains more. The old table labelled the stealth drain "guard" and the walking gain "sneak" and applied
+  the drain to blocking; Amazon walking is +3, not +4.
+- **Block is free.** The Barbarian's block branch (hero receive routine) spends no stamina and does not check it; the 2-point cost
+  per blocked blow and the "no stamina, no block" rule were guesses and are gone.
+- 151 tests.

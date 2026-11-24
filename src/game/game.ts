@@ -114,8 +114,6 @@ export type Stance = 'walk' | 'run' | 'stealth';
 export const STANCE_SPEED: Record<Stance, number> = { walk: 1, run: 2, stealth: 0.5 };
 /** Stealth: unaware monsters notice you from half as far, and the first blow on one of them does double damage. */
 const STEALTH_HEARING = 0.5;
-/** Barbarian block: stamina spent per blocked blow (a guess; the executable only charges for holding the shield up). */
-const BLOCK_COST = 2;
 /** Bows shoot an arrow that flies this many cells; it is aimed at the nearest monster within ~25 degrees of the aim. */
 const BOW_RANGE = 7;
 /** Worn items that survive death: the three legendary weapons (sword 14, bow 48, staff 61) and item 129. */
@@ -890,10 +888,9 @@ export class Game {
     const h = this.hero;
     if (!h.alive) return;
     const raw = lo + Math.floor(this.rnd() * (hi - lo + 1));
-    if (this.blocking && this.stamina >= BLOCK_COST) {
+    if (this.blocking) {
       const ed = Math.hypot(fromx, fromy) || 1;
       if ((fromx * this.facing.x + fromy * this.facing.y) / ed > 0) {
-        this.stamina -= BLOCK_COST;
         this.snd(this.pick(53, 4)); // c_cubrir
         if (this.rnd() < 0.8) this.wearItem('shield', Math.floor(raw / 3) + 1); // the Barbarian's routine: 8 blocked blows in 10 wear the shield
         return;
@@ -1072,11 +1069,17 @@ export class Game {
     if (!this.hero.alive) return;
     // per-frame values the class routines add to the stamina and mana pools (see rules.ts)
     const t = STAMINA_TICK[this.classId as ClassKey];
-    const run = this.moving && this.effectiveStance === 'run';
-    let tick = t.rest;
-    if (run) tick = this.inventory.equipped.armor ? t.runArmor : t.run;
-    else if (this.blocking || this.holding) tick = t.guard;
-    else if (this.moving && this.effectiveStance === 'stealth') tick = t.sneak;
+    // The executable's per-frame hero state routine (0x42c1f8): standing still regains `rest`, walking `walk`, walking in stealth
+    // (speed below the walking speed) loses `stealth`, running loses `run` (more in body armour); while attacking, covering or
+    // being hit nothing changes.
+    const busy = this.hero.state === 'attack' || this.hero.state === 'hit' || this.hero.state === 'block' || this.hero.state === 'dead';
+    let tick = 0;
+    if (!busy) {
+      if (!this.moving) tick = t.rest;
+      else if (this.effectiveStance === 'run') tick = this.inventory.equipped.armor ? t.runArmor : t.run;
+      else if (this.effectiveStance === 'stealth') tick = t.stealth;
+      else tick = t.walk;
+    }
     this.stamina = Math.max(0, Math.min(this.maxStamina, this.stamina + perSecond(tick) * dt));
     this.mana = Math.min(this.maxMana, this.mana + perSecond(manaRegenTick(this.eff.strength, this.level)) * dt);
   }

@@ -81,11 +81,15 @@ export const STAFF_MANA: Record<number, number> = {
   53: 4.5, 54: 6.75, 55: 11.25, 56: 3.4, 57: 5.45, 58: 7.5, 59: 3.475, 60: 5.75, 61: 8.5, 132: 3.45, 133: 5.5, 134: 7.25,
 };
 
-/** Per-frame stamina changes (original units, 1/200 point) of each class: resting, running, running in body armour, guarding, sneaking. */
-export const STAMINA_TICK: Record<ClassKey, { rest: number; run: number; runArmor: number; guard: number; sneak: number }> = {
-  100: { rest: 3, run: -5, runArmor: -6, guard: -3, sneak: 2 },
-  101: { rest: 4, run: -6, runArmor: -7, guard: -5, sneak: 4 },
-  102: { rest: 3, run: -6, runArmor: -6, guard: -3, sneak: 2 },
+/**
+ * Per-frame stamina changes (original units, 1/200 point) of each class, from the executable's per-state routine (hero states
+ * 0x78 standing, 0x79 running, 0x7a slower than walking = stealth, 0x7b walking): `rest` standing still, `walk`, `stealth`
+ * (a drain), `run` and `runArmor` (running with body armour worn). Attacking, covering and being hit change nothing.
+ */
+export const STAMINA_TICK: Record<ClassKey, { rest: number; walk: number; stealth: number; run: number; runArmor: number }> = {
+  100: { rest: 3, walk: 2, stealth: -3, run: -5, runArmor: -6 },
+  101: { rest: 4, walk: 3, stealth: -5, run: -6, runArmor: -7 },
+  102: { rest: 3, walk: 2, stealth: -3, run: -6, runArmor: -6 },
 };
 /** Stamina points per second for a per-frame value of the table above. */
 export const perSecond = (tick: number): number => (tick * GAME_FPS) / 200;

@@ -446,15 +446,15 @@ test('class gear of another hero is blocked', () => {
 
 const facing = (g: Game, x: number, y: number) => { (g as unknown as { facing: { x: number; y: number } }).facing = { x, y }; g.hero.face(x, y); };
 
-test('Barbarian block: frontal blows are stopped and cost stamina; blows from behind and with no stamina get through', () => {
+test('Barbarian block: frontal blows are stopped and cost no stamina (the executable charges none); blows from behind get through', () => {
   const setup = () => { const g = makeGame({ spawns: [{ id: '1', cx: 129, cy: 128 }] }); g.setGuard(true); facing(g, 1, 0); return g; };
   const front = setup();
   const heard: number[] = [];
   front.onSound = (id) => heard.push(id);
-  const s0 = front.stamina, hp0 = front.hero.hp;
+  front.stamina = 20; const s0 = front.stamina, hp0 = front.hero.hp;
   run(front, 6);
   assert.equal(front.hero.hp, hp0, 'no damage while covering up');
-  assert.ok(front.stamina < s0 && front.stamina !== s0, 'blocking spends stamina');
+  assert.equal(front.stamina, s0, 'blocking neither spends nor regains stamina');
   assert.equal(front.hero.state, 'block');
   assert.ok(heard.some((id) => id >= 53 && id <= 56), 'c_cubrir');
 
@@ -462,11 +462,6 @@ test('Barbarian block: frontal blows are stopped and cost stamina; blows from be
   facing(behind, -1, 0); // the goblin is behind him
   run(behind, 6);
   assert.ok(behind.hero.hp < behind.hero.stats.hp, 'a flank blow lands');
-
-  const tired = setup();
-  tired.stamina = 0;
-  run(tired, 6);
-  assert.ok(tired.hero.hp < tired.hero.stats.hp, 'no stamina, no block');
 });
 
 test('blocking holds the Cubrir pose, stops walking and attacking, and ends when the button is released', () => {
@@ -1274,4 +1269,17 @@ test('monsters without a patrol route roam within their search radius of home an
   for (let i = 0; i < 60 * 40; i++) { g.update(1 / 60, null); if (m.state === 'walk') moved = true; far = Math.max(far, Math.hypot(m.cx - 150, m.cy - 150)); }
   assert.ok(moved, 'it walks now and then');
   assert.ok(far > 0.5 && far < 9, `strays ${far.toFixed(1)} cells but stays near home`);
+});
+
+test('stamina by hero state (executable): standing regains, walking regains less, stealth walking and running drain', () => {
+  const rate = (stance: 'walk' | 'run' | 'stealth' | 'still') => {
+    const g = makeGame({ classId: 100 });
+    g.stamina = 20;
+    if (stance !== 'still') { g.setStance(stance === 'run', stance === 'stealth'); g.click(g.hero.cx + 40, g.hero.cy); }
+    run(g, 1);
+    return g.stamina - 20;
+  };
+  const still = rate('still'), walk = rate('walk'), stealth = rate('stealth'), runn = rate('run');
+  assert.ok(still > walk && walk > 0, `rest ${still}, walk ${walk}`);
+  assert.ok(stealth < 0 && runn < stealth, `stealth ${stealth}, run ${runn}`);
 });
