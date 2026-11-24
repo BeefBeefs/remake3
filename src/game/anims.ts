@@ -22,8 +22,8 @@ export interface ActorAnims {
 }
 export interface AnimData { dirs: string[]; actors: Record<string, ActorAnims> }
 
-/** Seconds per animation "speed" unit. The INI speeds are in engine ticks; 1/60 s is a guess that looks natural. */
-export const TICK = 1 / 60;
+/** Seconds per animation "speed" unit: the animation clock gains 1 per engine tick (0x4233ca..) and a frame lasts `speed` of them. */
+export const TICK = 1 / 35;
 
 export function frameId(a: AnimDef, dir: number, step: number): number {
   const d = a.dirs === 4 ? dir >> 1 : a.dirs === 1 ? 0 : dir;

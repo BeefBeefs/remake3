@@ -467,3 +467,14 @@ Read the use-item routine for type-512 items in `Nightstone.exe` (all 18 cases).
 - **Block is free.** The Barbarian's block branch (hero receive routine) spends no stamina and does not check it; the 2-point cost
   per blocked blow and the "no stamina, no block" rule were guesses and are gone.
 - 151 tests.
+
+## Turn 21 — real movement speed and animation clock
+
+- **Walking speed decoded.** The path set-up (`0x4237b8`) and per-tick move (`0x42345b`) work in screen pixels: each tick the object
+  advances `speed` pixels along the longer screen axis. Heroes walk at 1 px/tick (run 2, stealth 0.5); a monster's speed is
+  Velocidad × Velocidad (`0x422f57` multiplies the order's Velocidad by the actor's own, which is the INI Velocidad). Patrol and
+  roam orders pass the same value as chase, so the invented "patrol = 0.45 of chase" is gone. The old 3.2 / 1.7 cells per second
+  were three times too fast: a hero now crosses 1.09 cells/s along a map axis.
+- **Animation clock = 1/35 s.** The animation clock gains 1.0 per engine tick and a frame lasts `speed` ticks (the walk cycle
+  7×10 = 70 ticks = 2 s now matches 2 steps of ~35 px, so feet no longer glide). The 1/60 guess was too fast. Footsteps every 1.0 s.
+- Tests re-timed (151 pass).

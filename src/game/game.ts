@@ -10,7 +10,7 @@ import { Inventory, missingReqs, rollByMask, rollDrop, slotOf, type ItemDef } fr
 import { cellToWorld, depthOf } from '../iso.ts';
 import { World } from './world.ts';
 import {
-  ATTR_CAPS, MAX_LEVEL, POINTS_PER_LEVEL, START_ATTRS, STAFF_MANA, STAMINA_TICK, TICK, classDamage, hitReceived,
+  ATTR_CAPS, GAME_FPS, MAX_LEVEL, POINTS_PER_LEVEL, START_ATTRS, STAFF_MANA, STAMINA_TICK, TICK, classDamage, hitReceived,
   manaRegenTick, maxLife, maxMana, maxStamina, minDamage, perSecond, xpForLevel, type ClassKey,
 } from './rules.ts';
 
@@ -103,8 +103,8 @@ export const CLASSES = {
   102: { name: 'Sorceress', weapon: 56, sound: 140 },
 } as const;
 export type ClassId = keyof typeof CLASSES;
-/** Seconds of walking between footsteps (the walk cycle is ~1.2 s with two steps). */
-const STEP_EVERY = 0.58;
+/** Seconds of walking between footsteps: the walk cycle (Andar 7 ticks x 10 frames = 2 s) holds two steps. */
+const STEP_EVERY = 1.0;
 export type Attr = 'strength' | 'skill' | 'resistance' | 'magic';
 /** Potions of Fortuity (azar) and Knowledge (conocimiento): effects are guesses. */
 const POTION_FORTUITY = 111, POTION_KNOWLEDGE = 112;
@@ -133,9 +133,14 @@ type Element = 'electric' | 'ice' | 'dead' | 'fire';
 const staffElement = (id: number): Element => (id >= 132 ? 'fire' : id >= 59 ? 'dead' : id >= 56 ? 'ice' : 'electric');
 const STAFF_COLOR: Record<Element, number> = { electric: 0xaad4ff, ice: 0x9fe8ff, dead: 0xb070ff, fire: 0xff8040 };
 const STAFF_SOUND: Record<Element, number> = { electric: 24, ice: 74, dead: 23, fire: 72 };
-const HERO_SPEED = 3.2; // cells per second
-const MONSTER_SPEED = 1.7;
-const PATROL_SPEED = 0.45; // fraction of chase speed
+/**
+ * Walking speed in the executable (path set-up at 0x4237b8, per-tick move at 0x42345b): the object advances `speed` screen
+ * pixels per tick (35 a second) along the longer screen axis of its path. Heroes walk at 1 (run 2, stealth 0.5); a monster's
+ * speed is its Velocidad times itself (the order routine multiplies the Velocidad it is passed by the actor's own, 0x422f57),
+ * and the roaming, patrol and chase orders all pass it. Cells are 64x32 pixels.
+ */
+const HERO_SPEED = 1;
+const PATROL_SPEED = 1;
 const MELEE = 1.35; // cells
 const HIT_RANGE = 1.9; // hero swing reach, cells
 const PICKUP = 0.9; // cells
@@ -281,7 +286,7 @@ export class Game {
       hp: hdp.Vida ?? 10,
       damage: hdp.Fuerza ?? [1, 3],
       armor: hdp.Armadura ?? 0,
-      speed: MONSTER_SPEED * (hdp.Velocidad ?? 1),
+      speed: (hdp.Velocidad ?? 1) ** 2,
       cooldown: [cd[0] * AI_TICK, cd[1] * AI_TICK],
       hearing: ini.IA?.Oido ?? 3,
       xp: hdp.Pts_Experiencia ?? [1, 2],
@@ -1110,7 +1115,9 @@ export class Game {
     this.say(this.finalText);
   }
 
-  private step(c: Creature, vx: number, vy: number, speed: number, dt: number): void {
+  private step(c: Creature, vx: number, vy: number, pxPerTick: number, dt: number): void {
+    const run = Math.max(Math.abs(vx - vy) * 32, Math.abs(vx + vy) * 16); // screen pixels per cell moved along (vx, vy)
+    const speed = run > 0 ? (pxPerTick * GAME_FPS) / run : 0;
     const nx = c.cx + vx * speed * dt, ny = c.cy + vy * speed * dt;
     if (this.world.isWalkable(nx, ny)) { c.cx = nx; c.cy = ny; }
     else if (this.world.isWalkable(nx, c.cy)) c.cx = nx;

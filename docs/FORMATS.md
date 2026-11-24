@@ -128,7 +128,8 @@ Alarma = taunt, Extra/Atacar2/Vigilar/Aburrido/Aparecer = misc). A pack only con
 (Cubrir and Recibir2 absent). 3 monsters match uniquely, 13 are ambiguous (Recibir vs Recibir2 – same size – and a
 few others, resolved by a preference rule), 20 do not match any subset and only get Andar/Respirar/Atacar
 (these 20 are solved by the 4-direction-Morir rule below). Direction blocks (confirmed in-game): **E, NE, N, NW, W, SW, S, SE** (counter-clockwise from east; an earlier by-eye reading had E and W swapped).
-Frame time is `speed × tick`; the tick length is a guess (1/60 s looks right).
+Frame time is `speed × tick` with tick = 1/35 s: the object's animation clock gains 1.0 per engine tick (`0x4233d0`) and the frame advances when it reaches `speed` (Turn 21; it was a 1/60 s guess).
+**Movement** (`0x4237b8` path set-up, `0x42345b` per-tick move): positions are in screen pixels (cell = 64×32 diamond); each tick the object advances `speed` pixels along the longer screen axis of its path. Heroes: walk 1, run 2, stealth 0.5. Monsters: Velocidad × Velocidad (the order routine multiplies the passed Velocidad by the actor's own, `0x422f57`); roaming, patrol and chase all use it.
 
 **Player characters are layered pre-rendered sets.** `Actors/<a><b><c>-<Class>.P16` are complete figures with identical
 frame numbering (564 frames; plate armour 548): `000` bare hands, `001` dagger, `002` sword, `005` two-handed sword,

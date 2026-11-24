@@ -36,7 +36,7 @@ test('the hero walks when told to and stops at the click target', () => {
   g.click(g.hero.cx + 4, g.hero.cy);
   run(g, 0.3);
   assert.equal(g.hero.state, 'walk');
-  run(g, 3);
+  run(g, 5); // 1 pixel a tick: 1.09 cells a second along the screen's long axis
   assert.ok(Math.abs(g.hero.cx - 132) < 0.2, `cx=${g.hero.cx}`);
   assert.equal(g.hero.state, 'idle');
 });
@@ -236,10 +236,10 @@ test('walking plays alternating footstep sounds', () => {
   const g = makeGame();
   const heard: number[] = [];
   g.onSound = (id) => heard.push(id);
-  g.click(g.hero.cx + 8, g.hero.cy);
-  run(g, 3);
+  g.click(g.hero.cx + 4, g.hero.cy);
+  run(g, 4);
   const steps = heard.filter((id) => id === 160 || id === 161);
-  assert.ok(steps.length >= 4 && steps.length <= 6, `steps=${steps.length}`);
+  assert.ok(steps.length >= 3 && steps.length <= 5, `steps=${steps.length}`);
   assert.deepEqual(steps.slice(0, 2).sort(), [160, 161]);
   heard.length = 0;
   run(g, 1);
@@ -272,7 +272,7 @@ test('reaching the goal cell (named script without loot) completes the quest onc
   const g = new Game(new World(map, fakeAtlas, []), (() => { const x = makeGame() as unknown as { data: GameData }; return x.data; })(), { cx: 128, cy: 128 }, { spawns: [], finalText: 'You win' });
   assert.equal(g.goalReached, false);
   g.click(138, 128);
-  run(g, 5);
+  run(g, 12);
   assert.equal(g.goalReached, true);
   assert.equal(g.log.at(-1), 'You win');
   const n = g.log.length;
@@ -287,11 +287,11 @@ test('footsteps follow the surface underfoot', () => {
   g.onSound = (id) => heard.push(id);
   const stepsOf = (lo: number) => heard.filter((id) => id === lo || id === lo + 1).length;
   g.click(g.hero.cx + 20, g.hero.cy);
-  run(g, 1.5);
+  run(g, 3);
   assert.ok(stepsOf(160) >= 2 && stepsOf(164) === 0 && stepsOf(168) === 0);
-  surface = 'wood'; heard.length = 0; run(g, 1.5);
+  surface = 'wood'; heard.length = 0; run(g, 3);
   assert.ok(stepsOf(164) >= 2 && stepsOf(160) === 0);
-  surface = 'stone'; heard.length = 0; run(g, 1.5);
+  surface = 'stone'; heard.length = 0; run(g, 3);
   assert.ok(stepsOf(168) >= 2 && stepsOf(164) === 0);
 });
 
@@ -322,11 +322,11 @@ test('clicking an NPC walks the hero over, plays the talk animation and fires on
   run(g, 0.2);
   assert.equal(g.hero.state, 'walk');
   assert.equal(talked.length, 0);
-  run(g, 4);
+  run(g, 7);
   assert.deepEqual(talked, ['27']);
   assert.ok(Math.hypot(g.hero.cx - npc.creature.cx, g.hero.cy - npc.creature.cy) <= 2.3);
   assert.equal(npc.creature.state, 'attack', 'innkeeper turns to serve');
-  run(g, 8); // the serve animation is 70 frames x 6 ticks = 7 s
+  run(g, 14); // the serve animation is 70 frames x 6 ticks = 12 s
   assert.deepEqual(talked, ['27'], 'does not talk again by itself');
   assert.equal(npc.creature.state, 'idle');
 });
@@ -364,7 +364,7 @@ test('running is twice as fast, drains stamina, uses the running footsteps and s
   runner.stamina = 0;
   const x = runner.hero.cx;
   run(runner, 1);
-  assert.ok(Math.abs(runner.hero.cx - x - 3.2) < 0.2, 'out of stamina: back to walking pace');
+  assert.ok(Math.abs(runner.hero.cx - x - 1.09) < 0.1, 'out of stamina: back to walking pace');
 });
 
 test('standing still recovers stamina; stealth is slow and silent', () => {
@@ -378,7 +378,7 @@ test('standing still recovers stamina; stealth is slow and silent', () => {
   const x = g.hero.cx;
   g.click(x + 30, g.hero.cy);
   run(g, 2);
-  assert.ok(Math.abs(g.hero.cx - x - 3.2) < 0.3, `stealth speed ${g.hero.cx - x}`);
+  assert.ok(Math.abs(g.hero.cx - x - 1.09) < 0.15, `stealth speed ${g.hero.cx - x}`);
   assert.equal(heard.filter((id) => id >= 160 && id <= 171).length, 0, 'no footsteps');
 });
 
