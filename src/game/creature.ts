@@ -77,6 +77,8 @@ export class Creature {
   dormant = false;
   /** Use the second attack animation (Atacar2: demons) for the current / next swing. */
   secondAttack = false;
+  /** Strip played while walking: the heroes' packs hold a run (`Extra`) and a sneak (`Vigilar`) strip next to `Andar`. */
+  walkAnim: 'Andar' | 'Extra' | 'Vigilar' = 'Andar';
   /** seconds spent standing still (drives the fidget animations) */
   idleFor = 0;
 
@@ -84,6 +86,7 @@ export class Creature {
     const an = this.def.anims;
     if (state === 'attack' && this.secondAttack && an.Atacar2) return an.Atacar2;
     if (state === 'bored') return an.Aburrido ?? an.Vigilar;
+    if (state === 'walk') return an[this.walkAnim] ?? an.Andar;
     if (state === 'hit') return an.Recibir ?? an.Recibir2;
     return an[ANIM_OF[state]];
   }

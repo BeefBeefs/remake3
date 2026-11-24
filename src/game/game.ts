@@ -206,6 +206,10 @@ export class Game {
   /** Dark Stones / Cauldron parts (actors 70-82): objective objects kept in `monsters` so the hero can hit and see them, but they never act */
   private readonly stones = new Set<Creature>();
   private mapNumber = 0;
+  /** the monster the hero struck last and when (game seconds), for the target plate */
+  private struck: Creature | null = null;
+  private struckAt = -99;
+  private clockT = 0;
   /** monsters that have noticed the hero (they shout once) */
   private readonly alerted = new Set<Creature>();
   private readonly boxes: Box[] = [];
@@ -818,8 +822,16 @@ export class Game {
     this.fx.push(makeFx(75, c.cx, c.cy, { follow: c, lift: 26, size0: 24, size1: 70, life: 0.35, alpha0: 0.9, alpha1: 0 }));
   }
 
+  /** The monster the hero is going for, or the one he struck in the last few seconds: the HUD shows its name and life bar. */
+  get focus(): Creature | null {
+    if (this.target?.alive && !this.target.dormant) return this.target;
+    const s = this.struck;
+    return s && s.alive && !s.dormant && this.clockT - this.struckAt < 4 ? s : null;
+  }
+
   /** Applies hero damage to a monster: hurt/die sounds, loot, kill count and experience. */
   private damageMonster(m: Creature, dmg: number, stagger = true): void {
+    if (dmg > 0) { this.struck = m; this.struckAt = this.clockT; }
     if (this.stones.has(m)) { if (dmg > 0) this.hitStone(m as StoneObj, dmg); return; }
     if (dmg < 0) { m.hp = Math.min(m.stats.hp, m.hp - dmg); return; } // a family bonus below -1 heals (fire on demons)
     if (dmg === 0) return;
@@ -854,6 +866,7 @@ export class Game {
    */
   private heroHitMonster(m: Creature, _sneak: boolean, ranged = false): void {
     if (!m.alive) return;
+    this.struck = m; this.struckAt = this.clockT;
     // the executable's sum: class term B (own strength) + weapon W (Potencia roll plus its family bonus), then the
     // 0..2 -> 1..3 rule; a family bonus below zero replaces everything (it heals the monster, fire on demons)
     const [lo, hi] = this.hero.stats.damage;
@@ -1056,6 +1069,7 @@ export class Game {
   /** @param move cell-space unit vector from the keyboard, or null */
   update(dt: number, move: { x: number; y: number } | null): void {
     const h = this.hero;
+    this.clockT += dt;
     this.moving = false;
     this.updateHero(dt, move);
     this.tickResources(dt);
@@ -1214,8 +1228,9 @@ export class Game {
     if (vx || vy) {
       this.facing = { x: vx, y: vy };
       h.face(vx, vy);
-      h.setState('walk');
       const stance = this.effectiveStance;
+      h.walkAnim = stance === 'run' ? 'Extra' : stance === 'stealth' ? 'Vigilar' : 'Andar';
+      h.setState('walk');
       this.stepClock += dt * STANCE_SPEED[stance];
       if (this.stepClock >= STEP_EVERY) {
         this.stepClock -= STEP_EVERY;

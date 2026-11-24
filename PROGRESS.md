@@ -516,3 +516,10 @@ Read the use-item routine for type-512 items in `Nightstone.exe` (all 18 cases).
   offsets, life (254 in mission 35), halved / thirded blows, the shield on stones 70 and 80 while others stand and the skeleton
   spawn chances. The game now places them (`src/game/stone.ts`), the level completes when the last falls. Rat and Spider are
   unused critters. 157 tests.
+- **Hero attack, target plate, dark patches (from the user's screenshot).** The hero never swung because the pack's blocks are not in INI
+  order: run (Extra) and sneak (Vigilar) come before the swings, so the "Atacar" strip was the run. `tools/hero_layout.py` / `tools/fix_order.py`
+  score every block order by silhouette continuity; the heroes now swing with the real strip and run / sneak with Extra / Vigilar, and
+  17 monsters (goblins, orcs, skeleton masters, trolls, goblin leaders) got a corrected layout (all INI animations, Morir for 4 directions): their
+  deaths now end lying down in every direction. The HUD shows the target's name and a life bar (clicked target, or the monster struck in the
+  last 4 s). The dark-grass patch tiles (109-124, 4x4 blocks that looked like crosses) joined the orientation fit of `tools/tile_orient.py`
+  (8 of the 16 tiles mirrored). 159 tests.

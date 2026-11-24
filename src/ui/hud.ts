@@ -30,6 +30,11 @@ export class Hud {
   private seenLog = '';
   private seenPoints = -1;
   private seenDead = false;
+  private readonly plate = document.createElement('div');
+  private readonly plateName = document.createElement('div');
+  private readonly plateFill = document.createElement('div');
+  private plateFor: unknown = null;
+  private plateNameText = '';
 
   constructor(private readonly skin: Skin, private readonly game: Game, private readonly icons: Atlas, private readonly base: string, actions: HudActions) {
     // --- left: minimap ring (score 0), globe (10), buttons (2/3, 4/5, 6/7, 8/9) ---
@@ -87,6 +92,16 @@ export class Hud {
     this.msg.style.cssText = 'position:absolute;left:34px;top:49px;width:150px;height:55px;overflow:hidden;pointer-events:none';
     this.right.appendChild(this.msg);
 
+    // --- target plate: name and life bar of the monster the hero is attacking, top centre ---
+    this.plate.style.cssText = 'position:fixed;top:0;left:50%;width:200px;margin-left:-100px;padding-top:8px;display:none;z-index:5;pointer-events:none;transform-origin:center top;text-align:center';
+    this.plateName.style.cssText = 'height:16px;display:flex;justify-content:center;margin-bottom:3px';
+    const well = document.createElement('div');
+    well.style.cssText = 'width:150px;height:9px;margin:0 auto;box-sizing:border-box;border:1px solid #c8b070;background:#1a0d0a;box-shadow:0 0 0 1px #000;padding:1px';
+    this.plateFill.style.cssText = 'height:100%;width:100%;background:linear-gradient(#e24a3a,#8c1c14)';
+    well.appendChild(this.plateFill);
+    this.plate.append(this.plateName, well);
+    document.body.appendChild(this.plate);
+
     window.addEventListener('resize', () => this.layout());
     this.layout();
   }
@@ -104,6 +119,7 @@ export class Hud {
 
   private layout(): void {
     const s = window.innerHeight / 480;
+    this.plate.style.transform = `scale(${s})`;
     for (const c of [this.left, this.mid, this.right]) {
       const a = c.dataset.anchor;
       c.style.transform = a === 'center' ? `translateX(-50%) scale(${s})` : `scale(${s})`;
@@ -118,6 +134,16 @@ export class Hud {
 
   update(): void {
     const g = this.game, h = g.hero;
+    const f = g.focus;
+    if (f) {
+      if (this.plateFor !== f || this.plateNameText !== f.stats.name) {
+        this.plateFor = f; this.plateNameText = f.stats.name;
+        this.plateName.replaceChildren(this.skin.text(f.stats.name.trim(), { color: '#f1e3b0' }));
+      }
+      this.plateFill.style.width = `${Math.max(0, Math.min(100, (f.hp / Math.max(1, f.stats.hp)) * 100))}%`;
+      this.plate.title = `${f.stats.name.trim()} · ${Math.max(0, f.hp)}/${f.stats.hp}`;
+      this.plate.style.display = 'block';
+    } else if (this.plateFor) { this.plateFor = null; this.plate.style.display = 'none'; }
     this.setBar(this.bars.life, h.hp / h.stats.hp, 9 + 52);
     this.setBar(this.bars.stamina, g.stamina / g.maxStamina, 9 + 42);
     this.setBar(this.bars.mana, g.mana / Math.max(1, g.maxMana), 9 + 52);

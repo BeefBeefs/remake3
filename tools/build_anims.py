@@ -15,6 +15,9 @@ from p16 import P16  # noqa: E402
 
 ORDER = ['Andar', 'Respirar', 'Atacar', 'Cubrir', 'Recibir', 'Morir', 'Recibir2', 'Extra', 'Atacar2', 'Alarma', 'Vigilar']
 REQUIRED = ['Andar', 'Respirar', 'Atacar']
+# Block order of the player packs (found by tools/hero_layout.py from silhouette continuity; the INI order is wrong for them):
+# the 11-frame run, the 10-frame look-around, then the swings, the hit reactions, and Morir (4 directions) last.
+HERO_ORDER = ['Andar', 'Respirar', 'Extra', 'Vigilar', 'Atacar', 'Atacar2', 'Recibir', 'Cubrir', 'Recibir2', 'Alarma']
 # screen direction of each of the 8 blocks (corrected after testing in the browser: counter-clockwise from E)
 DIRS = ['E', 'NE', 'N', 'NW', 'W', 'SW', 'S', 'SE']
 
@@ -37,12 +40,12 @@ def layouts4(an, total):
     8 * sum(others) + 4 * Morir == total."""
     if an.get('Morir', [0, 0])[1] <= 0:
         return []
-    opt = [k for k in ORDER if k not in REQUIRED and k != 'Morir' and an.get(k, [0, 0])[1] > 0]
+    opt = [k for k in HERO_ORDER if k not in REQUIRED and k != 'Morir' and an.get(k, [0, 0])[1] > 0]
     req = [k for k in REQUIRED if an.get(k, [0, 0])[1] > 0]
     found = []
     for r in range(len(opt) + 1):
         for sub in itertools.combinations(opt, r):
-            names = [k for k in ORDER if k in req or k in sub]
+            names = [k for k in HERO_ORDER if k in req or k in sub]
             if 8 * sum(an[k][1] for k in names) + 4 * an['Morir'][1] == total:
                 found.append(names)
     return found

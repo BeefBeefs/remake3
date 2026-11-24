@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Orientation of the Outside ground transition tiles (VTiles 156-191, dirt fading into grass).
+"""Orientation of the Outside ground transition tiles (VTiles 156-191, dirt fading into grass, and 109-124, the 4x4 dark patches).
 
 The maps lay these tiles out next to each other regardless of what the pictures show, so along every shared edge the
 dirt / grass pattern of a tile must continue into its neighbour. For each transition tile this tries the picture as
@@ -18,6 +18,8 @@ from PIL import Image
 root = sys.argv[1] if len(sys.argv) > 1 else 'public/assets'
 H, W = 31, 64
 LO, HI = 156, 191
+DARK = range(109, 125)  # 4x4 dark-grass patches: id = 109 + 4*i + (3 - j)
+FIT = [t for t in range(LO, HI + 1)] + list(DARK)
 KS = ['id', 'x', 'y', 'xy']
 TR = {'id': lambda a: a, 'x': lambda a: a[:, ::-1], 'y': lambda a: a[::-1], 'xy': lambda a: a[::-1, ::-1]}
 V = {'T': (31.5, 0), 'R': (63, 15), 'B': (31.5, 30), 'L': (0, 15)}
@@ -40,8 +42,13 @@ dirt = np.mean([img(t)[inside].mean(0) for t in range(147, 156)], 0)
 grass = np.mean([img(t)[inside].mean(0) for t in range(330, 341)], 0)
 
 
+dark = np.mean([img(t)[inside].mean(0) for t in (114, 115, 118, 119)], 0)
+
+
 def dirt_mask(t):
     a = img(t)
+    if t in DARK:  # dark patch tiles: 1 = dark, 0 = ordinary grass
+        return ((np.linalg.norm(a - dark, axis=2) < np.linalg.norm(a - grass, axis=2)) & inside).astype(float)
     return ((np.linalg.norm(a - dirt, axis=2) < np.linalg.norm(a - grass, axis=2)) & inside).astype(float)
 
 
@@ -62,7 +69,7 @@ def profile(m):
     return out
 
 
-ids_all = sorted(int(k) for k in atlas if k.isdigit() and 147 <= int(k) <= 191 or k.isdigit() and 330 <= int(k) <= 407)
+ids_all = sorted(int(k) for k in atlas if k.isdigit() and (147 <= int(k) <= 191 or 330 <= int(k) <= 407 or 109 <= int(k) <= 124))
 PROF = {(t, k): profile(TR[k](dirt_mask(t))) for t in ids_all for k in KS}
 
 
@@ -79,6 +86,9 @@ def outside_maps():
     return out
 
 
+FIT_SET = set(FIT)
+
+
 def collect(maps):
     have = set(ids_all)
     pairs = collections.Counter()
@@ -87,7 +97,7 @@ def collect(maps):
             a = m[: 256 - dy, : 256 - dx].ravel().tolist()
             b = m[dy:, dx:].ravel().tolist()
             for x, y in zip(a, b):
-                if x in have and y in have and (LO <= x <= HI or LO <= y <= HI):
+                if x in have and y in have and (x in FIT_SET or y in FIT_SET):
                     pairs[(x, y, sa, sb)] += 1
     return pairs
 
@@ -103,7 +113,7 @@ def fit(pairs, restarts=30, seed=1):
         byt[a].append((a, b, sa, sb, n))
         if b != a:
             byt[b].append((a, b, sa, sb, n))
-    mine = [t for t in range(LO, HI + 1) if t in byt]
+    mine = [t for t in FIT if t in byt]
     best = None
     for r in range(restarts):
         ch = {t: ('id' if r == 0 else rnd.choice(KS)) for t in mine}
@@ -144,6 +154,6 @@ for t, k in ch.items():
         return sum(n * seam(a, c2.get(a, 'id'), b, c2.get(b, 'id'), sa, sb) for a, b, sa, sb, n in byt[t]) / max(1, sum(n for *_, n in byt[t]))
     if tot('id') - tot(k) > 0.02:
         keep[t] = k
-print('flipped', len(keep), 'of', HI - LO + 1, 'transition tiles:', {t: keep[t] for t in sorted(keep)})
+print('flipped', len(keep), 'of', len(FIT), 'tiles:', {t: keep[t] for t in sorted(keep)})
 os.makedirs(os.path.join(root, 'data'), exist_ok=True)
 json.dump({'outside': {str(t): keep[t] for t in sorted(keep)}}, open(os.path.join(root, 'data', 'tile_orient.json'), 'w'), indent=1)

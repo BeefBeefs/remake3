@@ -154,6 +154,17 @@ infernal demon burns out. Two animations the old ORDER list lacked: `Aparecer` (
 infernal demon forms out of flame) and `Aburrido` (orc fidget). `build_anims.py` falls back to this rule only when the
 8-direction search finds nothing, so the 36 earlier layouts are unchanged. No actor is `partial` any more.
 
+**Block order corrected (silhouette continuity, `tools/hero_layout.py`, `tools/fix_order.py`).** The sizes of the blocks were right
+but their *order* was only assumed to follow the INI, and for the heroes it does not: a frame-to-frame silhouette difference jumps at every
+block / direction boundary, and scoring every order of the blocks against those jumps (hero score 0.07–0.11 for the INI order, 0.25–0.31 for
+the best) gives, for **all three heroes**: Andar (10), Respirar (8), **Extra (11, the run)**, **Vigilar (10, the sneak)**, Atacar (9 / 14), Atacar2,
+Recibir, Cubrir, Recibir2, Morir (4 directions, last). The old assumption had been showing the run strip as the sword swing, and the real swing
+(Barbarian frames 313–321, an overhead cut) never played. The game now walks with Andar, runs with Extra and sneaks with Vigilar. Monsters:
+the pack sizes also fit "every INI animation present, Morir for 4 directions" for goblins, orcs, skeleton masters, trolls and the goblin leaders,
+and that is the explanation that ends every death lying down (goblins 3 → 8 of 8 directions, skeletons 0 → 8): Andar, Respirar, Atacar, Cubrir,
+Recibir, Morir, Recibir2, Alarma, Vigilar (the position of Cubrir and of equal-sized hit blocks is a tie the data cannot break; INI order is kept).
+The mage and Zelos keep the INI order (their deaths were already right); Naya's order is unverified.
+
 **Feet anchor.** Hotspot origins differ per pack (hero bottoms ≈ −12, goblins ≈ −52, troll ≈ +24), so each actor's
 `foot` point = median over the idle / walk frames of `(hx − legs centre, hy − bottom row)` (`tools/fix_feet.py`, `anims.json`). Scenery uses the fixed (128, 16) rule above.
 
@@ -163,7 +174,7 @@ the u32 carries a 0x10 flag on ~1–10 % of cells of ordinary ids — meaning un
 transition tiles (VTiles 156–191, laid out by the maps as four 3×3 sets: `id = base + 3·i + (2 − j)`, i along cx, j against cy) looked
 wrong drawn as stored (long slanted teeth along the patch borders). Taking each tile as stored or mirrored x / y / both and matching its edges
 (dirt vs grass along 8 segments per edge) with the tiles next to it in the 19 Outside maps lowers the mismatch from 0.338 to 0.241; fitting
-two disjoint halves of the maps gives the same orientation for 31–34 of the 36 tiles. The 18 tiles that gain clearly are listed in
+two disjoint halves of the maps gives the same orientation for 31–34 of the 36 tiles. The tiles that gain clearly (27 of 52 after the dark patches were added) are listed in
 `public/assets/data/tile_orient.json` and drawn mirrored by the game and the editor (`World`, `QuadBatch.add(flip)`). The
 borders are still a little jagged, so the stored mapping may not be the whole story; Cave and Dungeon tiles are not corrected.
 

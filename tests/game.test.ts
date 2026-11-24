@@ -1334,7 +1334,7 @@ test('ground tile orientation: mirror bits, a table that only names real transit
   assert.deepEqual(['x', 'y', 'xy', undefined, 'z'].map(tileFlip), [1, 2, 3, 0, 0]);
   const t = JSON.parse(readFileSync(new URL('../public/assets/data/tile_orient.json', import.meta.url), 'utf8')) as { outside: Record<string, string> };
   const ids = Object.keys(t.outside).map(Number);
-  assert.ok(ids.length >= 10 && ids.every((i) => i >= 156 && i <= 191), 'only the dirt/grass transition tiles are turned');
+  assert.ok(ids.length >= 10 && ids.every((i) => (i >= 156 && i <= 191) || (i >= 109 && i <= 124)), 'only the dirt/grass transition tiles and the dark patch tiles are turned');
   assert.ok(Object.values(t.outside).every((o) => ['x', 'y', 'xy'].includes(o)));
 });
 
@@ -1366,4 +1366,33 @@ test('Dark Stones: damage states, shielded main stone, halved blows, skeletons r
   assert.ok(!big!.alive);
   assert.equal(g.status, 'complete');
   assert.ok(g.monsters.length >= 2); // some blows raised skeletons next to the stones
+});
+
+test('heroes run with Extra, sneak with Vigilar, and the target plate follows the clicked or last struck monster', () => {
+  const an = json('data/anims.json').actors;
+  for (const id of ['100', '101', '102']) { // block order found by tools/hero_layout.py: run, sneak, swings, hit reactions, death
+    const a = an[id].anims;
+    assert.ok(a.Andar.start < a.Respirar.start && a.Respirar.start < a.Extra.start && a.Extra.start < a.Vigilar.start && a.Vigilar.start < a.Atacar.start && a.Atacar.start < a.Recibir.start && a.Recibir.start < a.Morir.start, id);
+  }
+  assert.equal(an['100'].anims.Atacar.start, 313);
+  const g = makeGame({ spawns: [{ id: '1', cx: 131, cy: 128 }] });
+  g.setStance(true, false);
+  g.update(1 / 60, { x: 0, y: -1 });
+  assert.equal(g.hero.walkAnim, 'Extra');
+  g.setStance(false, true);
+  g.update(1 / 60, { x: 0, y: -1 });
+  assert.equal(g.hero.walkAnim, 'Vigilar');
+  g.setStance(false, false);
+  g.update(1 / 60, { x: 0, y: -1 });
+  assert.equal(g.hero.walkAnim, 'Andar');
+  assert.equal(g.focus, null);
+  const m = g.monsters[0]!;
+  g.target = m;
+  assert.equal(g.focus, m);
+  g.target = null;
+  assert.equal(g.focus, null);
+  (g as any).heroHitMonster(m, false);
+  assert.equal(g.focus, m); // the monster struck last stays in focus for a few seconds
+  run(g, 5);
+  assert.equal(g.focus, null);
 });

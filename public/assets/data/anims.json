@@ -26,20 +26,31 @@
      "frames": 8,
      "speed": 7
     },
-    "Atacar": {
+    "Cubrir": {
      "start": 129,
+     "frames": 2,
+     "speed": 1
+    },
+    "Atacar": {
+     "start": 145,
      "frames": 8,
      "speed": 3
     },
     "Recibir": {
-     "start": 193,
+     "start": 209,
      "frames": 3,
      "speed": 7
     },
     "Morir": {
-     "start": 217,
+     "start": 233,
      "frames": 10,
-     "speed": 5
+     "speed": 5,
+     "dirs": 4
+    },
+    "Recibir2": {
+     "start": 273,
+     "frames": 3,
+     "speed": 8
     },
     "Alarma": {
      "start": 297,
@@ -73,15 +84,26 @@
      "frames": 8,
      "speed": 3
     },
-    "Recibir": {
+    "Cubrir": {
      "start": 193,
+     "frames": 2,
+     "speed": 1
+    },
+    "Recibir": {
+     "start": 209,
      "frames": 3,
      "speed": 7
     },
     "Morir": {
-     "start": 217,
+     "start": 233,
      "frames": 10,
-     "speed": 4
+     "speed": 4,
+     "dirs": 4
+    },
+    "Recibir2": {
+     "start": 273,
+     "frames": 3,
+     "speed": 8
     },
     "Alarma": {
      "start": 297,
@@ -115,15 +137,26 @@
      "frames": 8,
      "speed": 3
     },
-    "Recibir": {
+    "Cubrir": {
      "start": 193,
+     "frames": 2,
+     "speed": 1
+    },
+    "Recibir": {
+     "start": 209,
      "frames": 3,
      "speed": 7
     },
     "Morir": {
-     "start": 217,
+     "start": 233,
      "frames": 10,
-     "speed": 5
+     "speed": 5,
+     "dirs": 4
+    },
+    "Recibir2": {
+     "start": 273,
+     "frames": 3,
+     "speed": 8
     },
     "Alarma": {
      "start": 297,
@@ -157,15 +190,26 @@
      "frames": 8,
      "speed": 3
     },
-    "Recibir": {
+    "Cubrir": {
      "start": 193,
+     "frames": 2,
+     "speed": 1
+    },
+    "Recibir": {
+     "start": 209,
      "frames": 3,
      "speed": 7
     },
     "Morir": {
-     "start": 217,
+     "start": 233,
      "frames": 10,
-     "speed": 5
+     "speed": 5,
+     "dirs": 4
+    },
+    "Recibir2": {
+     "start": 273,
+     "frames": 3,
+     "speed": 8
     },
     "Alarma": {
      "start": 297,
@@ -199,15 +243,26 @@
      "frames": 8,
      "speed": 4
     },
-    "Recibir": {
+    "Cubrir": {
      "start": 193,
+     "frames": 2,
+     "speed": 1
+    },
+    "Recibir": {
+     "start": 209,
      "frames": 3,
      "speed": 7
     },
     "Morir": {
-     "start": 217,
+     "start": 233,
      "frames": 10,
-     "speed": 6
+     "speed": 6,
+     "dirs": 4
+    },
+    "Recibir2": {
+     "start": 273,
+     "frames": 3,
+     "speed": 8
     }
    },
    "foot": [
@@ -236,15 +291,26 @@
      "frames": 8,
      "speed": 3
     },
-    "Recibir": {
+    "Cubrir": {
      "start": 193,
+     "frames": 2,
+     "speed": 1
+    },
+    "Recibir": {
+     "start": 209,
      "frames": 3,
      "speed": 7
     },
     "Morir": {
-     "start": 217,
+     "start": 233,
      "frames": 10,
-     "speed": 6
+     "speed": 6,
+     "dirs": 4
+    },
+    "Recibir2": {
+     "start": 273,
+     "frames": 3,
+     "speed": 8
     }
    },
    "foot": [
@@ -273,15 +339,26 @@
      "frames": 8,
      "speed": 3
     },
-    "Recibir": {
+    "Cubrir": {
      "start": 193,
+     "frames": 2,
+     "speed": 1
+    },
+    "Recibir": {
+     "start": 209,
      "frames": 3,
      "speed": 7
     },
     "Morir": {
-     "start": 217,
+     "start": 233,
      "frames": 10,
-     "speed": 6
+     "speed": 6,
+     "dirs": 4
+    },
+    "Recibir2": {
+     "start": 273,
+     "frames": 3,
+     "speed": 8
     }
    },
    "foot": [
@@ -499,15 +576,26 @@
      "frames": 8,
      "speed": 3
     },
-    "Recibir": {
+    "Cubrir": {
      "start": 193,
+     "frames": 2,
+     "speed": 1
+    },
+    "Recibir": {
+     "start": 209,
      "frames": 3,
      "speed": 7
     },
     "Morir": {
-     "start": 217,
+     "start": 233,
      "frames": 10,
-     "speed": 6
+     "speed": 6,
+     "dirs": 4
+    },
+    "Recibir2": {
+     "start": 273,
+     "frames": 3,
+     "speed": 8
     },
     "Alarma": {
      "start": 297,
@@ -546,15 +634,26 @@
      "frames": 8,
      "speed": 3
     },
-    "Recibir": {
+    "Cubrir": {
      "start": 193,
+     "frames": 2,
+     "speed": 1
+    },
+    "Recibir": {
+     "start": 209,
      "frames": 3,
      "speed": 7
     },
     "Morir": {
-     "start": 217,
+     "start": 233,
      "frames": 10,
-     "speed": 6
+     "speed": 6,
+     "dirs": 4
+    },
+    "Recibir2": {
+     "start": 273,
+     "frames": 3,
+     "speed": 8
     },
     "Alarma": {
      "start": 297,
@@ -793,10 +892,21 @@
      "frames": 9,
      "speed": 7
     },
-    "Morir": {
+    "Recibir": {
      "start": 217,
-     "frames": 8,
+     "frames": 2,
      "speed": 9
+    },
+    "Morir": {
+     "start": 233,
+     "frames": 8,
+     "speed": 9,
+     "dirs": 4
+    },
+    "Recibir2": {
+     "start": 265,
+     "frames": 2,
+     "speed": 8
     },
     "Extra": {
      "start": 281,
@@ -1201,15 +1311,26 @@
      "frames": 8,
      "speed": 3
     },
-    "Recibir": {
+    "Cubrir": {
      "start": 193,
+     "frames": 2,
+     "speed": 1
+    },
+    "Recibir": {
+     "start": 209,
      "frames": 3,
      "speed": 7
     },
     "Morir": {
-     "start": 217,
+     "start": 233,
      "frames": 10,
-     "speed": 6
+     "speed": 6,
+     "dirs": 4
+    },
+    "Recibir2": {
+     "start": 273,
+     "frames": 3,
+     "speed": 8
     },
     "Alarma": {
      "start": 297,
@@ -1301,15 +1422,26 @@
      "frames": 8,
      "speed": 3
     },
-    "Recibir": {
+    "Cubrir": {
      "start": 193,
+     "frames": 2,
+     "speed": 1
+    },
+    "Recibir": {
+     "start": 209,
      "frames": 3,
      "speed": 7
     },
     "Morir": {
-     "start": 217,
+     "start": 233,
      "frames": 10,
-     "speed": 6
+     "speed": 6,
+     "dirs": 4
+    },
+    "Recibir2": {
+     "start": 273,
+     "frames": 3,
+     "speed": 8
     },
     "Alarma": {
      "start": 297,
@@ -1343,15 +1475,26 @@
      "frames": 8,
      "speed": 3
     },
-    "Recibir": {
+    "Cubrir": {
      "start": 193,
+     "frames": 2,
+     "speed": 1
+    },
+    "Recibir": {
+     "start": 209,
      "frames": 3,
      "speed": 7
     },
     "Morir": {
-     "start": 217,
+     "start": 233,
      "frames": 10,
-     "speed": 6
+     "speed": 6,
+     "dirs": 4
+    },
+    "Recibir2": {
+     "start": 273,
+     "frames": 3,
+     "speed": 8
     }
    },
    "foot": [
@@ -1380,10 +1523,21 @@
      "frames": 9,
      "speed": 7
     },
-    "Morir": {
+    "Recibir": {
      "start": 217,
-     "frames": 8,
+     "frames": 2,
      "speed": 9
+    },
+    "Morir": {
+     "start": 233,
+     "frames": 8,
+     "speed": 9,
+     "dirs": 4
+    },
+    "Recibir2": {
+     "start": 265,
+     "frames": 2,
+     "speed": 8
     },
     "Extra": {
      "start": 281,
@@ -1591,15 +1745,26 @@
      "frames": 8,
      "speed": 3
     },
-    "Recibir": {
+    "Cubrir": {
      "start": 193,
+     "frames": 2,
+     "speed": 1
+    },
+    "Recibir": {
+     "start": 209,
      "frames": 3,
      "speed": 7
     },
     "Morir": {
-     "start": 217,
+     "start": 233,
      "frames": 10,
-     "speed": 6
+     "speed": 6,
+     "dirs": 4
+    },
+    "Recibir2": {
+     "start": 273,
+     "frames": 3,
+     "speed": 8
     }
    },
    "foot": [
@@ -1701,15 +1866,15 @@
      "frames": 10,
      "speed": 6
     },
-    "Recibir2": {
-     "start": 353,
-     "frames": 3,
-     "speed": 8
-    },
     "Atacar2": {
-     "start": 377,
+     "start": 353,
      "frames": 16,
      "speed": 4
+    },
+    "Recibir2": {
+     "start": 481,
+     "frames": 3,
+     "speed": 8
     }
    },
    "foot": [
@@ -1733,40 +1898,40 @@
      "frames": 8,
      "speed": 8
     },
-    "Atacar": {
-     "start": 145,
-     "frames": 9,
-     "speed": 4
-    },
-    "Cubrir": {
-     "start": 217,
-     "frames": 2,
-     "speed": 1
-    },
-    "Recibir": {
-     "start": 233,
-     "frames": 3,
-     "speed": 7
-    },
-    "Recibir2": {
-     "start": 257,
-     "frames": 3,
-     "speed": 8
-    },
     "Extra": {
-     "start": 281,
+     "start": 145,
      "frames": 11,
      "speed": 5
     },
-    "Atacar2": {
-     "start": 369,
+    "Vigilar": {
+     "start": 233,
+     "frames": 10,
+     "speed": 7
+    },
+    "Atacar": {
+     "start": 313,
      "frames": 9,
      "speed": 4
     },
-    "Vigilar": {
-     "start": 441,
-     "frames": 10,
+    "Atacar2": {
+     "start": 385,
+     "frames": 9,
+     "speed": 4
+    },
+    "Recibir": {
+     "start": 457,
+     "frames": 3,
      "speed": 7
+    },
+    "Cubrir": {
+     "start": 481,
+     "frames": 2,
+     "speed": 1
+    },
+    "Recibir2": {
+     "start": 497,
+     "frames": 3,
+     "speed": 8
     },
     "Morir": {
      "start": 521,
@@ -1796,30 +1961,30 @@
      "frames": 8,
      "speed": 8
     },
-    "Atacar": {
-     "start": 145,
-     "frames": 14,
-     "speed": 2
-    },
-    "Recibir": {
-     "start": 257,
-     "frames": 3,
-     "speed": 7
-    },
-    "Recibir2": {
-     "start": 281,
-     "frames": 3,
-     "speed": 8
-    },
     "Extra": {
-     "start": 305,
+     "start": 145,
      "frames": 11,
      "speed": 5
     },
     "Vigilar": {
-     "start": 393,
+     "start": 233,
      "frames": 10,
      "speed": 7
+    },
+    "Atacar": {
+     "start": 313,
+     "frames": 14,
+     "speed": 2
+    },
+    "Recibir": {
+     "start": 425,
+     "frames": 3,
+     "speed": 7
+    },
+    "Recibir2": {
+     "start": 449,
+     "frames": 3,
+     "speed": 8
     },
     "Morir": {
      "start": 473,
@@ -1849,35 +2014,35 @@
      "frames": 8,
      "speed": 8
     },
-    "Atacar": {
-     "start": 145,
-     "frames": 14,
-     "speed": 2
-    },
-    "Cubrir": {
-     "start": 257,
-     "frames": 2,
-     "speed": 2
-    },
-    "Recibir": {
-     "start": 273,
-     "frames": 3,
-     "speed": 7
-    },
-    "Recibir2": {
-     "start": 297,
-     "frames": 3,
-     "speed": 8
-    },
     "Extra": {
-     "start": 321,
+     "start": 145,
      "frames": 11,
      "speed": 5
     },
     "Vigilar": {
-     "start": 409,
+     "start": 233,
      "frames": 11,
      "speed": 7
+    },
+    "Atacar": {
+     "start": 321,
+     "frames": 14,
+     "speed": 2
+    },
+    "Recibir": {
+     "start": 433,
+     "frames": 3,
+     "speed": 7
+    },
+    "Cubrir": {
+     "start": 457,
+     "frames": 2,
+     "speed": 2
+    },
+    "Recibir2": {
+     "start": 473,
+     "frames": 3,
+     "speed": 8
     },
     "Morir": {
      "start": 497,

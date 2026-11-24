@@ -35,11 +35,25 @@ test('animation blocks are contiguous, in range, and 8 directions each', () => {
   }
 });
 
-test('goblin layout matches the pack (Andar, Respirar, Atacar, Recibir, Morir, Alarma = 400 frames)', () => {
+test('goblin layout matches the pack: all INI animations, Morir for 4 directions after Recibir (found by tools/fix_order.py)', () => {
   const g = data.actors['1']!;
-  assert.deepEqual(Object.keys(g.anims), ['Andar', 'Respirar', 'Atacar', 'Recibir', 'Morir', 'Alarma']);
+  assert.deepEqual(Object.keys(g.anims), ['Andar', 'Respirar', 'Cubrir', 'Atacar', 'Recibir', 'Morir', 'Recibir2', 'Alarma']);
   assert.equal(g.frames, 400);
-  assert.equal(g.anims.Morir!.start, 217);
+  assert.equal(g.anims.Morir!.start, 233);
+  assert.equal(g.anims.Morir!.dirs, 4);
+});
+
+test('the last frame of every death sequence of the common monsters shows a body lying down', () => {
+  const atlasOf = (pack: string) => JSON.parse(readFileSync(new URL(`../public/assets/p16/actors/${pack.toLowerCase()}.json`, import.meta.url), 'utf8')) as { frames: Record<string, number[]> };
+  for (const id of ['1', '2', '3', '4', '5', '6', '7', '11', '12', '39', '43', '45', '58', '100', '101', '102']) {
+    const a = data.actors[id]!, m = a.anims.Morir!, atlas = atlasOf(a.pack);
+    let lying = 0;
+    for (let d = 0; d < 8; d++) {
+      const f = atlas.frames[String(m.start + (m.dirs === 4 ? d >> 1 : d) * m.frames + m.frames - 1)]!;
+      if (f[2]! > 1.15 * f[3]!) lying++;
+    }
+    assert.ok(lying >= 6, `actor ${id}: ${lying} of 8 directions end lying down`);
+  }
 });
 
 test('every monster now has a full layout: Morir for 4 directions, all INI animations, nothing left over', () => {
