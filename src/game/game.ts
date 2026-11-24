@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { Atlas } from '../assets/atlas.ts';
 import { type AnimData } from './anims.ts';
 import { Creature, type Stats } from './creature.ts';
+import { Inventory, rollDrop, type ItemDef } from './items.ts';
+import { cellToWorld, depthOf } from '../iso.ts';
 import { World } from './world.ts';
 
 type Range = [number, number];
@@ -9,6 +11,7 @@ interface ActorIni {
   General?: { Vel_Ataque?: Range; Altura?: number };
   HDP?: { Vida?: number; Fuerza?: Range; Armadura?: number; Pts_Experiencia?: Range; Velocidad?: number };
   IA?: { Oido?: number };
+  Items?: { IDItem?: number[]; PItem?: number[] };
 }
 
 /** Everything the simulation needs to be loaded from /assets (see main.ts). */
@@ -17,13 +20,21 @@ export interface GameData {
   actors: Record<string, ActorIni>;
   names: Record<string, string>;
   atlases: Map<string, Atlas>;
+  items: Map<number, ItemDef>;
+  /** item icon atlas (System/IListData.b16), frame id = item id */
+  icons: Atlas;
 }
+
+export interface GroundItem { id: number; cx: number; cy: number; mesh: THREE.Object3D }
 
 const HERO_ID = '100';
 const HERO_SPEED = 3.2; // cells per second
 const MONSTER_SPEED = 1.7;
 const MELEE = 1.35; // cells
 const HIT_RANGE = 1.9; // hero swing reach, cells
+const PICKUP = 0.9; // cells
+const DROP_CHANCE = 0.45;
+const GOLD_BAG = 124; // 'small bag of gold'
 /** Engine ticks of the INI cooldown (Vel_Ataque) in seconds; 1/30 is a guess. */
 const AI_TICK = 1 / 30;
 
@@ -42,14 +53,26 @@ export class Game {
   readonly group = new THREE.Group();
   kills = 0;
   xp = 0;
+  readonly inventory: Inventory;
+  readonly ground: GroundItem[] = [];
+  /** most recent messages, newest last (for the HUD) */
+  readonly log: string[] = [];
+  /** bumps whenever the inventory/equipment changed (so the UI knows to redraw) */
+  version = 0;
   /** The enemy the hero is walking up to / fighting. */
   target: Creature | null = null;
   walkTarget: { cx: number; cy: number } | null = null;
   private facing = { x: 0, y: 1 };
   private readonly rnd = mulberry32(0x4e53);
+  private readonly idOf = new Map<Creature, string>();
 
   constructor(private readonly world: World, private readonly data: GameData, start: { cx: number; cy: number }) {
-    this.hero = this.make(HERO_ID, start.cx, start.cy, { hp: 60, damage: [3, 7], speed: HERO_SPEED, name: data.names[HERO_ID] ?? 'Hero' });
+    this.inventory = new Inventory(data.items, 100);
+    // starting kit: the INI lists the Barbarian's items; we start with a scimitar in hand and two life potions
+    this.inventory.add(1); this.inventory.equip(0);
+    this.inventory.add(104); this.inventory.add(104);
+    this.hero = this.make(HERO_ID, start.cx, start.cy, { hp: 60, damage: [2, 4], speed: HERO_SPEED, name: data.names[HERO_ID] ?? 'Hero' });
+    this.refreshHeroStats();
     this.hero.onStrike = () => this.heroStrike();
     this.group.add(this.hero.sprite);
     this.populate(start);
@@ -84,6 +107,7 @@ export class Game {
         const cx = Math.round(start.cx + Math.cos(a) * r), cy = Math.round(start.cy + Math.sin(a) * r);
         if (!this.world.isWalkable(cx, cy)) continue;
         const m = this.make(id, cx, cy);
+        this.idOf.set(m, id);
         m.dir = Math.floor(this.rnd() * 8);
         this.monsters.push(m);
         this.group.add(m.sprite);
@@ -119,6 +143,80 @@ export class Game {
     return true;
   }
 
+  private say(msg: string): void {
+    this.log.push(msg);
+    if (this.log.length > 6) this.log.shift();
+  }
+
+  /** Damage and armour follow the equipment. */
+  refreshHeroStats(): void {
+    this.hero.stats.damage = this.inventory.damage();
+    this.hero.stats.armor = this.inventory.armor();
+    this.version++;
+  }
+
+  /** Clicking an inventory slot: drink potions, wear equipment. */
+  useSlot(index: number): void {
+    const id = this.inventory.slots[index];
+    const def = id ? this.inventory.def(id) : undefined;
+    if (!def || !this.hero.alive) return;
+    if (def.kind === 'potion') {
+      if (def.data === 1) {
+        const [lo, hi] = def.power;
+        const heal = lo + Math.floor(this.rnd() * (hi - lo + 1));
+        this.hero.hp = Math.min(this.hero.stats.hp, this.hero.hp + heal);
+        this.inventory.take(index);
+        this.say(`You drink the ${def.name}: +${heal} HP`);
+      } else this.say(`${def.name}: stamina and magic are not in the game yet`);
+    } else if (this.inventory.equip(index)) {
+      this.say(`You equip the ${def.name}`);
+    } else if (!this.inventory.canUse(def) && def.kind !== 'scroll' && def.kind !== 'book' && def.kind !== 'key' && def.kind !== 'quest') {
+      this.say(`${def.name} is not for a Barbarian`);
+    } else this.say(def.name);
+    this.refreshHeroStats();
+  }
+
+  unequip(slot: 'weapon' | 'shield' | 'armor' | 'ring' | 'amulet'): void {
+    if (this.inventory.unequip(slot)) this.refreshHeroStats();
+  }
+
+  private dropLoot(m: Creature, id: string): void {
+    const table = this.data.actors[id]?.Items;
+    const picks: number[] = [];
+    if (this.rnd() < DROP_CHANCE) { const d = rollDrop(table, this.rnd); if (d) picks.push(d); }
+    if (this.rnd() < 0.25) picks.push(GOLD_BAG);
+    picks.forEach((item, i) => this.spawnGround(item, m.cx + (i ? 0.6 : 0), m.cy));
+  }
+
+  /** Puts an item on the ground (also used by tests). */
+  spawnGround(id: number, cx: number, cy: number): void {
+    const mesh = this.data.icons.mesh(id, 'bottom');
+    mesh.scale.set(0.55, 0.55, 1);
+    const w = cellToWorld(cx, cy);
+    mesh.position.set(w.x, w.y - 4, depthOf(cx, cy) + 0.2);
+    this.group.add(mesh);
+    this.ground.push({ id, cx, cy, mesh });
+  }
+
+  private pickups(): void {
+    const h = this.hero;
+    if (!h.alive) return;
+    for (let i = this.ground.length - 1; i >= 0; i--) {
+      const g = this.ground[i]!;
+      if (Math.hypot(g.cx - h.cx, g.cy - h.cy) > PICKUP) continue;
+      const def = this.inventory.def(g.id);
+      if (def?.kind === 'gold') {
+        const amount = 5 + Math.floor(this.rnd() * 20) * (g.id - GOLD_BAG + 1);
+        this.inventory.gold += amount;
+        this.say(`+${amount} gold`);
+      } else if (!this.inventory.add(g.id)) { this.say('Your pack is full'); continue; }
+      else this.say(`Picked up ${def?.name ?? 'an item'}`);
+      this.group.remove(g.mesh);
+      this.ground.splice(i, 1);
+      this.version++;
+    }
+  }
+
   private heroStrike(): void {
     const h = this.hero;
     for (const m of this.monsters) {
@@ -129,6 +227,7 @@ export class Game {
       const [lo, hi] = h.stats.damage;
       const dmg = Math.max(1, lo + Math.floor(this.rnd() * (hi - lo + 1)) - m.stats.armor);
       if (m.hurt(dmg)) {
+        this.dropLoot(m, this.idOf.get(m) ?? '');
         this.kills++;
         this.xp += m.stats.xp[0] + Math.floor(this.rnd() * (m.stats.xp[1] - m.stats.xp[0] + 1));
       }
@@ -146,6 +245,7 @@ export class Game {
   update(dt: number, move: { x: number; y: number } | null): void {
     const h = this.hero;
     this.updateHero(dt, move);
+    this.pickups();
     for (const m of this.monsters) this.updateMonster(m, dt);
     h.update(dt);
     for (const m of this.monsters) m.update(dt);

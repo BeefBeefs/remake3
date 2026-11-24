@@ -16,8 +16,30 @@ Each working session appends an entry below (newest first). Format knowledge liv
 | Map layout (`.map`) | 🟡 terrain grid + object layer decoded; other layers, spawn/triggers (`.adv`) open |
 | Renderer + game loop (three.js) | 🟡 real Lost Forrest, Barbarian, monsters, melee combat (milestone 2) — **never run in a browser** |
 | NHS data / animation layouts | ✅ 72 actors, 141 items; 17 monsters fully or ambiguously mapped, 20 partial |
-| Items, inventory, skills, dialogue, quests (`.adv`), sound effects, multiplayer, editor | ⬜ not started |
+| Items, inventory, equipment | 🟡 working in code (drops, pickup, equip, potions); UI never browser-tested |
+| Skills/magic, dialogue, quests (`.adv`), sound effects, shops, multiplayer, editor | ⬜ not started |
 | Combat + monster AI | 🟡 first pass (placeholder numbers) |
+
+## Turn 4 — 2026-11-24 · items, loot and inventory
+
+### Step 4 ✅ Items, drops, pickup
+- Item icons are `System/IListData.b16` frames with **frame id = item id** (checked on a contact sheet: 1 scimitar, 20
+  two-handed axe, 40 short bow, 60 staff…). English names come from `Idioma.bdt` `ITEMS\ID-<n>`.
+- `Tipo` in the item INIs is a bit mask (1/2/4/8 melee weapons, 16 shield, 32 bow, 64 staff, 128 ring, 256 amulet,
+  512 scroll, 1024 potion with `Data` 1 life / 2 stamina / 4 magic, 2048 key, 4096 gold bag, 8192/16384/32768 body
+  armour per class, 65536/131072 books, 262144 the horn). `src/game/items.ts` turns the 141 items into typed defs.
+- Monsters drop loot on death: 45 % one item rolled from their INI drop table (`IDItem` weighted by `PItem`) + 25 % a gold
+  bag. Items lie on the ground as icons; walking within 0.9 cells picks them up (gold goes straight to the purse).
+
+### Step 5 ✅ Inventory and equipment
+- 20-slot pack, equipment slots (weapon, shield, body armour, ring, amulet), class restrictions (a Barbarian can't wear
+  Amazon armour), potions of life heal and are consumed. The wielded weapon's `Potencia` sets the hero's damage; body armour
+  level + shield protection reduce incoming damage. Start kit: scimitar equipped + two life potions.
+- DOM inventory panel (`src/ui/inventory.ts`, key **I**) with icons cropped from the atlas, tooltips, message log and gold
+  in the HUD.
+- Tests: 25 passing (new `tests/items.test.ts` + loot/pickup/potion/equip cases in `tests/game.test.ts`).
+- Placeholders: drop chances, gold amounts, hero HP 60; strength/dexterity requirements (`R_*`) are ignored because the
+  character stat system isn't decoded; stamina/magic potions do nothing yet. The inventory panel is untested in a browser.
 
 ## Turn 3 — 2026-11-24 · game data, animations, enemies (steps logged as they finish)
 

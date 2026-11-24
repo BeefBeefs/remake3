@@ -3,6 +3,8 @@ import { Atlas } from './assets/atlas.ts';
 import { World } from './game/world.ts';
 import { Game, type GameData } from './game/game.ts';
 import type { AnimData } from './game/anims.ts';
+import { buildItems } from './game/items.ts';
+import { InventoryPanel } from './ui/inventory.ts';
 import { gunzip, parseMap } from './formats/map.ts';
 import { cellToWorld, worldToCell } from './iso.ts';
 
@@ -45,10 +47,13 @@ async function boot() {
   const animData = (await (await fetch(`${BASE}data/anims.json`)).json()) as AnimData;
   const actorsIni = (await (await fetch(`${BASE}data/actors.json`)).json()) as GameData['actors'];
   const names: Record<string, string> = {};
+  const itemNames: Record<string, string> = {};
   for (const [k, v] of Object.entries((await (await fetch(`${BASE}text/idioma.json`)).json()) as Record<string, string>)) {
-    const m = /^ACTORS\\ID-(\d+)$/.exec(k);
-    if (m) names[m[1]!] = v;
+    const m = /^(ACTORS|ITEMS)\\ID-(\d+)$/.exec(k);
+    if (m) (m[1] === 'ACTORS' ? names : itemNames)[m[2]!] = v;
   }
+  const items = buildItems((await (await fetch(`${BASE}data/items.json`)).json()) as Parameters<typeof buildItems>[0], itemNames);
+  const icons = await Atlas.load(BASE, 'atlas/system/ilistdata.json');
   // Hero + the monster kinds that Game.populate() spawns.
   const atlases = new Map<string, Atlas>();
   await Promise.all(['100', '1', '2', '3', '5'].map(async (id) => {
@@ -58,7 +63,8 @@ async function boot() {
 
   // Start in the camp area of the map (the real spawn point lives in the adventure file, not decoded yet).
   const spawn = world.findOpenCell(152, 78);
-  const game = new Game(world, { anims: animData, actors: actorsIni, names, atlases }, spawn);
+  const game = new Game(world, { anims: animData, actors: actorsIni, names, atlases, items, icons }, spawn);
+  const panel = new InventoryPanel(game, icons, BASE);
   scene.add(game.group);
   const hero = game.hero;
   world.update(hero.cx, hero.cy);
@@ -82,6 +88,7 @@ async function boot() {
   window.addEventListener('keydown', (e) => {
     keys.add(e.key.toLowerCase());
     if (e.key === ' ') { game.swing(); e.preventDefault(); }
+    if (e.key.toLowerCase() === 'i') panel.toggle();
     if (e.key.toLowerCase() === 'r' && !game.hero.alive) location.reload();
     startAudio();
   });
@@ -122,20 +129,21 @@ async function boot() {
       move = { x: c.cx / l, y: c.cy / l };
     }
     game.update(dt, move);
+    panel.update();
     world.update(hero.cx, hero.cy);
     const w = cellToWorld(hero.cx, hero.cy);
     camera.position.x += (w.x - camera.position.x) * Math.min(1, dt * 6);
     camera.position.y += (w.y - camera.position.y) * Math.min(1, dt * 6);
     hpname.textContent = hero.stats.name;
     hpfill.style.width = `${(100 * hero.hp) / hero.stats.hp}%`;
-    hpinfo.textContent = `HP ${hero.hp}/${hero.stats.hp}  kills ${game.kills}  xp ${game.xp}`;
+    hpinfo.textContent = `HP ${hero.hp}/${hero.stats.hp}  gold ${game.inventory.gold}  kills ${game.kills}  xp ${game.xp}`;
     const left = game.monsters.filter((m) => m.alive).length;
     banner.style.display = !hero.alive || left === 0 ? 'block' : 'none';
     banner.textContent = !hero.alive ? 'You have fallen — press R to restart' : 'The camp is clear!';
     renderer.render(scene, camera);
     requestAnimationFrame(frame);
   }
-  hud.textContent = 'NightStone remake · milestone 2 · click ground to walk, click a monster (or Space) to fight · WASD also moves';
+  hud.textContent = 'NightStone remake · milestone 2 · click ground to walk, click a monster (or Space) to fight · WASD moves · I inventory';
   frame();
 }
 
