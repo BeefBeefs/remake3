@@ -83,7 +83,7 @@ export function buildItems(raw: Record<string, RawItem>, names: Record<string, s
       kind: kindOf(tipo),
       power: g.Potencia ?? [0, 0],
       level: g.Nivel ?? 0,
-      price: g.Precio ?? 0,
+      price: loadedPrice(g.Precio ?? 0),
       character: v.Requerimientos?.Character ?? 0,
       data: g.Data ?? 0,
       chestLevel: g.CofreLv ?? 0,
@@ -137,6 +137,9 @@ export const INVENTORY_SIZE = 20;
 export const MAX_DURABILITY = 255;
 /** The three legendary weapons (Ripping Sword 14, Bow of Virtue 48, Staff of Destiny 61) are skipped by the engine's wear routine. */
 export const NEVER_WEARS = new Set([14, 48, 61]);
+
+/** The item loader (0x44cb3f) shrinks big prices: from 300 up, half of what is above 300 is taken off (1350 becomes 825). */
+export const loadedPrice = (p: number): number => (p >= 300 ? p - Math.trunc((p - 300) / 2) : p);
 
 export class Inventory {
   /** item id per slot, 0 = empty */

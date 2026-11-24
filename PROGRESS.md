@@ -495,3 +495,6 @@ Read the use-item routine for type-512 items in `Nightstone.exe` (all 18 cases).
   Hero blows set a 20-tick counter (`+0xc0`, ticked down while standing, walking or running) that I could not find a reader for.
   The XP awards 159 and 525 belong to message types 57 and 59 of the event queue (`0x426bd8`, `0x426c2d`); what posts them is
   not mapped. Docs updated; no code change.
+- **Item prices.** The item loader (`0x44cb3f`) shrinks any price of 300 or more by half of what is above 300 (1350 becomes 825);
+  the remake now does the same on load. The loader also shows the record layout: Grafico +8, Potencia +0xc, Nivel +0x14,
+  Durabilidad +0x18 (capped at 255), Peso +0x1c, CofreLv +0x20, Data +0x24, Precio +0x28, Especial +0x2c. 153 tests.

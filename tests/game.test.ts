@@ -1299,3 +1299,8 @@ test('a monster that reaches the hero waits half an attack delay before its firs
   assert.ok(arrived > 0 && struck > arrived, `arrived ${arrived}, struck ${struck}`);
   assert.ok(struck - arrived >= m.stats.cooldown[0] * 0.5 * 0.9, `first blow ${struck - arrived} s after arriving`);
 });
+
+test('the item loader takes half of the price above 300 off (executable 0x44cb3f)', async () => {
+  const { loadedPrice } = await import('../src/game/items.ts');
+  assert.deepEqual([0, 120, 299, 300, 301, 1350].map(loadedPrice), [0, 120, 299, 300, 301, 825]);
+});
