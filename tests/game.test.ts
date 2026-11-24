@@ -381,7 +381,7 @@ test('standing still recovers stamina; stealth is slow and silent', () => {
   assert.equal(heard.filter((id) => id >= 160 && id <= 171).length, 0, 'no footsteps');
 });
 
-test('stealth hides you from monsters at half range and the first blow on an unaware one is doubled', () => {
+test('stealth hides you from monsters at half range', () => {
   const mk = (stealth: boolean, gx: number) => { const g = makeGame({ spawns: [{ id: '1', cx: gx, cy: 128 }] }); g.setStance(false, stealth); return g; };
   // a goblin 7 cells away: a walking hero is heard (hearing + 3 > 7?) only if inside range; stealth halves it
   const range = (stealth: boolean) => {
@@ -390,20 +390,6 @@ test('stealth hides you from monsters at half range and the first blow on an una
   };
   const walkRange = range(false), sneakRange = range(true);
   assert.ok(walkRange > 0 && sneakRange > 0 && sneakRange < walkRange, `walk hears at ${walkRange}, stealth at ${sneakRange}`);
-  // identical seeds: same damage roll, so the sneak blow must be exactly double (before armour)
-  const blow = (stealth: boolean) => {
-    const g = mk(stealth, 129);
-    const m = g.monsters[0]!;
-    m.hp = 10000; m.stats.hp = 10000; m.stats.armor = 0;
-    g.target = null;
-    g.hero.face(1, 0); (g as unknown as { facing: { x: number; y: number } }).facing = { x: 1, y: 0 };
-    g.swing();
-    run(g, 0.6);
-    return 10000 - m.hp;
-  };
-  const normal = blow(false), sneak = blow(true);
-  assert.ok(normal > 0);
-  assert.equal(sneak, normal * 2);
 });
 
 test('stamina, mana and the vitality potion: mask bits restore each pool; vitality can hurt', () => {
@@ -747,13 +733,53 @@ test('keys 1-4 use the first four light objects, skipping heavy gear in the back
   assert.deepEqual(g.inventory.slots, before, 'only 1-4 are quick keys');
 });
 
-test('difficulty scales monster life and damage: Apprentice softer, Hero tougher, Expert unchanged', () => {
-  const stats = (d: 0 | 1 | 2) => { const g = makeGame({ difficulty: d, spawns: [{ id: '1', cx: 140, cy: 128 }] }); const m = g.monsters[0]!; return { hp: m.stats.hp, hit: m.hp, dmg: m.stats.damage }; };
+test('difficulty changes monster armour (halved / doubled) and attack delay (x1.5 / x2/3), not life or damage', () => {
+  const stats = (d: 0 | 1 | 2) => {
+    const g = makeGame({ difficulty: d, spawns: [{ id: '8', cx: 140, cy: 128 }] });
+    const m = g.monsters[0]!;
+    return { hp: m.stats.hp, armor: m.stats.armor, dmg: m.stats.damage, cd: m.stats.cooldown };
+  };
   const easy = stats(0), normal = stats(1), hard = stats(2);
-  assert.ok(easy.hp < normal.hp && normal.hp < hard.hp);
-  assert.ok(easy.dmg[1] < normal.dmg[1] && normal.dmg[1] < hard.dmg[1]);
-  assert.equal(easy.hit, easy.hp, 'monsters start at full life');
-  assert.equal(normal.hp, 12, 'goblin life in the data');
+  assert.deepEqual([easy.hp, hard.hp], [normal.hp, normal.hp], 'life is the same on every level');
+  assert.deepEqual([easy.dmg, hard.dmg], [normal.dmg, normal.dmg], 'so is the damage');
+  assert.equal(normal.armor, 3, 'the orc captain has armour 3 to scale');
+  assert.equal(easy.armor, Math.trunc(normal.armor / 2));
+  assert.equal(hard.armor, normal.armor * 2);
+  assert.ok(Math.abs(easy.cd[0] - normal.cd[0] * 1.5) < 1e-9 && Math.abs(hard.cd[1] - normal.cd[1] * 2 / 3) < 1e-9);
+});
+
+test('the monster receive routine: a blow from behind is tripled, an almost-behind one doubled, ranged ones never; armour comes off after', () => {
+  const g = makeGame({ spawns: [{ id: '1', cx: 300, cy: 300 }] });
+  const m = g.monsters[0]!; m.hp = 1e6; m.stats.hp = 1e6; m.stats.armor = 0; m.stats.block = 0; m.stats.stun = 0;
+  const hit = g as unknown as { heroHitMonster(m: unknown, s: boolean, ranged?: boolean): void };
+  const blow = (heroDir: number, ranged = false) => { g.hero.dir = heroDir; m.dir = 3; m.hp = 1e6; g.inventory.repairAll(); hit.heroHitMonster(m, false, ranged); return 1e6 - m.hp; };
+  // same seed each time: the roll before the multiplier is identical, so compare with a front blow
+  const front = (() => { let t = 0; for (let i = 0; i < 400; i++) t += blow(7); return t / 400; })(); // opposite side: x1
+  const behind = (() => { let t = 0; for (let i = 0; i < 400; i++) t += blow(3); return t / 400; })();
+  const side = (() => { let t = 0; for (let i = 0; i < 400; i++) t += blow(4); return t / 400; })();
+  const shot = (() => { let t = 0; for (let i = 0; i < 400; i++) t += blow(3, true); return t / 400; })();
+  assert.ok(Math.abs(behind / front - 3) < 0.35, `behind ${behind} vs front ${front}`);
+  assert.ok(Math.abs(side / front - 2) < 0.3, `side ${side} vs front ${front}`);
+  assert.ok(Math.abs(shot / front - 1) < 0.2, `a shot from the same side is not tripled: ${shot}`);
+  m.stats.armor = 1e3;
+  assert.equal(blow(7), 1, 'armour takes the blow down to the minimum of 1');
+});
+
+test('a monster covers frontal melee blows by its Rnd_Bloqueo percent and shrugs off blows under its Aturdirse', () => {
+  const g = makeGame({ spawns: [{ id: '1', cx: 300, cy: 300 }] });
+  const m = g.monsters[0]!; m.hp = 1e6; m.stats.hp = 1e6; m.stats.armor = 0;
+  const hit = g as unknown as { heroHitMonster(m: unknown, s: boolean, ranged?: boolean): void };
+  let blocked = 0;
+  m.stats.block = 30; m.stats.stun = 0;
+  for (let i = 0; i < 1000; i++) { m.setState('idle'); g.hero.dir = 7; m.dir = 3; g.inventory.repairAll(); const hp = m.hp; hit.heroHitMonster(m, false); if (m.hp === hp) blocked++; }
+  assert.ok(blocked > 240 && blocked < 360, `blocked ${blocked} of 1000 at 30 %`);
+  m.stats.block = 0; m.stats.stun = 1e3; // never staggers
+  m.setState('idle'); g.hero.dir = 7; m.dir = 3;
+  hit.heroHitMonster(m, false);
+  assert.equal(m.state, 'idle', 'a light blow does not stagger it');
+  m.stats.stun = 0;
+  hit.heroHitMonster(m, false);
+  assert.equal(m.state, 'hit');
 });
 
 test('knowledge potion gives an attribute point, fortuity potion drops two items', () => {
@@ -1083,13 +1109,14 @@ test('Exit level with command 3 needs every enemy of the race mask dead', () => 
   assert.equal(h.log.at(-2), 'You have completed this level');
 });
 
-test('Exit level with command 11 needs the item in the pack; command 12 always ends the level; 4 starts nothing by itself', () => {
+test('Exit level with command 11 needs the item in the pack; command 12 always ends the level; 4 starts the mission clock', () => {
   const sc: GameMap['scripts'] = [{ index: 0, name: 'Bdt Salirnivel', commands: [{ id: 11, args: [130, 0, 0, 0] }] }, { index: 1, name: 'Bdt Salirnivel', commands: [{ id: 12, args: [0, 0, 0, 0] }] }, { index: 2, name: '', commands: [{ id: 4, args: [60, 0, 0, 0] }] }];
   const g = scriptGame(sc, {});
   g.runScript(0, 0, 0);
   assert.equal(g.status, 'playing');
+  assert.equal(g.clock, null, 'no clock until script 2 sets it');
   g.runScript(2, 0, 0);
-  assert.equal(g.clock, null);
+  assert.equal(g.clock, 60);
   g.inventory.add(130);
   g.runScript(0, 0, 0);
   assert.equal(g.status, 'complete');
@@ -1099,11 +1126,11 @@ test('Exit level with command 11 needs the item in the pack; command 12 always e
   assert.equal(h.goalReached, true, 'walking over the exit cell ends the level');
 });
 
-test('the mission clock only runs once started and fails the mission at zero', () => {
+test('command 4 starts the mission clock (setting it, not adding) and it fails the mission at zero', () => {
   const g = scriptGame([{ index: 0, name: '', commands: [{ id: 4, args: [2, 0, 0, 0] }] }], {});
-  g.clock = 1;
+  g.clock = 100;
   g.runScript(0, 0, 0);
-  assert.equal(g.clock, 3);
+  assert.equal(g.clock, 2, 'set to a0 seconds');
   run(g, 3.5);
   assert.equal(g.status, 'failed');
   assert.equal(g.log.at(-1), 'You have failed the mission');
@@ -1134,23 +1161,39 @@ test('every campaign map: its scripts run without errors and the start cell does
   assert.ok(scripts > 300, `${scripts} scripts`);
 });
 
-test('durability: a weapon wears one point per blow that lands and breaks at zero; items marked 999 never wear', () => {
+test('durability: the weapon wears on about one blow in eleven (1-2 points over its level), breaks, the three legendary weapons never wear', () => {
   const g = makeGame({ spawns: [{ id: '1', cx: 300, cy: 300 }] });
-  const m = g.monsters[0]!; m.hp = 1e6; m.stats.hp = 1e6;
+  const m = g.monsters[0]!; m.hp = 1e9; m.stats.hp = 1e9; m.stats.block = 0;
   const hit = (g as unknown as { heroHitMonster(m: unknown, s: boolean): void });
   assert.equal(g.inventory.leftOf('weapon'), 56, 'the scimitar has 56');
-  for (let i = 0; i < 10; i++) hit.heroHitMonster(m, false);
-  assert.equal(g.inventory.leftOf('weapon'), 46);
-  for (let i = 0; i < 45; i++) hit.heroHitMonster(m, false);
-  assert.equal(g.inventory.equipped.weapon, 1);
-  hit.heroHitMonster(m, false);
+  const start = 56;
+  for (let i = 0; i < 400; i++) { hit.heroHitMonster(m, false); if (!g.inventory.equipped.weapon) break; }
+  const used = start - (g.inventory.leftOf('weapon') ?? 0);
+  assert.ok(g.inventory.equipped.weapon === undefined || (used > 5 && used < 40), `used ${used} points in 400 blows`);
+  // run it long enough and it breaks
+  for (let i = 0; i < 4000 && g.inventory.equipped.weapon; i++) hit.heroHitMonster(m, false);
   assert.equal(g.inventory.equipped.weapon, undefined, 'broken');
   assert.match(g.log.at(-1)!, /broke/);
   assert.deepEqual(g.hero.stats.damage, [1, 2], 'bare hands again');
-  g.inventory.add(23); g.inventory.equipped.weapon = 23; // the mystic axe: 999
-  for (let i = 0; i < 50; i++) hit.heroHitMonster(m, false);
-  assert.equal(g.inventory.equipped.weapon, 23);
-  assert.equal(g.inventory.leftOf('weapon'), 999);
+  g.inventory.add(14); g.inventory.equipped.weapon = 14; // the Ripping Sword never wears
+  for (let i = 0; i < 2000; i++) hit.heroHitMonster(m, false);
+  assert.equal(g.inventory.equipped.weapon, 14);
+  assert.equal(g.inventory.leftOf('weapon'), 80);
+});
+
+test('Inventory.wear: amounts are divided by the item level unless flat; durability is capped at 255', () => {
+  const g = makeGame();
+  const inv = g.inventory;
+  inv.equipped.armor = 0; delete inv.equipped.armor;
+  const def = inv.def(28)!; // a shield
+  inv.add(28); inv.equip(inv.slots.indexOf(28));
+  const lvl = def.level;
+  inv.wear('shield', 5, true);
+  assert.equal(inv.leftOf('shield'), def.durability - 5, 'flat: not divided');
+  inv.repairAll();
+  inv.wear('shield', 6);
+  assert.equal(inv.leftOf('shield'), def.durability - (lvl > 0 ? Math.trunc(6 / lvl) : 6));
+  assert.ok(Math.max(...[...inv.itemDefs.values()].map((d) => d.durability)) <= 255, '999 in the data reads as 255');
 });
 
 test('durability: armour and shield wear when the hero is hit, wear travels with the item, the restoration parchment repairs, saves keep it', () => {

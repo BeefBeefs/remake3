@@ -198,7 +198,7 @@ Interpreter commands (jump table at 0x422bf4; semantics read from the disassembl
 | 1 | roll a random item with `Tipo & a0` from chest level ≤ a1 (item INI `CofreLv`), drop it at the cell — **verified in data**: scripts 0–9 are loot tables (a0 = 100 melee/bow/staff mix, 1, 32, 64, 1024 potions, 0xE000 armour, 128 rings, 256 amulets; script 8 = one armour per class; script 9 = 8/64/32 weapons) |
 | 2 | move the hero to cell (a0,a1) — names `Bdt Entrar` / `Bdt Salir` come in pairs on the dungeon maps ("Move to") |
 | 3 | "End if does not have": the level ends if no live actor whose `Raza` bit mask matches a0 remains (mask 31 = goblins…trolls); otherwise the objective message |
-| 4 | "Add time": adds a0 seconds to the mission clock (timer globals 0x570628 / 0x57062c) |
+| 4 | "Add time" in the editor, but the routine (0x420cd0) **sets** both timer words to a0 × 35 ticks, i.e. it starts the mission clock (0 = off); the per-frame routine 0x420bb0 counts it down and at zero sets game state 6 (time over). Only missions 3 (435 s) and 35 (500 s) use it |
 | 5 | "Create enemy": spawns actor a0+1 facing direction a1 (0–7) at cell (a2,a3) with the `Aparecer` animation (`Spawn:%d (A:%d) at (%d,%d)`) |
 | 6 | put a script on a cell ("Put Script") |
 | 7 / 8 | remove the object at cell (a0,a1) ("Delete Tile") / delete the script's own cell object |

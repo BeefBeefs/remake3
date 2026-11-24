@@ -87,7 +87,7 @@ export function buildItems(raw: Record<string, RawItem>, names: Record<string, s
       character: v.Requerimientos?.Character ?? 0,
       data: g.Data ?? 0,
       chestLevel: g.CofreLv ?? 0,
-      durability: g.Durabilidad ?? 0,
+      durability: Math.min(MAX_DURABILITY, g.Durabilidad ?? 0),
       bonus: parseBonus(v),
       req: { strength: v.Requerimientos?.R_Fuerza ?? 0, skill: v.Requerimientos?.R_Destreza ?? 0, resistance: v.Requerimientos?.R_Resistencia ?? 0, magic: v.Requerimientos?.R_Magia ?? 0, level: v.Requerimientos?.R_Nivel ?? 0 },
     });
@@ -133,8 +133,10 @@ export function rollDrop(table: { IDItem?: number[]; PItem?: number[] } | undefi
 
 export const INVENTORY_SIZE = 20;
 
-/** Items with this durability never wear out (the "mystic" and light items). */
-export const UNBREAKABLE = 999;
+/** The engine keeps durability in one byte: the INI value is capped at 255 when the item table loads (999 reads as 255). */
+export const MAX_DURABILITY = 255;
+/** The three legendary weapons (Ripping Sword 14, Bow of Virtue 48, Staff of Destiny 61) are skipped by the engine's wear routine. */
+export const NEVER_WEARS = new Set([14, 48, 61]);
 
 export class Inventory {
   /** item id per slot, 0 = empty */
@@ -170,11 +172,17 @@ export class Inventory {
     return this.equippedLeft[slot] || d.durability;
   }
 
-  /** One blow's wear on a worn item. Returns the item when it broke (it is gone from the slot). */
-  wear(slot: Slot, amount = 1): ItemDef | null {
+  /**
+   * Wear on a worn item, as the engine's routine does it: the amount is divided by the item's level (`Nivel`, when it has one)
+   * unless `flat`; the legendary weapons never wear; the item breaks when its durability is used up (the engine lets it go one
+   * point below zero first; "0 left" is how a save says "as new", so ours breaks at zero). Returns the item when it broke (it is gone from the slot).
+   */
+  wear(slot: Slot, amount = 1, flat = false): ItemDef | null {
     const d = this.equipped[slot] ? this.defs.get(this.equipped[slot]!) : undefined;
-    if (!d || !d.durability || d.durability >= UNBREAKABLE) return null;
-    const left = (this.equippedLeft[slot] || d.durability) - amount;
+    if (!d || !d.durability || NEVER_WEARS.has(d.id)) return null;
+    const lost = flat || d.level <= 0 ? amount : Math.trunc(amount / d.level);
+    if (lost <= 0) return null;
+    const left = (this.equippedLeft[slot] || d.durability) - lost;
     if (left <= 0) { delete this.equipped[slot]; delete this.equippedLeft[slot]; return d; }
     this.equippedLeft[slot] = left;
     return null;

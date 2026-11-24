@@ -5,7 +5,7 @@
  */
 import type { Atlas } from '../assets/atlas.ts';
 import { Game } from '../game/game.ts';
-import { isHeavy, slotOf, type ItemDef, type Slot } from '../game/items.ts';
+import { isHeavy, NEVER_WEARS, slotOf, type ItemDef, type Slot } from '../game/items.ts';
 import type { Skin } from './skin.ts';
 
 /** Equipment slots: big ones are 64x64, small 34x32 (frame 0 coordinates) and the silhouette frame shown when empty. */
@@ -53,11 +53,11 @@ export class InventoryPanel {
     const b = def.bonus;
     const bonus = [['Strength', b.strength], ['Skill', b.skill], ['Resistance', b.resistance], ['Power', b.magic], ['armour', b.armor]].filter(([, v]) => v).map(([k, v]) => `${Number(v) > 0 ? '+' : ''}${v} ${k}`);
     if (bonus.length) parts.push(bonus.join(', '));
-    if (def.durability && def.durability < 999) {
+    if (def.durability) {
       const inv = this.game.inventory;
       const slot = (Object.keys(inv.equipped) as (keyof typeof inv.equipped)[]).find((k) => inv.equipped[k] === def.id);
       const here = slot ? inv.leftOf(slot) : null;
-      parts.push(`duration ${here ?? def.durability}/${def.durability}`);
+      parts.push(NEVER_WEARS.has(def.id) ? 'never wears out' : `duration ${here ?? def.durability}/${def.durability}`);
     }
     if (def.price) parts.push(`worth ${def.price}`);
     if (!this.game.inventory.canUse(def)) parts.push('not for your class');

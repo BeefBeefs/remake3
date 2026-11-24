@@ -303,6 +303,18 @@ async function boot() {
   banner.style.cssText = 'position:fixed;left:0;right:0;top:40%;text-align:center;font:24px ui-monospace,Menlo,monospace;color:#e9c27a;text-shadow:0 2px 4px #000;pointer-events:none;display:none';
   document.body.appendChild(banner);
 
+  // the mission clock of the two timed missions (3 and 35): top right, red in the last minute
+  const clockEl = document.createElement('div');
+  clockEl.style.cssText = 'position:fixed;top:8px;right:12px;font:bold 18px monospace;color:#f0e3b0;text-shadow:0 0 4px #000,0 0 2px #000;display:none;pointer-events:none;z-index:5';
+  document.body.appendChild(clockEl);
+  const showClock = () => {
+    const t = game.clock;
+    if (t === null) { clockEl.style.display = 'none'; return; }
+    const secs = Math.ceil(t);
+    clockEl.style.display = 'block';
+    clockEl.style.color = secs <= 60 ? '#ff6a5a' : '#f0e3b0';
+    clockEl.textContent = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
+  };
   const clock = new THREE.Clock();
   let won = false;
   function frame() {
@@ -320,6 +332,7 @@ async function boot() {
     }
     game.setStance(down.has(prefs.keys.run), down.has(prefs.keys.stealth));
     if (!menu.isOpen) game.update(dt, move);
+    showClock();
     panel.update();
     charPanel.update();
     world.update(hero.cx, hero.cy);

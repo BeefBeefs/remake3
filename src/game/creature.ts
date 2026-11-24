@@ -21,6 +21,10 @@ export interface Stats {
   xp: [number, number];
   /** INI `Raza` family mask: 1 goblin, 2 orc, 4 undead, 8 beast, 16 troll, 32 demon, 64 human */
   race?: number;
+  /** INI `Rnd_Bloqueo`: percent chance to cover against a frontal blow */
+  block?: number;
+  /** INI `Aturdirse`: a blow of at least this much staggers it (ranged: two more) */
+  stun?: number;
 }
 
 const ONE_SHOT = new Set<State>(['attack', 'hit', 'dead', 'appear', 'taunt', 'bored']);
@@ -131,7 +135,7 @@ export class Creature {
   }
 
   /** Applies damage; returns true if this killed the creature. */
-  hurt(amount: number): boolean {
+  hurt(amount: number, stagger = true): boolean {
     if (!this.alive) return false;
     this.hp -= amount;
     if (this.hp <= 0) {
@@ -139,7 +143,7 @@ export class Creature {
       this.state = 'dead'; this.t = 0; this.deadFor = 0;
       return true;
     }
-    if (this.state !== 'attack') this.setState('hit');
+    if (stagger && this.state !== 'attack') this.setState('hit');
     return false;
   }
 }

@@ -396,3 +396,21 @@ map exercises them, so none is implemented; nothing has been seen in a browser.
   +0x2c `SangreFX`, +0x44 `Vida`, +0x50 `Armadura`, +0x54 `Aturdirse`) but not the code that uses `Aturdirse` / `Rnd_Bloqueo`;
   the game does not use those two fields yet.
 
+## Turn 18 — the executable's monster rules (replacing guesses)
+
+Found by following the monster constructor (template pointer at `+0x2170` / `+0x2374`, template array at `0x572de4`, 0x194 bytes
+per actor) to its receive-hit method (vtable slot 12, `0x436fd0`) and the wear routine `0x42af90`:
+
+- **Monster receive-hit.** Blow B + W ×3 from behind (same facing), ×2 nearly behind, ×1 otherwise (ranged never); armour comes off,
+  minimum 1. A frontal melee blow is covered with probability `Rnd_Bloqueo` percent (clang, no damage). The monster staggers only if
+  the blow ≥ `Aturdirse` (ranged: more). The old "sneak attack ×2" guess is gone — the ambush is the behind rule.
+- **Difficulty** is monster armour ×½ / ×1 / ×2 and attack delay ×1.5 / ×1 / ×⅔. Life and damage do not scale (the old 0.7–1.4
+  multipliers were wrong).
+- **Item wear** has real numbers: weapon 9 % per blow (1–2 points ÷ item level) + 5 % / 7 % flat per melee swing; armour 20 % / 27 %
+  / 30 % per class; Barbarian shield 80 % per block. Durability is a byte (999 reads as 255, not "unbreakable"); only items 14, 48
+  and 61 never wear.
+- **Mission clock bug.** Script command 4 *sets* the timer (seconds × 35 ticks), it does not add to a running one; the clock never
+  started before. Missions 3 (435 s) and 35 (500 s) now run it; shown top right, red in the last minute, mission fails at zero.
+- `Especial` (special items): no code outside the loader reads the item's `+0x2c` field, so it probably has no gameplay effect.
+- 145 tests.
+

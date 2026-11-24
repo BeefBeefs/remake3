@@ -18,8 +18,8 @@ export { xpForLevel, POINTS_PER_LEVEL };
 
 type Range = [number, number];
 interface ActorIni {
-  General?: { Vel_Ataque?: Range; Altura?: number; Raza?: number };
-  HDP?: { Vida?: number; Fuerza?: Range; Armadura?: number; Pts_Experiencia?: Range; Velocidad?: number };
+  General?: { Vel_Ataque?: Range; Altura?: number; Raza?: number; Rnd_Bloqueo?: number };
+  HDP?: { Vida?: number; Fuerza?: Range; Armadura?: number; Aturdirse?: number; Pts_Experiencia?: Range; Velocidad?: number };
   IA?: { Oido?: number };
   Items?: { IDItem?: number[]; PItem?: number[] };
   Sonidos?: { SndBase?: number; Carne?: number };
@@ -54,8 +54,11 @@ export interface GameOptions {
   save?: HeroSave;
 }
 
-/** Monster life and damage multipliers per difficulty level (the manual only names the levels; the numbers are guesses). */
-export const DIFFICULTY = [{ hp: 0.7, damage: 0.7 }, { hp: 1, damage: 1 }, { hp: 1.4, damage: 1.3 }] as const;
+/**
+ * What the difficulty level changes, read from the executable: monster armour (halved / as is / doubled) and the delay between
+ * a monster's attacks (x1.5 / as is / x2/3). Monster life and damage do not depend on it.
+ */
+export const DIFFICULTY = [{ armor: 0.5, delay: 1.5 }, { armor: 1, delay: 1 }, { armor: 2, delay: 2 / 3 }] as const;
 
 /** What survives from one attempt to the next: the hero's growth (manual: dying costs the items and one point of each ability). */
 export interface HeroSave {
@@ -109,7 +112,6 @@ export type Stance = 'walk' | 'run' | 'stealth';
 export const STANCE_SPEED: Record<Stance, number> = { walk: 1, run: 2, stealth: 0.5 };
 /** Stealth: unaware monsters notice you from half as far, and the first blow on one of them does double damage. */
 const STEALTH_HEARING = 0.5;
-const SNEAK_MULT = 2;
 /** Barbarian block: stamina spent per blocked blow (a guess; the executable only charges for holding the shield up). */
 const BLOCK_COST = 2;
 /** Bows shoot an arrow that flies this many cells; it is aimed at the nearest monster within ~25 degrees of the aim. */
@@ -194,7 +196,7 @@ export class Game {
   private triggers: Trigger[] = [];
   /** 'complete' when a level-end script ran (Complete level, Exit level), 'failed' when the mission clock ran out. */
   status: 'playing' | 'complete' | 'failed' = 'playing';
-  /** Seconds left on the mission clock set by the "Add time" script command, or null when no clock runs. */
+  /** Seconds left on the mission clock, started by script command 4 ("Add time" in the editor: it sets the timer), or null when no clock runs. */
   clock: number | null = null;
   /** where the mission's goal objects are (for the minimap) */
   get goalSpots(): readonly { cx: number; cy: number }[] { return this.goals; }
@@ -255,9 +257,8 @@ export class Game {
 
   private applyDifficulty(m: Creature): void {
     const k = DIFFICULTY[this.difficulty];
-    m.stats.hp = Math.max(1, Math.round(m.stats.hp * k.hp));
-    m.hp = m.stats.hp;
-    m.stats.damage = [Math.max(1, Math.round(m.stats.damage[0] * k.damage)), Math.max(1, Math.round(m.stats.damage[1] * k.damage))];
+    m.stats.armor = Math.trunc(m.stats.armor * k.armor);
+    m.stats.cooldown = [m.stats.cooldown[0] * k.delay, m.stats.cooldown[1] * k.delay];
   }
 
   private make(id: string, cx: number, cy: number, over: Partial<Stats> = {}): Creature {
@@ -276,6 +277,8 @@ export class Game {
       hearing: ini.IA?.Oido ?? 3,
       xp: hdp.Pts_Experiencia ?? [1, 2],
       race: ini.General?.Raza ?? 0,
+      block: ini.General?.Rnd_Bloqueo ?? 0,
+      stun: ini.HDP?.Aturdirse ?? 0,
       ...over,
     };
     return new Creature(def, atlas, stats, cx, cy);
@@ -375,7 +378,7 @@ export class Game {
           if (this.monsters.some((m) => m.alive && ((m.stats.race ?? 0) & c.args[0]) !== 0)) { this.say(LEVEL_MSG.objective); return; }
           this.completeLevel();
           break;
-        case 4: if (this.clock !== null) this.clock += c.args[0]; break;
+        case 4: this.clock = c.args[0] > 0 ? c.args[0] : null; break; // the executable's set-timer routine: seconds x 35 ticks into both timer words (0 switches it off)
         case 5: this.spawnScripted(c.args[0] + 1, c.args[1], c.args[2], c.args[3]); break;
         case 7: this.world.setObject(c.args[0], c.args[1], 0); break;
         case 8: this.world.setObject(cx, cy, 0); break;
@@ -428,7 +431,7 @@ export class Game {
     }
   }
 
-  /** Counts the mission clock down; it only runs after an "Add time" command and ends the mission at zero. */
+  /** Counts the mission clock down (per engine frame in the executable; game state 6 at zero) and ends the mission at zero. */
   private tickClock(dt: number): void {
     if (this.clock === null || this.status !== 'playing') return;
     this.clock -= dt;
@@ -739,12 +742,12 @@ export class Game {
   }
 
   /** Applies hero damage to a monster: hurt/die sounds, loot, kill count and experience. */
-  private damageMonster(m: Creature, dmg: number): void {
+  private damageMonster(m: Creature, dmg: number, stagger = true): void {
     if (dmg < 0) { m.hp = Math.min(m.stats.hp, m.hp - dmg); return; } // a family bonus below -1 heals (fire on demons)
     if (dmg === 0) return;
-    const killed = m.hurt(dmg);
+    const killed = m.hurt(dmg, stagger);
     this.bleed(m);
-    this.msnd(m, killed ? 2 : 3);
+    if (killed || stagger) this.msnd(m, killed ? 2 : 3); // only a blow that staggers it makes it cry out
     if (killed) {
       this.dropLoot(m, this.idOf.get(m) ?? '');
       this.kills++;
@@ -755,17 +758,24 @@ export class Game {
 
   /** Rolls and applies the hero's weapon damage against one monster (melee swing or arrow arrival). */
   /** Wear of one blow on a worn item; a broken item is gone and the hero's numbers follow. */
-  private wearItem(slot: 'weapon' | 'shield' | 'armor'): void {
-    const broke = this.inventory.wear(slot);
+  private wearItem(slot: 'weapon' | 'shield' | 'armor', amount = 1, flat = false): void {
+    if (amount <= 0) return;
+    const broke = this.inventory.wear(slot, amount, flat);
     if (!broke) return;
     this.say(`Your ${broke.name.includes(':') ? broke.name.slice(broke.name.indexOf(':') + 1).trim() : broke.name} broke`);
     this.snd(13);
     this.refreshHeroStats();
   }
 
-  private heroHitMonster(m: Creature, sneak: boolean): void {
+  /**
+   * The monster's receive routine of the executable. The blow B + W is multiplied by 3 when the hero stands behind the monster
+   * (both face the same way), by 2 when almost behind it; ranged blows never are. The monster's armour (halved / doubled by the
+   * difficulty) is then taken off, at least 1 is left. A frontal melee blow can be covered (INI `Rnd_Bloqueo`, in percent) and then
+   * does nothing. Otherwise the weapon may wear (1 in 11 blows, 1 or 2 points divided by its level, plus a flat point for 5-7 % of
+   * melee swings) and the monster staggers only if the blow is at least its `Aturdirse` (ranged: two more).
+   */
+  private heroHitMonster(m: Creature, _sneak: boolean, ranged = false): void {
     if (!m.alive) return;
-    this.wearItem('weapon');
     // the executable's sum: class term B (own strength) + weapon W (Potencia roll plus its family bonus), then the
     // 0..2 -> 1..3 rule; a family bonus below zero replaces everything (it heals the monster, fire on demons)
     const [lo, hi] = this.hero.stats.damage;
@@ -773,12 +783,25 @@ export class Game {
     const part = potency * (this.inventory.weaponVs(m.stats.race ?? 0) - 1);
     let total = part < 0 ? Math.trunc(part) : classDamage(this.classId as ClassKey, this.eff, this.level) + potency + Math.trunc(part);
     total = minDamage(total, this.rnd());
-    if (sneak && total > 0) total *= SNEAK_MULT;
-    const dmg = total <= 0 ? total : Math.max(1, total - m.stats.armor);
-    if (sneak) this.say('Sneak attack!');
     const flesh = this.data.actors[this.idOf.get(m) ?? '']?.Sonidos?.Carne !== 0;
+    let dmg = total, mult = 1;
+    if (total > 0) {
+      if (!ranged) { const turn = Math.abs(this.hero.dir - m.dir); mult = turn === 0 ? 3 : turn === 1 || turn === 7 ? 2 : 1; }
+      dmg = Math.max(1, total * mult - m.stats.armor);
+      const covering = m.state === 'hit' || m.state === 'block';
+      if (!ranged && mult === 1 && !covering && Math.floor(this.rnd() * 1000) * 0.1 <= (m.stats.block ?? 0)) {
+        this.snd(this.pick(53, 4)); // the monster covers: the blow does nothing (c_cubrir)
+        m.setState('block');
+        m.cooldown = Math.max(0, m.cooldown - 4 * AI_TICK);
+        return;
+      }
+      if (mult > 1) this.say(mult === 3 ? 'A blow in the back!' : 'A blow from behind!');
+      if (this.rnd() < 0.09) this.wearItem('weapon', 1 + Math.floor(this.rnd() * 2));
+      if (!ranged && this.rnd() < (this.classId === 100 ? 0.05 : 0.07)) this.wearItem('weapon', 1, true);
+    }
     this.snd(this.pick(flesh ? 59 : 62, 3)); // c_carne / c_nocarne
-    this.damageMonster(m, dmg);
+    const stun = m.stats.stun ?? 0;
+    this.damageMonster(m, dmg, ranged ? dmg > stun + 1 + Math.floor(this.rnd() * 2) : dmg >= stun);
   }
 
   private heroStrike(): void {
@@ -806,7 +829,7 @@ export class Game {
       const sneakNow = this.effectiveStance === 'stealth' ? new Set(this.unaware) : new Set<Creature>();
       const kind: ProjKind = staff ? 'bolt' : 'arrow';
       const color = staff ? STAFF_COLOR[staffElement(this.inventory.equipped.weapon ?? 0)] : 0xffffff;
-      this.projectiles.push(makeProjectile(kind, h.cx + (ax / n) * 0.5, h.cy + (ay / n) * 0.5, ax, ay, BOW_RANGE + 1, true, (m) => { if (m) this.heroHitMonster(m, sneakNow.has(m)); }, color));
+      this.projectiles.push(makeProjectile(kind, h.cx + (ax / n) * 0.5, h.cy + (ay / n) * 0.5, ax, ay, BOW_RANGE + 1, true, (m) => { if (m) this.heroHitMonster(m, sneakNow.has(m), true); }, color));
     }
     if (!bow) for (const m of this.monsters) {
       if (!m.alive || m.dormant) continue;
@@ -838,19 +861,28 @@ export class Game {
   private hurtHero([lo, hi]: [number, number], fromx: number, fromy: number): void {
     const h = this.hero;
     if (!h.alive) return;
+    const raw = lo + Math.floor(this.rnd() * (hi - lo + 1));
     if (this.blocking && this.stamina >= BLOCK_COST) {
       const ed = Math.hypot(fromx, fromy) || 1;
       if ((fromx * this.facing.x + fromy * this.facing.y) / ed > 0) {
         this.stamina -= BLOCK_COST;
         this.snd(this.pick(53, 4)); // c_cubrir
-        this.wearItem('shield');
+        if (this.rnd() < 0.8) this.wearItem('shield', Math.floor(raw / 3) + 1); // the Barbarian's routine: 8 blocked blows in 10 wear the shield
         return;
       }
     }
     this.bleed(h);
-    const died = h.hurt(hitReceived(lo + Math.floor(this.rnd() * (hi - lo + 1)), h.stats.armor));
-    this.wearItem('armor');
-    this.wearItem('shield');
+    const taken = hitReceived(raw, h.stats.armor);
+    const died = h.hurt(taken);
+    // armour wear per class, from the executable: Barbarian 20 % of the blows, third of the damage plus a roll of up to as much;
+    // Amazon 27 % and Sorceress 30 %, half the damage plus a roll plus the armour value itself (only when armour is worn)
+    if (this.classId === 100) {
+      const b = Math.floor(taken / 3);
+      if (this.rnd() < 0.2) this.wearItem('armor', b + (b > 0 ? Math.floor(this.rnd() * b) : 0));
+    } else if (h.stats.armor > 0 && this.rnd() < (this.classId === 101 ? 0.27 : 0.3)) {
+      const half = Math.floor(taken / 2);
+      this.wearItem('armor', half + (half > 2 ? Math.floor(this.rnd() * (half - 2)) : 0) + h.stats.armor);
+    }
     const sb = CLASSES[this.classId].sound;
     this.snd(died ? sb : this.pick(sb + 1, 2)); // <class>_morir / _recibir
     if (died) this.die();
