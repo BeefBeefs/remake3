@@ -31,9 +31,9 @@ export class TitleMenu {
   }
 
   /** Shows the menu and resolves when a game is started. */
-  run(): Promise<MenuResult> {
+  run(start: 'main' | 'newgame' | 'hero' | 'difficulty' | 'controls' | 'credits' = 'main'): Promise<MenuResult> {
     document.body.appendChild(this.root);
-    this.main();
+    ({ main: () => this.main(), newgame: () => this.newGame(), hero: () => this.selectHero(), difficulty: () => this.difficulty(), controls: () => this.controls(), credits: () => this.credits() })[start]();
     return new Promise((resolve) => { this.done = (r) => { this.root.remove(); resolve(r); }; });
   }
 
@@ -44,6 +44,7 @@ export class TitleMenu {
   /** A clickable sprite: hover brightens, `enabled = false` dims it and ignores clicks. */
   private button(bank: Parameters<Skin['sprite']>[0], id: number, x: number, y: number, onClick: () => void, enabled = true, title?: string): HTMLDivElement {
     const b = this.skin.sprite(bank, id, x, y);
+    if (bank === 'menu' && id <= 14) b.style.mixBlendMode = 'screen'; // the big menu words carry a black backdrop: add them to the picture
     b.style.cursor = enabled ? 'pointer' : 'default';
     if (!enabled) { b.style.opacity = '0.35'; if (title) b.title = title; }
     else {

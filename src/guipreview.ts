@@ -15,7 +15,7 @@ const skin = await Skin.load(BASE);
 
 if (screen === 'title') {
   const menu = new TitleMenu(skin, { ...DEFAULT_PREFS }, () => undefined, ['Barbarian', 'Amazon', 'Sorceress']);
-  const r = await menu.run();
+  const r = await menu.run((q.get('at') as Parameters<TitleMenu['run']>[0] | null) ?? 'main');
   document.body.append(`chose hero ${r.hero}, difficulty ${r.difficulty}`);
 } else if (screen === 'options') {
   new GameMenu(skin, () => undefined).open();
