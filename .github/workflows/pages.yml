@@ -1,4 +1,4 @@
-name: Build and deploy
+name: Build and deploy to GitHub Pages
 
 on:
   push:
@@ -10,6 +10,7 @@ permissions:
   pages: write
   id-token: write
 
+# one deploy at a time; a newer push cancels an older run that hasn't deployed yet
 concurrency:
   group: pages
   cancel-in-progress: true
@@ -19,18 +20,33 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
-      - run: npm install   # no lockfile yet (first install must be done on a machine with registry access)
-      - run: npm test
-      - run: npm run build
+          node-version: 22   # the tests use `node --experimental-transform-types` (Node >= 22.7)
+
+      # No package-lock.json is committed yet (the first install has to happen on a machine with registry access).
+      # Once you have run `npm install` locally and committed the lockfile, switch this to `npm ci` and add
+      # `cache: npm` to setup-node above.
+      - run: npm install
+
+      - name: Unit tests (format, map, animation, game logic)
+        run: npm test
+
+      # The three.js layer has never been compiled against the real three typings, so type errors are reported
+      # as a warning for now instead of blocking the deploy. Remove `continue-on-error` once it is clean.
+      - name: Typecheck
+        run: npm run typecheck
+        continue-on-error: true
+
+      - name: Build
+        run: npm run build
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
 
   deploy:
-    # Only deploys once GitHub Pages is enabled for the repo (Settings -> Pages -> Source: GitHub Actions).
     needs: build
     runs-on: ubuntu-latest
     environment:
