@@ -21,11 +21,11 @@ export function depthOf(cx: number, cy: number): number {
   return cx + cy;
 }
 
-/** The 8 direction blocks of a P16 actor animation, in storage order (judged by eye on the Barbarian idle cycle). */
-export const DIR_NAMES = ['W', 'NW', 'N', 'NE', 'E', 'SE', 'S', 'SW'] as const;
+/** The 8 direction blocks of a P16 actor animation, in storage order (first judged by eye, then corrected by the user: the blocks run counter-clockwise starting at E). */
+export const DIR_NAMES = ['E', 'NE', 'N', 'NW', 'W', 'SW', 'S', 'SE'] as const;
 
 /** 8-way direction index from a screen-space vector (x right, y up). */
 export function screenDir(sx: number, sy: number): number {
   const a = Math.atan2(sx, sy); // 0 = up (N), clockwise
-  return (Math.round(a / (Math.PI / 4)) + 2 + 8) % 8;
+  return (((2 - Math.round(a / (Math.PI / 4))) % 8) + 8) % 8;
 }

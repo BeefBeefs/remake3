@@ -109,7 +109,7 @@ Alarma = taunt, Extra/Atacar2/Vigilar/Aburrido/Aparecer = misc). A pack only con
 `tools/build_anims.py` finds the subset whose frame total matches the pack: goblin `1E` = 8·(8+8+8+3+10+13) = 400 ✓
 (Cubrir and Recibir2 absent). 3 monsters match uniquely, 13 are ambiguous (Recibir vs Recibir2 – same size – and a
 few others, resolved by a preference rule), 20 do not match any subset and only get Andar/Respirar/Atacar
-(`partial`). Direction blocks, by eye on the Barbarian idle cycle: **W, NW, N, NE, E, SE, S, SW**.
+(`partial`). Direction blocks (confirmed in-game): **E, NE, N, NW, W, SW, S, SE** (counter-clockwise from east; an earlier by-eye reading had E and W swapped).
 Frame time is `speed × tick`; the tick length is a guess (1/60 s looks right).
 
 **Player characters are layered pre-rendered sets.** `Actors/<a><b><c>-<Class>.P16` are complete figures with identical

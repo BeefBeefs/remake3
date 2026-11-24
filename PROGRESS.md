@@ -20,6 +20,15 @@ Each working session appends an entry below (newest first). Format knowledge liv
 | Skills/magic, dialogue, quests (`.adv`), sound effects, shops, multiplayer, editor | ⬜ not started |
 | Combat + monster AI | 🟡 first pass (placeholder numbers) |
 
+## Turn 5 — 2026-11-24 · GitHub Pages deploy and a direction fix
+
+- `.github/workflows/pages.yml` builds (install, tests, typecheck, Vite) and deploys to GitHub Pages on every push to
+  `main`; live at https://beefbeefs.github.io/remake3/ . It runs in the browser.
+- **Fix from your first playtest:** east and west were swapped (and so NE/NW, SE/SW). The 8 direction blocks of every
+  actor pack run counter-clockwise from east: **E, NE, N, NW, W, SW, S, SE** (the Turn 3 order was a mirror image). One
+  mapping in `src/iso.ts` (`DIR_NAMES`/`screenDir`, now covered for all 8 directions in `tests/anims.test.ts`) and
+  `anims.json`; it applies to the hero and all monsters. Docs updated.
+
 ## Turn 4 — 2026-11-24 · items, loot and inventory
 
 ### Step 4 ✅ Items, drops, pickup
@@ -60,7 +69,7 @@ Each working session appends an entry below (newest first). Format knowledge liv
   per-animation `(speed, frames)`; matching the INI against pack frame counts gives the layout. Goblin (`1E`, 400
   frames) matches exactly and its idle / hit / death / taunt rows were checked on contact sheets.
   `tools/build_anims.py` → `data/anims.json` (36 monsters + the Barbarian).
-- Direction order corrected to **W, NW, N, NE, E, SE, S, SW** (my Turn 2 guess was rotated, and the Barbarian walk
+- Direction order corrected to **W, NW, N, NE, E, SE, S, SW** (superseded in Turn 5: E and W were swapped; my Turn 2 guess was rotated, and the Barbarian walk
   cycle is 10 frames per direction, not 12).
 - Player characters turned out to be **layered equipment sets** (000 bare, 002 sword, 010 shield, 100/200 armour…), all
   with the same frame numbering. The hero now draws pack 002 (sword).

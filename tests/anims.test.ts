@@ -15,6 +15,9 @@ test('screenDir maps screen vectors to the P16 direction order', () => {
   assert.equal(screenDir(-1, 0), idx('W'));
   assert.equal(screenDir(1, 1), idx('NE'));
   assert.equal(screenDir(-1, -1), idx('SW'));
+  assert.equal(screenDir(-1, 1), idx('NW'));
+  assert.equal(screenDir(1, -1), idx('SE'));
+  assert.deepEqual([...DIR_NAMES], ['E', 'NE', 'N', 'NW', 'W', 'SW', 'S', 'SE']);
 });
 
 test('animation blocks are contiguous, in range, and 8 directions each', () => {

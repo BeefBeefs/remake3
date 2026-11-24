@@ -15,8 +15,8 @@ from p16 import P16  # noqa: E402
 
 ORDER = ['Andar', 'Respirar', 'Atacar', 'Cubrir', 'Recibir', 'Morir', 'Recibir2', 'Extra', 'Atacar2', 'Alarma', 'Vigilar']
 REQUIRED = ['Andar', 'Respirar', 'Atacar']
-# screen direction of each of the 8 blocks (judged by eye on the Barbarian idle cycle)
-DIRS = ['W', 'NW', 'N', 'NE', 'E', 'SE', 'S', 'SW']
+# screen direction of each of the 8 blocks (corrected after testing in the browser: counter-clockwise from E)
+DIRS = ['E', 'NE', 'N', 'NW', 'W', 'SW', 'S', 'SE']
 
 
 def layouts(an, total):
