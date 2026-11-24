@@ -1405,6 +1405,483 @@
     -130.5,
     -4.0
    ]
+  },
+  "27": {
+   "title": "POSADERO",
+   "pack": "27X",
+   "frames": 99,
+   "verified": true,
+   "npc": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 14,
+     "speed": 8,
+     "dirs": 1
+    },
+    "Respirar": {
+     "start": 15,
+     "frames": 15,
+     "speed": 6,
+     "dirs": 1
+    },
+    "Atacar": {
+     "start": 30,
+     "frames": 70,
+     "speed": 6,
+     "dirs": 1
+    }
+   },
+   "foot": [
+    -126.0,
+    -3.0
+   ]
+  },
+  "28": {
+   "title": "BORRACHO BARRA",
+   "pack": "28X",
+   "frames": 35,
+   "verified": true,
+   "npc": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 11,
+     "speed": 10,
+     "dirs": 1
+    },
+    "Respirar": {
+     "start": 12,
+     "frames": 24,
+     "speed": 6,
+     "dirs": 1
+    }
+   },
+   "foot": [
+    -117.0,
+    15.0
+   ]
+  },
+  "29": {
+   "title": "ARQUERO BARRA",
+   "pack": "29X",
+   "frames": 100,
+   "verified": false,
+   "npc": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 30,
+     "speed": 4,
+     "dirs": 1
+    },
+    "Respirar": {
+     "start": 31,
+     "frames": 30,
+     "speed": 4,
+     "dirs": 1
+    }
+   },
+   "foot": [
+    -113.5,
+    25.0
+   ]
+  },
+  "30": {
+   "title": "CABALLERO",
+   "pack": "30X",
+   "frames": 60,
+   "verified": true,
+   "npc": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 30,
+     "speed": 5,
+     "dirs": 1
+    },
+    "Respirar": {
+     "start": 31,
+     "frames": 30,
+     "speed": 6,
+     "dirs": 1
+    }
+   },
+   "foot": [
+    -84.5,
+    -7.0
+   ]
+  },
+  "31": {
+   "title": "B\u00c1RBARO",
+   "pack": "31X",
+   "frames": 60,
+   "verified": true,
+   "npc": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 30,
+     "speed": 5,
+     "dirs": 1
+    },
+    "Respirar": {
+     "start": 31,
+     "frames": 30,
+     "speed": 6,
+     "dirs": 1
+    }
+   },
+   "foot": [
+    -100.0,
+    -11.0
+   ]
+  },
+  "32": {
+   "title": "GUERRERO MESA",
+   "pack": "32X",
+   "frames": 60,
+   "verified": true,
+   "npc": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 30,
+     "speed": 5,
+     "dirs": 1
+    },
+    "Respirar": {
+     "start": 31,
+     "frames": 30,
+     "speed": 6,
+     "dirs": 1
+    }
+   },
+   "foot": [
+    -103.0,
+    -12.0
+   ]
+  },
+  "33": {
+   "title": "BORRACHO MESA",
+   "pack": "33X",
+   "frames": 93,
+   "verified": false,
+   "npc": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 30,
+     "speed": 5,
+     "dirs": 1
+    },
+    "Respirar": {
+     "start": 31,
+     "frames": 61,
+     "speed": 4,
+     "dirs": 1
+    }
+   },
+   "foot": [
+    -100.5,
+    -21.0
+   ]
+  },
+  "34": {
+   "title": "GORDO DORMIDO",
+   "pack": "34X",
+   "frames": 80,
+   "verified": true,
+   "npc": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 30,
+     "speed": 6,
+     "dirs": 1
+    },
+    "Respirar": {
+     "start": 31,
+     "frames": 50,
+     "speed": 4,
+     "dirs": 1
+    }
+   },
+   "foot": [
+    -92.5,
+    -35.0
+   ]
+  },
+  "35": {
+   "title": "JUGADOR 1",
+   "pack": "35X",
+   "frames": 140,
+   "verified": false,
+   "npc": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 30,
+     "speed": 4,
+     "dirs": 1
+    },
+    "Respirar": {
+     "start": 31,
+     "frames": 30,
+     "speed": 4,
+     "dirs": 1
+    },
+    "Atacar": {
+     "start": 61,
+     "frames": 30,
+     "speed": 4,
+     "dirs": 1
+    }
+   },
+   "foot": [
+    -104.5,
+    -11.0
+   ]
+  },
+  "36": {
+   "title": "JUGADOR 2",
+   "pack": "36X",
+   "frames": 140,
+   "verified": false,
+   "npc": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 30,
+     "speed": 4,
+     "dirs": 1
+    },
+    "Respirar": {
+     "start": 31,
+     "frames": 30,
+     "speed": 4,
+     "dirs": 1
+    },
+    "Atacar": {
+     "start": 61,
+     "frames": 30,
+     "speed": 4,
+     "dirs": 1
+    }
+   },
+   "foot": [
+    -125.5,
+    -30.0
+   ]
+  },
+  "37": {
+   "title": "MAGO37",
+   "pack": "37X",
+   "frames": 30,
+   "verified": true,
+   "npc": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 30,
+     "speed": 4,
+     "dirs": 1
+    }
+   },
+   "foot": [
+    -124.0,
+    17.0
+   ]
+  },
+  "38": {
+   "title": "Fase 1: Viejo orco",
+   "pack": "38X",
+   "frames": 12,
+   "verified": true,
+   "npc": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 12,
+     "speed": 8,
+     "dirs": 1
+    }
+   },
+   "foot": [
+    -118.0,
+    -44.0
+   ]
+  },
+  "41": {
+   "title": "FASE 5: Viajero",
+   "pack": "41X",
+   "frames": 10,
+   "verified": true,
+   "npc": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 10,
+     "speed": 8,
+     "dirs": 1
+    }
+   },
+   "foot": [
+    -133.0,
+    -17.0
+   ]
+  },
+  "42": {
+   "title": "FASE 5: Fantasma del mago",
+   "pack": "42X",
+   "frames": 30,
+   "verified": false,
+   "npc": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 10,
+     "speed": 8,
+     "dirs": 1
+    }
+   },
+   "foot": [
+    -124.0,
+    17.0
+   ]
+  },
+  "44": {
+   "title": "FASE 7: Aldeano",
+   "pack": "44X",
+   "frames": 9,
+   "verified": true,
+   "npc": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 9,
+     "speed": 8,
+     "dirs": 1
+    }
+   },
+   "foot": [
+    -137.5,
+    -20.0
+   ]
+  },
+  "46": {
+   "title": "FASE 9: Guerrero",
+   "pack": "46X",
+   "frames": 11,
+   "verified": true,
+   "npc": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 11,
+     "speed": 8,
+     "dirs": 1
+    }
+   },
+   "foot": [
+    -135.5,
+    -11.0
+   ]
+  },
+  "47": {
+   "title": "FASE 11: Caballero",
+   "pack": "47X",
+   "frames": 10,
+   "verified": true,
+   "npc": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 10,
+     "speed": 8,
+     "dirs": 1
+    }
+   },
+   "foot": [
+    -127.5,
+    -11.0
+   ]
+  },
+  "53": {
+   "title": "FASE 19: FANTASMA DE CABALLERO",
+   "pack": "53X",
+   "frames": 10,
+   "verified": true,
+   "npc": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 10,
+     "speed": 8,
+     "dirs": 1
+    }
+   },
+   "foot": [
+    -127.5,
+    -11.0
+   ]
+  },
+  "56": {
+   "title": "FASE 24: CAMPESINO",
+   "pack": "56X",
+   "frames": 12,
+   "verified": true,
+   "npc": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 12,
+     "speed": 8,
+     "dirs": 1
+    }
+   },
+   "foot": [
+    -105.5,
+    -55.0
+   ]
+  },
+  "57": {
+   "title": "FASE 25: Fantasma de h\u00e9roe",
+   "pack": "57X",
+   "frames": 30,
+   "verified": true,
+   "npc": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 30,
+     "speed": 8,
+     "dirs": 1
+    }
+   },
+   "foot": [
+    -141.0,
+    -23.0
+   ]
+  },
+  "62": {
+   "title": "FASE 34: Ni\u00f1era",
+   "pack": "62X",
+   "frames": 21,
+   "verified": true,
+   "npc": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 21,
+     "speed": 8,
+     "dirs": 1
+    }
+   },
+   "foot": [
+    -120.0,
+    6.0
+   ]
   }
  }
 }

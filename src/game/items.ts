@@ -93,6 +93,9 @@ export class Inventory {
 
   constructor(private readonly defs: Map<number, ItemDef>, private readonly character: number) {}
 
+  /** All item definitions (for shops). */
+  get itemDefs(): Map<number, ItemDef> { return this.defs; }
+
   def(id: number): ItemDef | undefined { return this.defs.get(id); }
 
   add(id: number): boolean {

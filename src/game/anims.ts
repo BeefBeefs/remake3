@@ -3,7 +3,7 @@ export interface AnimDef {
   start: number;
   frames: number;
   speed: number;
-  /** direction blocks stored: 8 (default) or 4 for the heroes' death animation (screen direction d uses block d >> 1) */
+  /** direction blocks stored: 8 (default), 4 for the heroes' death animation (screen direction d uses block d >> 1), 1 for NPC strips */
   dirs?: number;
 }
 export interface ActorAnims {
@@ -14,6 +14,8 @@ export interface ActorAnims {
   verified: boolean;
   /** true when only Andar/Respirar/Atacar are known (monsters without a matched layout). */
   partial?: boolean;
+  /** NPC strip (single view, no directions) */
+  npc?: boolean;
   /** Hotspot-space point of the actor's feet (see tools/build_anims.py). */
   foot: [number, number];
   anims: Record<string, AnimDef>;
@@ -24,6 +26,6 @@ export interface AnimData { dirs: string[]; actors: Record<string, ActorAnims> }
 export const TICK = 1 / 60;
 
 export function frameId(a: AnimDef, dir: number, step: number): number {
-  const d = a.dirs === 4 ? dir >> 1 : dir;
+  const d = a.dirs === 4 ? dir >> 1 : a.dirs === 1 ? 0 : dir;
   return a.start + d * a.frames + (step % a.frames);
 }

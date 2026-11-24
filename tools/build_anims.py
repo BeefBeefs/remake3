@@ -122,5 +122,21 @@ if __name__ == '__main__':
         res[aid] = {'title': actors[aid]['title'], 'pack': pack, 'frames': total, 'verified': True, 'anims': anims}
         # feet from the bare body pack: weapons skew the bbox centre
         res[aid]['foot'] = foot(bp, res[aid]['anims'])
+    # NPCs (<id>X.P16) are single-view strips: Andar, Respirar, Atacar (the INI order) back to back, no directions.
+    for aid, a in actors.items():
+        an = a.get('Animaciones')
+        path = os.path.join(game, 'Actors', f'{aid}X.P16')
+        if not an or not os.path.exists(path) or aid in res:
+            continue
+        p16 = P16(path)
+        total = len(p16.ids())
+        names = [k for k in ('Andar', 'Respirar', 'Atacar') if an.get(k, [0, 0])[1] > 0]
+        anims, pos = {}, 1
+        for k in names:
+            anims[k] = {'start': pos, 'frames': an[k][1], 'speed': an[k][0], 'dirs': 1}
+            pos += an[k][1]
+        res[aid] = {'title': a.get('title', '').strip(), 'pack': f'{aid}X', 'frames': total, 'verified': pos - 1 == total, 'npc': True, 'anims': anims}
+        res[aid]['foot'] = foot(p16, {k: {**v, 'frames': 1} for k, v in anims.items()}) if False else [float(sorted(p16.x[i] + p16.w[i] / 2 for i in range(total) if p16.w[i])[total // 2]), float(sorted(p16.y[i] + p16.h[i] for i in range(total) if p16.w[i])[total // 2])]
+        stats['npc'] = stats.get('npc', 0) + 1
     json.dump({'dirs': DIRS, 'actors': res}, open(os.path.join(out, 'data', 'anims.json'), 'w'), indent=1)
     print(stats, len(res), 'actors')

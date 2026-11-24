@@ -95,7 +95,7 @@ def monster_packs(game, out):
         return {}
     res = {}
     for aid, a in json.load(open(path))['actors'].items():
-        if a['pack'][0].isdigit() and a['pack'].endswith('E'):  # hostile monsters; NPC 'X' packs are converted later
+        if a['pack'][0].isdigit() and a['pack'][-1] in 'EX':  # hostile monsters (E) and NPCs (X)
             res[f"actors/{a['pack'].lower()}"] = f"Actors/{a['pack']}.P16"
     return res
 

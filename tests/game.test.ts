@@ -258,7 +258,8 @@ test('a kill that crosses XP thresholds raises the level, heals and plays the cl
   run(g, 10);
   assert.equal(g.level, 3);
   assert.equal(g.hero.hp, g.hero.stats.hp);
-  assert.ok(g.hero.stats.hp > hp0);
+  assert.equal(g.hero.stats.hp, hp0, 'life only grows through Resistance');
+  assert.equal(g.points, 8, 'four points per level');
   assert.equal(heard.filter((id) => id === 123).length, 2, 'one amazon level-up sound per level');
 });
 
@@ -291,4 +292,56 @@ test('footsteps follow the surface underfoot', () => {
   assert.ok(stepsOf(164) >= 2 && stepsOf(160) === 0);
   surface = 'stone'; heard.length = 0; run(g, 1.5);
   assert.ok(stepsOf(168) >= 2 && stepsOf(164) === 0);
+});
+
+test('NPC strips: every frame of every animation exists in the atlas; the innkeeper has idle and talk animations', () => {
+  const anims = json('data/anims.json');
+  const npcs = Object.entries<any>(anims.actors).filter(([, a]) => a.npc);
+  assert.ok(npcs.length >= 15);
+  for (const [id, a] of npcs) {
+    const atlas = json(`p16/actors/${a.pack.toLowerCase()}.json`);
+    for (const [name, an] of Object.entries<any>(a.anims)) {
+      assert.equal(an.dirs, 1);
+      for (let dir = 0; dir < 8; dir++) for (let step = 0; step < an.frames; step++) assert.ok(atlas.frames[String(frameId(an, dir, step))], `${id} ${name}`);
+    }
+  }
+  const inn = anims.actors['27'];
+  assert.ok(inn.verified);
+  assert.deepEqual([inn.anims.Andar.frames, inn.anims.Respirar.frames, inn.anims.Atacar.frames], [14, 15, 70]);
+});
+
+test('clicking an NPC walks the hero over, plays the talk animation and fires onTalk once', () => {
+  const g = makeGame({ spawns: [{ id: '27', cx: 136, cy: 128 }] });
+  assert.equal(g.npcs.length, 1);
+  assert.equal(g.monsters.length, 0, 'an NPC is not a monster');
+  const npc = g.npcs[0]!;
+  const talked: string[] = [];
+  g.onTalk = (n) => talked.push(n.id);
+  g.click(npc.creature.cx, npc.creature.cy);
+  run(g, 0.2);
+  assert.equal(g.hero.state, 'walk');
+  assert.equal(talked.length, 0);
+  run(g, 4);
+  assert.deepEqual(talked, ['27']);
+  assert.ok(Math.hypot(g.hero.cx - npc.creature.cx, g.hero.cy - npc.creature.cy) <= 2.3);
+  assert.equal(npc.creature.state, 'attack', 'innkeeper turns to serve');
+  run(g, 8); // the serve animation is 70 frames x 6 ticks = 7 s
+  assert.deepEqual(talked, ['27'], 'does not talk again by itself');
+  assert.equal(npc.creature.state, 'idle');
+});
+
+test('level-up points: spending raises the attribute, Resistance also raises life, no points = no change', () => {
+  const g = makeGame({ attrs: { strength: 30, skill: 24, resistance: 30, magic: 11 } });
+  assert.equal(g.spend('strength'), false);
+  g.points = 2;
+  const hp = g.hero.stats.hp;
+  g.hero.hp = hp - 10;
+  assert.equal(g.spend('resistance'), true);
+  assert.equal(g.attrs.resistance, 31);
+  assert.equal(g.hero.stats.hp, hp + 2);
+  assert.equal(g.hero.hp, hp - 8);
+  assert.equal(g.spend('magic'), true);
+  assert.equal(g.attrs.magic, 12);
+  assert.equal(g.spend('magic'), false);
+  assert.equal(g.points, 0);
 });

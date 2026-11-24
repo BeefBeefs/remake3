@@ -3,10 +3,12 @@ import { Atlas } from './assets/atlas.ts';
 import { World } from './game/world.ts';
 import { Sfx } from './audio/sfx.ts';
 import { surfaceLookup, type TileTable } from './game/surface.ts';
-import { CLASSES, type ClassId, Game, type GameData } from './game/game.ts';
+import { CLASSES, MERCHANTS, type ClassId, Game, type GameData } from './game/game.ts';
 import type { AnimData } from './game/anims.ts';
 import { buildItems } from './game/items.ts';
 import { InventoryPanel } from './ui/inventory.ts';
+import { ShopWindow } from './ui/shop.ts';
+import { CharacterPanel } from './ui/character.ts';
 import { gunzip, parseMap, startOf } from './formats/map.ts';
 import { cellToWorld, worldToCell } from './iso.ts';
 
@@ -62,8 +64,10 @@ async function boot() {
   const classId: ClassId = byName[new URLSearchParams(location.search).get('class')?.toLowerCase() ?? ''] ?? (await chooseClass(adv.heroes));
   // Hero + every monster kind the map places (pack-0 markers).
   const spawns = map.markers.filter((m) => animData.actors[String(m.id)] && m.id < 100).map((m) => ({ id: String(m.id), cx: m.cx, cy: m.cy, route: m.route }));
+  // ?npc=27,28 puts those NPCs next to the start (the Lost Forrest has none; the Inn map is not in this install).
+  const extraNpcs = (new URLSearchParams(location.search).get('npc') ?? '').split(',').filter((id) => animData.actors[id]?.npc);
   const atlases = new Map<string, Atlas>();
-  await Promise.all([String(classId), ...new Set(spawns.map((s) => s.id))].map(async (id) => {
+  await Promise.all([String(classId), ...extraNpcs, ...new Set(spawns.map((s) => s.id))].map(async (id) => {
     const pack = animData.actors[id]!.pack;
     if (!atlases.has(pack)) atlases.set(pack, await Atlas.load(BASE, `p16/actors/${pack.toLowerCase()}.json`));
   }));
@@ -73,9 +77,13 @@ async function boot() {
   const spawn = world.findOpenCell(st?.cx ?? 152, st?.cy ?? 78);
   const tileSurface = surfaceLookup((await (await fetch(`${BASE}data/tiles.json`)).json()) as TileTable, map.tileset);
   const surface = (cx: number, cy: number) => (map.terrain[Math.floor(cy) * map.dim + Math.floor(cx)] !== undefined ? tileSurface(map.terrain[Math.floor(cy) * map.dim + Math.floor(cx)]!) : 'grass');
-  const game = new Game(world, { anims: animData, actors: actorsIni, names, atlases, items, icons }, spawn, { spawns, surface, attrs: adv.heroes[classId - 100], classId, finalText: adv.final.startsWith('Enter the final text') ? 'You have found the Tomb of Donmir!' : adv.final });
+  const npcSpawns = extraNpcs.map((id, k) => { const c = world.findOpenCell(spawn.cx + 3 + 2 * k, spawn.cy + 2); return { id, cx: c.cx, cy: c.cy }; });
+  const game = new Game(world, { anims: animData, actors: actorsIni, names, atlases, items, icons }, spawn, { spawns: [...spawns, ...npcSpawns], surface, attrs: adv.heroes[classId - 100], classId, finalText: adv.final.startsWith('Enter the final text') ? 'You have found the Tomb of Donmir!' : adv.final });
   game.say(adv.mission_text);
   const panel = new InventoryPanel(game, icons, BASE);
+  const shop = new ShopWindow(game, icons, BASE);
+  const charPanel = new CharacterPanel(game);
+  game.onTalk = (npc) => { if (MERCHANTS.has(npc.id)) shop.open(npc.name); };
   scene.add(game.group);
   const hero = game.hero;
   world.update(hero.cx, hero.cy);
@@ -98,8 +106,10 @@ async function boot() {
   const keys = new Set<string>();
   window.addEventListener('keydown', (e) => {
     keys.add(e.key.toLowerCase());
-    if (e.key === ' ') { game.swing(); e.preventDefault(); }
+    if (e.key === 'Escape') shop.close();
+    if (e.key === ' ') { if (!shop.isOpen) game.swing(); e.preventDefault(); }
     if (e.key.toLowerCase() === 'i') panel.toggle();
+    if (e.key.toLowerCase() === 'c') charPanel.toggle();
     if (e.key.toLowerCase() === 'r' && !game.hero.alive) location.reload();
     startAudio();
   });
@@ -145,13 +155,14 @@ async function boot() {
     }
     game.update(dt, move);
     panel.update();
+    charPanel.update();
     world.update(hero.cx, hero.cy);
     const w = cellToWorld(hero.cx, hero.cy);
     camera.position.x += (w.x - camera.position.x) * Math.min(1, dt * 6);
     camera.position.y += (w.y - camera.position.y) * Math.min(1, dt * 6);
     hpname.textContent = hero.stats.name;
     hpfill.style.width = `${(100 * hero.hp) / hero.stats.hp}%`;
-    hpinfo.textContent = `HP ${hero.hp}/${hero.stats.hp}  gold ${game.inventory.gold}  kills ${game.kills}  xp ${game.xp}`;
+    hpinfo.textContent = `HP ${hero.hp}/${hero.stats.hp}  gold ${game.inventory.gold}  kills ${game.kills}  xp ${game.xp}  L${game.level}${game.points ? `  +${game.points} points (C)` : ''}`;
     const left = game.monsters.filter((m) => m.alive).length;
     banner.style.display = !hero.alive || left === 0 ? 'block' : 'none';
     banner.textContent = !hero.alive ? 'You have fallen — press R to restart' : 'The camp is clear!';
@@ -159,7 +170,7 @@ async function boot() {
     renderer.render(scene, camera);
     requestAnimationFrame(frame);
   }
-  hud.textContent = 'NightStone remake · milestone 2 · click ground to walk, click a monster (or Space) to fight · WASD moves · I inventory';
+  hud.textContent = 'NightStone remake · milestone 2 · click ground to walk, click a monster (or Space) to fight · WASD moves · I inventory · C character';
   frame();
 }
 

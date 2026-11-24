@@ -19,14 +19,21 @@ Each working session appends an entry below (newest first). Format knowledge liv
 | NHS data / animation layouts | ✅ 72 actors, 141 items; 17 monsters fully or ambiguously mapped, 20 partial |
 | Items, inventory, equipment | 🟡 working in code (drops, pickup, equip, potions); UI never browser-tested |
 | Tile surfaces | 🟡 inferred from tile colour (footsteps) |
-| Skills/magic, dialogue, quests (`.adv`), shops, multiplayer, editor | ⬜ not started |
+| NPCs, shops, character window | 🟡 working in code; no NPC in the playable map (Inn map not in install) |
+| Skills/magic, dialogue, quests (`.adv`), multiplayer, editor | ⬜ not started |
 | Combat + monster AI | 🟡 first pass (placeholder numbers) |
 
-### Turn 8 — tile surfaces, NPCs and shops
+### Turn 8 — tile surfaces, NPCs, shops and the character window
 
 **Step 1 ✅ Tile types.** `System/*.CDt` turned out to be the editor's brush catalogue (see FORMATS), so tile surfaces are *inferred* from tile colour
-(`tools/build_tiles.py` → `data/tiles.json`, all three tilesets, 160+ Outside ids). `Game` takes a `surface(cx, cy)` hook and footsteps use the grass/wood/stone
-sound pairs. 49 tests passing. Unverified: nothing run in a browser; colour-based classification is a heuristic and dirt = grass sound is a guess.
+(`tools/build_tiles.py` → `data/tiles.json`, all three tilesets). `Game` takes a `surface(cx, cy)` hook; footsteps use the grass/wood/stone sound pairs.
+**Step 2 ✅ NPC sprites.** The 21 `<id>X.P16` packs are single-view strips in INI order Andar, Respirar, Atacar (15 match their frame counts exactly, e.g. the
+innkeeper 27 = 14 + 15 + 70). Converted (≈316 KB) and added to `anims.json` (`npc: true`, `dirs: 1`). Map markers for NPC ids now spawn NPCs, not monsters.
+**Step 3 ✅ Talking and shops.** Clicking an NPC walks the hero up, the NPC plays its Atacar strip, `onTalk` fires; the innkeeper opens a **buy/sell window** built from the
+manual's rules (heavy/light lists, basket, unaffordable basket buys nothing). Finding: **the manual puts shops only at the Inn of the White Goddess, a campaign map that
+is not in this install** (only Lost Forrest, five multiplayer maps and `Adv/Test.adv` are) — so the Lost Forrest has no NPCs; `?npc=27` places the innkeeper beside the start for testing.
+**Step 4 ✅ Character window (key C).** From the manual: level-ups give +4 points to spend; Life follows Resistance. Replaces my earlier flat +6 HP. New `docs/RULES.md` lists the manual's rules and what is done.
+- Tests: 56 passing. Unverified: nothing run in a browser; tile classification is a colour heuristic; merchant choice, stock and half-price sell-back are guesses; other NPCs only show their name (no dialogue text exists in the data).
 
 ### Turn 7, continued — footsteps, levels and the tomb ending
 

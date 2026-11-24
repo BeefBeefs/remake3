@@ -41,6 +41,12 @@ export interface GameOptions {
   finalText?: string;
 }
 
+/** A non-hostile character (innkeeper, villagers…): single-view sprite strip, talks when clicked. */
+export interface Npc { id: string; name: string; creature: Creature }
+/** NPC actors that run the buy/sell window (guess: the innkeeper; the manual only says "certain people at the Inn"). */
+export const MERCHANTS = new Set(['27']);
+const TALK_RANGE = 2.2;
+
 export interface GroundItem { id: number; cx: number; cy: number; mesh: THREE.Object3D }
 
 /** Pack-3 container objects. The map stores the *open* sprite of a chest; the closed one is the previous frame id (401/402, 403/404, 526/527 ...). */
@@ -65,6 +71,10 @@ export type ClassId = keyof typeof CLASSES;
 export const xpForLevel = (level: number): number => 25 * (level - 1) * level;
 /** Seconds of walking between footsteps (the walk cycle is ~1.2 s with two steps). */
 const STEP_EVERY = 0.58;
+export const POINTS_PER_LEVEL = 4;
+export type Attr = 'strength' | 'skill' | 'resistance' | 'magic';
+/** Hit points per point of Resistance (the manual only says life is tied to Resistance; 2 is a guess). */
+export const HP_PER_RESISTANCE = 2;
 /** Bows shoot: the swing hits the nearest monster in front within this many cells (no projectile is drawn yet). */
 const BOW_RANGE = 7;
 const HERO_SPEED = 3.2; // cells per second
@@ -90,11 +100,17 @@ function mulberry32(seed: number) {
 export class Game {
   readonly hero: Creature;
   readonly monsters: Creature[] = [];
+  readonly npcs: Npc[] = [];
+  /** Fired when the hero reaches an NPC he clicked: the front end opens the shop for merchants. */
+  onTalk?: (npc: Npc) => void;
+  private talkTarget: Npc | null = null;
   readonly group = new THREE.Group();
   kills = 0;
   xp = 0;
   /** Hero level (guess: the real XP table is not decoded; level n+1 needs `xpForLevel(n+1)` total points). */
   level = 1;
+  /** Unspent attribute points (4 per level, see `spend`). */
+  points = 0;
   readonly inventory: Inventory;
   readonly ground: GroundItem[] = [];
   /** most recent messages, newest last (for the HUD) */
@@ -128,7 +144,7 @@ export class Game {
   readonly classId: ClassId;
 
   constructor(private readonly world: World, private readonly data: GameData, start: { cx: number; cy: number }, opts: GameOptions = {}) {
-    this.attrs = opts.attrs ?? { strength: 30, skill: 24, resistance: 30, magic: 11 };
+    this.attrs = { ...(opts.attrs ?? { strength: 30, skill: 24, resistance: 30, magic: 11 }) };
     this.finalText = opts.finalText ?? 'Mission complete.';
     this.surfaceAt = opts.surface ?? (() => 'grass');
     this.classId = opts.classId ?? 100;
@@ -137,7 +153,7 @@ export class Game {
     // starting kit: the class's first weapon in hand and two life potions
     this.inventory.add(cls.weapon); this.inventory.equip(0);
     this.inventory.add(104); this.inventory.add(104);
-    this.hero = this.make(String(this.classId), start.cx, start.cy, { hp: this.attrs.resistance * 2 /* guess: 60 hp for the Barbarian's 30 resistance */, damage: [2, 4], speed: HERO_SPEED, name: data.names[String(this.classId)] ?? cls.name });
+    this.hero = this.make(String(this.classId), start.cx, start.cy, { hp: this.attrs.resistance * HP_PER_RESISTANCE, damage: [2, 4], speed: HERO_SPEED, name: data.names[String(this.classId)] ?? cls.name });
     this.refreshHeroStats();
     this.hero.onStrike = () => this.heroStrike();
     this.group.add(this.hero.sprite);
@@ -171,6 +187,11 @@ export class Game {
       const def = this.data.anims.actors[sp.id];
       if (!def || !this.data.atlases.has(def.pack)) continue;
       const m = this.make(sp.id, sp.cx, sp.cy);
+      if (def.npc) {
+        this.npcs.push({ id: sp.id, name: m.stats.name.trim(), creature: m });
+        this.group.add(m.sprite);
+        continue;
+      }
       this.idOf.set(m, sp.id);
       m.dir = Math.floor(this.rnd() * 8);
       this.monsters.push(m);
@@ -254,6 +275,9 @@ export class Game {
   /** Called with a cell-space click position. */
   click(cx: number, cy: number): void {
     if (!this.hero.alive) return;
+    const npc = this.npcs.find((n) => Math.hypot(n.creature.cx - cx, n.creature.cy - cy) < 1.3);
+    if (npc) { this.talkTarget = npc; this.target = null; this.targetBox = null; this.walkTarget = null; return; }
+    this.talkTarget = null;
     const box = this.boxAt(cx, cy, 0.8);
     let best: Creature | null = null, bd = 1.3;
     for (const m of this.monsters) {
@@ -264,6 +288,14 @@ export class Game {
     this.targetBox = best ? null : box;
     this.target = best;
     this.walkTarget = best || box ? null : { cx, cy };
+  }
+
+  /** The hero stands next to an NPC: it plays its talk animation and the front end is told. */
+  private talk(npc: Npc): void {
+    npc.creature.face(this.hero.cx - npc.creature.cx, this.hero.cy - npc.creature.cy);
+    npc.creature.setState('attack'); // NPC "Atacar" strips are their serve / talk animations
+    this.say(npc.name);
+    this.onTalk?.(npc);
   }
 
   /** Space bar: swing in the current facing direction. */
@@ -281,6 +313,8 @@ export class Game {
   }
 
   private snd(id: number): void { this.onSound?.(id); }
+  /** Lets the UI play a sound through the same hook. */
+  playSound(id: number): void { this.onSound?.(id); }
   private pick(base: number, n: number): number { return base + Math.floor(this.rnd() * n); }
   /** Monster sound: SndBase + 0 attack, 1 alarm, 2 die, 3 hurt (file names 200_goblin_atacar … 203_goblin_recibir). */
   private msnd(m: Creature, k: number): void {
@@ -436,15 +470,26 @@ export class Game {
     this.pickups();
     this.checkGoal();
     for (const m of this.monsters) this.updateMonster(m, dt);
+    for (const n of this.npcs) n.creature.update(dt);
     h.update(dt);
     for (const m of this.monsters) m.update(dt);
+  }
+
+  /** Spends one level-up point on an attribute. Life follows Resistance (and the hero is healed by the gain). */
+  spend(attr: Attr): boolean {
+    if (this.points <= 0 || !this.hero.alive) return false;
+    this.points--;
+    this.attrs[attr]++;
+    if (attr === 'resistance') { this.hero.stats.hp += HP_PER_RESISTANCE; this.hero.hp += HP_PER_RESISTANCE; }
+    this.version++;
+    return true;
   }
 
   private checkLevel(): void {
     while (this.xp >= xpForLevel(this.level + 1)) {
       this.level++;
       const st = this.hero.stats;
-      st.hp += 6; // placeholder growth
+      this.points += POINTS_PER_LEVEL; // manual: "+4" points to distribute on the character specifications window
       this.hero.hp = st.hp;
       this.snd(CLASSES[this.classId].sound + 3); // <class>_nivel
       this.say(`${st.name} reached level ${this.level}`);
@@ -475,8 +520,13 @@ export class Game {
     if (h.state === 'attack' || h.state === 'hit') return;
     let vx = 0, vy = 0;
     if (move) {
-      this.target = null; this.walkTarget = null; this.targetBox = null;
+      this.target = null; this.walkTarget = null; this.targetBox = null; this.talkTarget = null;
       vx = move.x; vy = move.y;
+    } else if (this.talkTarget) {
+      const n = this.talkTarget.creature, ex = n.cx - h.cx, ey = n.cy - h.cy, d = Math.hypot(ex, ey);
+      this.facing = { x: ex / (d || 1), y: ey / (d || 1) };
+      if (d <= TALK_RANGE) { h.face(ex, ey); this.talk(this.talkTarget); this.talkTarget = null; }
+      else { vx = ex / d; vy = ey / d; }
     } else if (this.target && this.target.alive) {
       const ex = this.target.cx - h.cx, ey = this.target.cy - h.cy, d = Math.hypot(ex, ey);
       this.facing = { x: ex / (d || 1), y: ey / (d || 1) };
