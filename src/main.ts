@@ -3,7 +3,7 @@ import { Atlas } from './assets/atlas.ts';
 import { World } from './game/world.ts';
 import { Sfx } from './audio/sfx.ts';
 import { surfaceLookup, type TileTable } from './game/surface.ts';
-import { CLASSES, MERCHANTS, type ClassId, Game, type GameData } from './game/game.ts';
+import { CLASSES, MERCHANTS, type ClassId, Game, type GameData, type HeroSave } from './game/game.ts';
 import type { AnimData } from './game/anims.ts';
 import { buildItems } from './game/items.ts';
 import { InventoryPanel } from './ui/inventory.ts';
@@ -61,7 +61,14 @@ async function boot() {
   const adv = (await (await fetch(`${BASE}data/adventure.json`)).json()) as { mission_text: string; final: string; heroes: { strength: number; skill: number; resistance: number; magic: number }[] };
   // Which hero? ?class=amazon skips the menu.
   const byName: Record<string, ClassId> = { barbarian: 100, amazon: 101, sorceress: 102 };
-  const classId: ClassId = byName[new URLSearchParams(location.search).get('class')?.toLowerCase() ?? ''] ?? (await chooseClass(adv.heroes));
+  // After dying, R comes back here with the hero's growth (items and ability points already paid for) in sessionStorage.
+  let carried: { classId: ClassId; save: HeroSave } | null = null;
+  try {
+    const raw = sessionStorage.getItem('nst-save');
+    sessionStorage.removeItem('nst-save');
+    if (raw) carried = JSON.parse(raw) as { classId: ClassId; save: HeroSave };
+  } catch { /* storage unavailable: start fresh */ }
+  const classId: ClassId = carried?.classId ?? byName[new URLSearchParams(location.search).get('class')?.toLowerCase() ?? ''] ?? (await chooseClass(adv.heroes));
   // Hero + every monster kind the map places (pack-0 markers).
   const spawns = map.markers.filter((m) => animData.actors[String(m.id)] && m.id < 100).map((m) => ({ id: String(m.id), cx: m.cx, cy: m.cy, route: m.route }));
   // ?npc=27,28 puts those NPCs next to the start (the Lost Forrest has none; the Inn map is not in this install).
@@ -78,7 +85,7 @@ async function boot() {
   const tileSurface = surfaceLookup((await (await fetch(`${BASE}data/tiles.json`)).json()) as TileTable, map.tileset);
   const surface = (cx: number, cy: number) => (map.terrain[Math.floor(cy) * map.dim + Math.floor(cx)] !== undefined ? tileSurface(map.terrain[Math.floor(cy) * map.dim + Math.floor(cx)]!) : 'grass');
   const npcSpawns = extraNpcs.map((id, k) => { const c = world.findOpenCell(spawn.cx + 3 + 2 * k, spawn.cy + 2); return { id, cx: c.cx, cy: c.cy }; });
-  const game = new Game(world, { anims: animData, actors: actorsIni, names, atlases, items, icons }, spawn, { spawns: [...spawns, ...npcSpawns], surface, attrs: adv.heroes[classId - 100], classId, finalText: adv.final.startsWith('Enter the final text') ? 'You have found the Tomb of Donmir!' : adv.final });
+  const game = new Game(world, { anims: animData, actors: actorsIni, names, atlases, items, icons }, spawn, { spawns: [...spawns, ...npcSpawns], surface, attrs: adv.heroes[classId - 100], classId, save: carried?.save, finalText: adv.final.startsWith('Enter the final text') ? 'You have found the Tomb of Donmir!' : adv.final });
   game.say(adv.mission_text);
   const panel = new InventoryPanel(game, icons, BASE);
   const shop = new ShopWindow(game, icons, BASE);
@@ -119,9 +126,13 @@ async function boot() {
     keys.add(e.key.toLowerCase());
     if (e.key === 'Escape') shop.close();
     if (e.key === ' ') { if (!shop.isOpen) game.swing(); e.preventDefault(); }
+    if (e.key >= '1' && e.key <= '4' && !shop.isOpen) game.useQuick(Number(e.key));
     if (e.key.toLowerCase() === 'i') panel.toggle();
     if (e.key.toLowerCase() === 'c') charPanel.toggle();
-    if (e.key.toLowerCase() === 'r' && !game.hero.alive) location.reload();
+    if (e.key.toLowerCase() === 'r' && !game.hero.alive) {
+      try { sessionStorage.setItem('nst-save', JSON.stringify({ classId: game.classId, save: game.save() })); } catch { /* start fresh */ }
+      location.reload();
+    }
     startAudio();
   });
   window.addEventListener('keyup', (e) => { readMods(e); keys.delete(e.key.toLowerCase()); });
@@ -180,7 +191,7 @@ async function boot() {
     hpinfo.textContent = `HP ${hero.hp}/${hero.stats.hp}  gold ${game.inventory.gold}  kills ${game.kills}  xp ${game.xp}  L${game.level}${game.points ? `  +${game.points} points (C)` : ''}`;
     const left = game.monsters.filter((m) => m.alive).length;
     banner.style.display = !hero.alive || left === 0 ? 'block' : 'none';
-    banner.textContent = !hero.alive ? 'You have fallen — press R to restart' : 'The camp is clear!';
+    banner.textContent = !hero.alive ? 'You have fallen — press R to try again (items and one point of each ability are lost)' : 'The camp is clear!';
     if (game.goalReached && !won) { won = true; showVictory(game, hero.stats.name); }
     renderer.render(scene, camera);
     requestAnimationFrame(frame);

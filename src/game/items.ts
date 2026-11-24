@@ -36,14 +36,36 @@ export interface ItemDef {
   chestLevel: number;
   /** attribute and level requirements (INI R_Fuerza, R_Destreza = skill, R_Resistencia, R_Magia = power, R_Nivel) */
   req: Requirements;
+  bonus: Bonus;
 }
+
+/** Monster family bit masks (INI `Raza`) and the item bonus keys that refer to them. */
+export const FAMILY_BONUS: Record<string, number> = { B_Goblins: 1, B_Orcos: 2, B_NoMuertos: 4, B_Bestias: 8, B_Trolls: 16, B_Demonios: 32, B_Humanos: 64 };
+
+/** What wearing an item adds (INI `Bonificadores`): attribute points, armour, and a damage multiplier per monster family. */
+export interface Bonus { strength: number; skill: number; resistance: number; magic: number; armor: number; vs: Record<number, number> }
+export const noBonus = (): Bonus => ({ strength: 0, skill: 0, resistance: 0, magic: 0, armor: 0, vs: {} });
 
 export interface Requirements { strength: number; skill: number; resistance: number; magic: number; level: number }
 
 interface RawItem {
   title?: string;
   General?: { Tipo?: number; Potencia?: [number, number]; Nivel?: number; Precio?: number; Data?: number; CofreLv?: number };
+  Bonificadores?: Record<string, number>;
+  Bonificacion?: Record<string, number>;
   Requerimientos?: { Character?: number; R_Fuerza?: number; R_Destreza?: number; R_Resistencia?: number; R_Magia?: number; R_Nivel?: number };
+}
+
+function parseBonus(v: RawItem): Bonus {
+  const raw = { ...v.Bonificacion, ...v.Bonificadores };
+  const b = noBonus();
+  b.strength = raw.B_Fuerza ?? 0;
+  b.skill = raw.B_Destreza ?? 0;
+  b.resistance = raw.B_Resistencia ?? 0;
+  b.magic = (raw.B_Magia ?? 0) + (raw.B_Poder ?? 0); // B_Poder (one amulet) is Power too
+  b.armor = raw.B_Armadura ?? 0;
+  for (const [k, mask] of Object.entries(FAMILY_BONUS)) if (raw[k]) b.vs[mask] = raw[k]!;
+  return b;
 }
 
 export function buildItems(raw: Record<string, RawItem>, names: Record<string, string>): Map<number, ItemDef> {
@@ -63,6 +85,7 @@ export function buildItems(raw: Record<string, RawItem>, names: Record<string, s
       character: v.Requerimientos?.Character ?? 0,
       data: g.Data ?? 0,
       chestLevel: g.CofreLv ?? 0,
+      bonus: parseBonus(v),
       req: { strength: v.Requerimientos?.R_Fuerza ?? 0, skill: v.Requerimientos?.R_Destreza ?? 0, resistance: v.Requerimientos?.R_Resistencia ?? 0, magic: v.Requerimientos?.R_Magia ?? 0, level: v.Requerimientos?.R_Nivel ?? 0 },
     });
   }
@@ -156,11 +179,28 @@ export class Inventory {
     return w ? [w.power[0], w.power[1]] : [1, 2];
   }
 
-  /** Damage absorbed per hit: body armour level + shield protection. */
+  /** Damage absorbed per hit: body armour level + shield protection + armour bonuses of worn items. */
   armor(): number {
     const a = this.equipped.armor ? this.defs.get(this.equipped.armor) : undefined;
     const s = this.equipped.shield ? this.defs.get(this.equipped.shield) : undefined;
-    return (a?.level ?? 0) + (s?.power[0] ?? 0);
+    return (a?.level ?? 0) + (s?.power[0] ?? 0) + this.worn().armor;
+  }
+
+  /** Sum of the bonuses of everything worn. */
+  worn(): Bonus {
+    const t = noBonus();
+    for (const id of Object.values(this.equipped)) {
+      const b = id ? this.defs.get(id)?.bonus : undefined;
+      if (!b) continue;
+      t.strength += b.strength; t.skill += b.skill; t.resistance += b.resistance; t.magic += b.magic; t.armor += b.armor;
+    }
+    return t;
+  }
+
+  /** Damage multiplier of the wielded weapon against a monster family mask (1 = no bonus; below 0 heals). */
+  weaponVs(race: number): number {
+    const w = this.equipped.weapon ? this.defs.get(this.equipped.weapon) : undefined;
+    return 1 + familyBonus(w?.bonus, race);
   }
 }
 
@@ -172,4 +212,12 @@ export function rollByMask(defs: Map<number, ItemDef>, mask: number, level: numb
   const pool = [...defs.values()].filter((d) => d.chestLevel >= 1 && d.chestLevel <= level && (d.tipo & mask) !== 0 && usable(d));
   if (!pool.length) return null;
   return pool[Math.floor(rnd() * pool.length)]!.id;
+}
+
+/** Sum of an item's family bonuses that apply to a monster's `Raza` mask. */
+export function familyBonus(b: Bonus | undefined, race: number): number {
+  if (!b) return 0;
+  let t = 0;
+  for (const [mask, v] of Object.entries(b.vs)) if (race & Number(mask)) t += v;
+  return t;
 }

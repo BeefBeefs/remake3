@@ -23,6 +23,13 @@ Each working session appends an entry below (newest first). Format knowledge liv
 | Skills/magic, dialogue, quests (`.adv`), multiplayer, editor | ⬜ not started |
 | Combat + monster AI | 🟡 first pass (placeholder numbers) |
 
+### Turn 10 — equipment bonuses, death penalty, right-click use
+
+**Equipment bonuses ✅.** `items.json` has a `Bonificadores` block I had not read: attribute bonuses (`B_Fuerza/Destreza/Resistencia/Magia/Poder`), `B_Armadura`, and damage multipliers per monster family. Wearing items now changes the effective abilities (life, stamina, mana, spell damage), armour, and weapon/parchment damage against a family (`Raza` in the actor INI is a bit mask: 1 goblin, 2 orc, 4 undead, 8 beast, 16 troll, 32 demon, 64 human). Requirements still use invested points so a bonus item cannot unlock itself. The parchments carry their own family bonuses (storm +40% vs humans, incineration 0 vs demons), so the spell numbers are now partly data-driven.
+**Death penalty ✅.** Dying loses the whole inventory (backpack and worn gear) and one point from each ability; **R** reloads with the same hero (level, xp, points, gold) through `sessionStorage`. Guesses: gold kept, worn gear counts as carried, mission restarts.
+**Right-click use ✅.** Right button in the inventory drinks/reads; left button wears equipment and only reminds you about potions and scrolls. Keys 1-4 use the first four backpack slots.
+- Tests: 85 passing. Not run in a browser; the on-screen quick bar of the original is not recreated.
+
 ### Turn 9 — stamina and stances, item requirements, block/hold and parchments (from the manual)
 
 **Step 1 ✅ Stamina, mana, run and stealth.** Stamina = 2 × Resistance, mana = 2 × Power (ratios guessed); bars under the HP bar. Ctrl = run (×2, running footsteps 162/166/170, drains stamina, impossible at 0),

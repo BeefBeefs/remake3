@@ -593,3 +593,152 @@ test('Berserk fills life, immunity fills mana', () => {
   assert.equal(i.attrs.magic, 32);
   assert.equal(i.mana, i.maxMana, 'full pool after the cost');
 });
+
+const SORC = { strength: 19, skill: 23, resistance: 21, magic: 50 };
+
+test('worn items add their attribute bonuses to life, stamina and mana, and take them away again', () => {
+  const g = makeGame({ classId: 100, attrs: { strength: 32, skill: 24, resistance: 30, magic: 30 } });
+  g.inventory.add(80); // amulet: +8 Strength, -4 Skill, -4 Resistance, -6 Power
+  const hp0 = g.hero.stats.hp, st0 = g.maxStamina, mp0 = g.maxMana;
+  g.useSlot(g.inventory.slots.indexOf(80));
+  assert.equal(g.inventory.equipped.amulet, 80);
+  assert.equal(g.eff.strength, 40);
+  assert.equal(g.eff.resistance, 26);
+  assert.equal(g.hero.stats.hp, hp0 - 8, 'two life per Resistance point');
+  assert.equal(g.maxStamina, st0 - 8);
+  assert.equal(g.maxMana, mp0 - 12, 'Poder counts as Power');
+  assert.equal(g.attrs.resistance, 30, 'the invested points are untouched');
+  g.unequip('amulet');
+  assert.equal(g.hero.stats.hp, hp0);
+  assert.equal(g.maxMana, mp0);
+});
+
+test('requirements are checked against invested points, not against worn bonuses', () => {
+  const g = makeGame({ classId: 100, attrs: { strength: 32, skill: 24, resistance: 30, magic: 30 } });
+  g.inventory.add(80);
+  g.useSlot(g.inventory.slots.indexOf(80));
+  const def = g.inventory.def(1)!;
+  assert.equal(g.missing({ ...def, req: { ...def.req, strength: 36 } }).length, 1, '32 invested + 8 worn must not satisfy a Strength 36 requirement');
+});
+
+test('a cursed ring lowers everything but raises armour; life never drops below 1 when it is put on', () => {
+  const g = makeGame({ classId: 100, attrs: { strength: 32, skill: 24, resistance: 30, magic: 30 } });
+  g.inventory.add(71);
+  const armor0 = g.hero.stats.armor;
+  g.hero.hp = 3;
+  g.useSlot(g.inventory.slots.indexOf(71));
+  assert.equal(g.hero.stats.armor, armor0 + 1);
+  assert.equal(g.eff.magic, 28);
+  assert.ok(g.hero.hp >= 1);
+});
+
+test('a staff does extra damage to the families it is made for and little to the rest', () => {
+  const dmgOn = (race: number, staff: number) => {
+    const g = makeGame({ classId: 102, attrs: SORC, spawns: [{ id: '1', cx: 129, cy: 128 }] });
+    const m = g.monsters[0]!;
+    m.hp = m.stats.hp = 500; m.stats.armor = 0; m.stats.race = race;
+    g.inventory.equipped.weapon = staff;
+    g.refreshHeroStats();
+    facing(g, 1, 0);
+    let total = 0;
+    for (let i = 0; i < 40; i++) { const before = m.hp; (g as unknown as { heroStrike(): void }).heroStrike(); total += before - m.hp; }
+    return total / 40;
+  };
+  assert.ok(dmgOn(1, 55) > dmgOn(0, 55) * 1.4, 'staff 55: +64% against goblins');
+  assert.ok(dmgOn(32, 58) > dmgOn(1, 58) * 1.4, 'staff 58: +70% against demons');
+});
+
+test('a spell uses the scroll\'s own family bonus: storm hits humans 40% harder, incineration cannot hurt demons', () => {
+  const hit = (scroll: number, race: number) => {
+    const g = makeGame({ classId: 102, attrs: SORC, spawns: [{ id: '1', cx: 131, cy: 128 }] });
+    const m = g.monsters[0]!;
+    m.hp = m.stats.hp = 900; m.stats.armor = 0; m.stats.race = race;
+    g.inventory.add(scroll); g.mana = 500;
+    g.useSlot(g.inventory.slots.indexOf(scroll));
+    return 900 - m.hp;
+  };
+  assert.ok(hit(87, 64) > hit(87, 1) * 1.3);
+  assert.equal(hit(90, 32), 0);
+  assert.ok(hit(90, 1) > 0);
+});
+
+const killHero = (g: Game) => {
+  g.hero.hp = 1;
+  const m = g.monsters[0]!;
+  (g as unknown as { monsterStrike(m: unknown): void }).monsterStrike(m);
+};
+
+test('dying loses every item and one point of each ability, but keeps gold, level and unspent points', () => {
+  const g = makeGame({ classId: 100, attrs: { strength: 32, skill: 24, resistance: 30, magic: 12 }, spawns: [{ id: '1', cx: 129, cy: 128 }] });
+  g.inventory.add(104); g.inventory.gold = 250; g.level = 3; g.points = 4;
+  killHero(g);
+  assert.equal(g.hero.alive, false);
+  assert.equal(g.dead, true);
+  assert.equal(g.inventory.slots.some(Boolean), false);
+  assert.deepEqual(g.inventory.equipped, {});
+  assert.deepEqual(g.attrs, { strength: 31, skill: 23, resistance: 29, magic: 11 });
+  assert.deepEqual(g.save(), { attrs: { strength: 31, skill: 23, resistance: 29, magic: 11 }, level: 3, xp: g.xp, points: 4, gold: 250 });
+  assert.match(g.log.at(-1)!, /You have died: \d+ items lost/);
+  assert.equal(g.hero.hp <= 0, true, 'a dead hero is not revived by stat refreshes');
+});
+
+test('a hero never loses an ability below 1', () => {
+  const g = makeGame({ classId: 100, attrs: { strength: 1, skill: 5, resistance: 1, magic: 2 }, spawns: [{ id: '1', cx: 129, cy: 128 }] });
+  killHero(g);
+  assert.deepEqual(g.attrs, { strength: 1, skill: 4, resistance: 1, magic: 1 });
+});
+
+test('a new attempt continues with the saved hero: attributes, level, experience, points, gold and the starting kit', () => {
+  const first = makeGame({ classId: 102, attrs: { strength: 19, skill: 23, resistance: 21, magic: 30 }, spawns: [{ id: '1', cx: 129, cy: 128 }] });
+  first.level = 4; first.xp = 600; first.points = 8; first.inventory.gold = 77;
+  killHero(first);
+  const second = makeGame({ classId: 102, save: first.save() });
+  assert.deepEqual(second.attrs, first.attrs);
+  assert.equal(second.level, 4);
+  assert.equal(second.xp, 600);
+  assert.equal(second.points, 8);
+  assert.equal(second.inventory.gold, 77);
+  assert.equal(second.hero.alive, true);
+  assert.equal(second.hero.stats.hp, second.attrs.resistance * 2);
+  assert.ok(second.inventory.equipped.weapon, 'back with the class weapon in hand');
+});
+
+test('left click wears equipment but only reminds you about potions and scrolls; right click uses them', () => {
+  const g = makeGame({ classId: 102, attrs: SORC });
+  g.inventory.add(86);
+  const at = g.inventory.slots.indexOf(86);
+  g.mana = 100;
+  g.activate(at, 'left');
+  assert.ok(g.inventory.slots.includes(86), 'left click leaves the scroll alone');
+  assert.match(g.log.at(-1)!, /Right-click to use/);
+  g.activate(at, 'right');
+  assert.equal(g.inventory.slots.includes(86), false, 'right click reads it');
+  const p = g.inventory.slots.indexOf(104);
+  g.hero.hp = 5;
+  g.activate(p, 'left');
+  assert.equal(g.hero.hp, 5, 'left click does not drink');
+  g.activate(p, 'right');
+  assert.ok(g.hero.hp > 5);
+});
+
+test('left click still wears a weapon, and right click does too', () => {
+  const g = makeGame({ classId: 100, attrs: { strength: 60, skill: 60, resistance: 30, magic: 30 } });
+  g.inventory.add(2);
+  const w0 = g.inventory.equipped.weapon;
+  g.activate(g.inventory.slots.indexOf(2), 'left');
+  assert.equal(g.inventory.equipped.weapon, 2);
+  assert.ok(w0 !== 2);
+  g.activate(g.inventory.slots.indexOf(w0!), 'right');
+  assert.equal(g.inventory.equipped.weapon, w0);
+});
+
+test('keys 1-4 use the first four backpack slots', () => {
+  const g = makeGame({ classId: 100 });
+  assert.equal(g.inventory.slots[0] && g.inventory.def(g.inventory.slots[0]!)!.kind, 'potion');
+  g.hero.hp = 5;
+  g.useQuick(1);
+  assert.ok(g.hero.hp > 5);
+  const before = g.inventory.slots.slice();
+  g.useQuick(0); g.useQuick(5);
+  assert.deepEqual(g.inventory.slots, before, 'only 1-4 are quick keys');
+});

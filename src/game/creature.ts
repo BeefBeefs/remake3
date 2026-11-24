@@ -19,6 +19,8 @@ export interface Stats {
   /** hearing / aggro radius in cells (monsters) */
   hearing: number;
   xp: [number, number];
+  /** INI `Raza` family mask: 1 goblin, 2 orc, 4 undead, 8 beast, 16 troll, 32 demon, 64 human */
+  race?: number;
 }
 
 const ONE_SHOT = new Set<State>(['attack', 'hit', 'dead']);

@@ -1,5 +1,5 @@
 import type { Atlas } from '../assets/atlas.ts';
-import type { Game } from '../game/game.ts';
+import { Game } from '../game/game.ts';
 import { slotOf, type ItemDef, type Slot } from '../game/items.ts';
 
 const SLOTS: Slot[] = ['weapon', 'shield', 'armor', 'ring', 'amulet'];
@@ -51,13 +51,21 @@ export class InventoryPanel {
     return parts.join(' · ');
   }
 
-  private cell(def: ItemDef | undefined, onClick?: () => void, highlight = false): HTMLDivElement {
+  private cell(def: ItemDef | undefined, onClick?: () => void, highlight = false, onRight?: () => void, label?: string): HTMLDivElement {
     const c = document.createElement('div');
     c.style.cssText = `width:60px;height:60px;box-sizing:border-box;background:#1d160d;border:1px solid ${highlight ? '#d8b24a' : def && this.game.blocked(def) ? '#b32020' : '#4a3a1c'};cursor:${def && onClick ? 'pointer' : 'default'}`;
+    c.style.position = 'relative';
+    if (label) {
+      const n = document.createElement('span');
+      n.textContent = label;
+      n.style.cssText = 'position:absolute;left:2px;top:0;font-size:10px;color:#8d7c52;pointer-events:none';
+      c.appendChild(n);
+    }
     if (def) {
       c.appendChild(this.icon(def));
       c.title = this.tip(def);
       if (onClick) c.addEventListener('click', onClick);
+      if (onRight) c.addEventListener('contextmenu', (e) => { e.preventDefault(); onRight(); });
     }
     return c;
   }
@@ -76,18 +84,18 @@ export class InventoryPanel {
     eq.style.cssText = 'display:flex;gap:4px;margin-bottom:8px';
     for (const slot of SLOTS) {
       const id = inv.equipped[slot];
-      eq.appendChild(this.cell(id ? inv.def(id) : undefined, () => this.game.unequip(slot), true));
+      eq.appendChild(this.cell(id ? inv.def(id) : undefined, () => this.game.unequip(slot), true, () => this.game.unequip(slot)));
     }
     this.body.appendChild(eq);
     const grid = document.createElement('div');
     grid.style.cssText = 'display:grid;grid-template-columns:repeat(5,60px);gap:4px';
     inv.slots.forEach((id, i) => {
       const def = id ? inv.def(id) : undefined;
-      grid.appendChild(this.cell(def, () => this.game.useSlot(i), !!def && slotOf(def) === null && def.kind === 'potion'));
+      grid.appendChild(this.cell(def, () => this.game.activate(i, 'left'), !!def && slotOf(def) === null && (def.kind === 'potion' || def.kind === 'scroll'), () => this.game.activate(i, 'right'), i < Game.QUICK_SLOTS ? String(i + 1) : undefined));
     });
     this.body.appendChild(grid);
     const hint = document.createElement('div');
-    hint.textContent = 'click an item to use / wear it · click a worn item to take it off · I closes';
+    hint.textContent = 'click to wear · right-click to drink / read · keys 1-4 use the first four slots · click a worn item to take it off · I closes';
     hint.style.cssText = 'margin-top:6px;color:#8d7c52';
     this.body.appendChild(hint);
   }

@@ -4,7 +4,7 @@ A TypeScript / three.js, browser-playable remake of **NightStone** (2001, New Ho
 Interactive) — an isometric action RPG with a Barbarian, a Sorceress and an Amazon. See [PROGRESS.md](PROGRESS.md) for the
 current state and [docs/FORMATS.md](docs/FORMATS.md) for the reverse-engineered file formats.
 
-**Play it:** https://beefbeefs.github.io/remake3/ (add `?class=amazon` or `?class=sorceress` to skip the hero menu; `?npc=27` puts the innkeeper next to you to try the shop)
+**Play it:** https://beefbeefs.github.io/remake3/ (right-click items to use them, keys 1-4 for the first four slots; add `?class=amazon` or `?class=sorceress` to skip the hero menu; `?npc=27` puts the innkeeper next to you to try the shop)
 
 ## Run it
 

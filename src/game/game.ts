@@ -4,13 +4,13 @@ import { type AnimData } from './anims.ts';
 import { SPELLS, SPELL_RADIUS, blastDamage, manaCost } from './spells.ts';
 import { STEP_SOUND, type Surface } from './surface.ts';
 import { Creature, type Stats } from './creature.ts';
-import { Inventory, missingReqs, rollByMask, rollDrop, slotOf, type ItemDef } from './items.ts';
+import { Inventory, familyBonus, missingReqs, rollByMask, rollDrop, slotOf, type ItemDef } from './items.ts';
 import { cellToWorld, depthOf } from '../iso.ts';
 import { World } from './world.ts';
 
 type Range = [number, number];
 interface ActorIni {
-  General?: { Vel_Ataque?: Range; Altura?: number };
+  General?: { Vel_Ataque?: Range; Altura?: number; Raza?: number };
   HDP?: { Vida?: number; Fuerza?: Range; Armadura?: number; Pts_Experiencia?: Range; Velocidad?: number };
   IA?: { Oido?: number };
   Items?: { IDItem?: number[]; PItem?: number[] };
@@ -40,7 +40,12 @@ export interface GameOptions {
   classId?: ClassId;
   /** text shown when the mission's goal object is reached */
   finalText?: string;
+  /** continue with a hero from an earlier attempt (see `Game.save`); its attributes replace `attrs` */
+  save?: HeroSave;
 }
+
+/** What survives from one attempt to the next: the hero's growth (manual: dying costs the items and one point of each ability). */
+export interface HeroSave { attrs: { strength: number; skill: number; resistance: number; magic: number }; level: number; xp: number; points: number; gold: number }
 
 /** A non-hostile character (innkeeper, villagers…): single-view sprite strip, talks when clicked. */
 export interface Npc { id: string; name: string; creature: Creature }
@@ -169,11 +174,14 @@ export class Game {
   private readonly patrols = new Map<Creature, { pts: { cx: number; cy: number }[]; i: number; wait: number }>();
 
   /** hero attributes of the adventure (shown in the inventory panel; only resistance feeds back into HP, see below) */
+  /** life points currently granted by worn Resistance bonuses (already inside hero.stats.hp) */
+  private appliedBonusHp = 0;
   readonly attrs: NonNullable<GameOptions['attrs']>;
   readonly classId: ClassId;
 
   constructor(private readonly world: World, private readonly data: GameData, start: { cx: number; cy: number }, opts: GameOptions = {}) {
-    this.attrs = { ...(opts.attrs ?? { strength: 30, skill: 24, resistance: 30, magic: 11 }) };
+    this.attrs = { ...(opts.save?.attrs ?? opts.attrs ?? { strength: 30, skill: 24, resistance: 30, magic: 11 }) };
+    if (opts.save) { this.level = opts.save.level; this.xp = opts.save.xp; this.points = opts.save.points; }
     this.finalText = opts.finalText ?? 'Mission complete.';
     this.surfaceAt = opts.surface ?? (() => 'grass');
     this.classId = opts.classId ?? 100;
@@ -182,6 +190,7 @@ export class Game {
     // starting kit: the class's first weapon in hand and two life potions
     this.inventory.add(cls.weapon); this.inventory.equip(0);
     this.inventory.add(104); this.inventory.add(104);
+    if (opts.save) this.inventory.gold = opts.save.gold;
     this.hero = this.make(String(this.classId), start.cx, start.cy, { hp: this.attrs.resistance * HP_PER_RESISTANCE, damage: [2, 4], speed: HERO_SPEED, name: data.names[String(this.classId)] ?? cls.name });
     this.stamina = this.maxStamina;
     this.mana = this.maxMana;
@@ -207,6 +216,7 @@ export class Game {
       cooldown: [cd[0] * AI_TICK, cd[1] * AI_TICK],
       hearing: ini.IA?.Oido ?? 3,
       xp: hdp.Pts_Experiencia ?? [1, 2],
+      race: ini.General?.Raza ?? 0,
       ...over,
     };
     return new Creature(def, atlas, stats, cx, cy);
@@ -372,6 +382,12 @@ export class Game {
   refreshHeroStats(): void {
     this.hero.stats.damage = this.inventory.damage();
     this.hero.stats.armor = this.inventory.armor();
+    const bonusHp = HP_PER_RESISTANCE * this.inventory.worn().resistance;
+    this.hero.stats.hp += bonusHp - this.appliedBonusHp;
+    this.appliedBonusHp = bonusHp;
+    if (this.hero.alive) this.hero.hp = Math.max(1, Math.min(this.hero.hp, this.hero.stats.hp));
+    this.stamina = Math.min(this.stamina, this.maxStamina);
+    this.mana = Math.min(this.mana, this.maxMana);
     this.version++;
   }
 
@@ -387,10 +403,10 @@ export class Game {
     const near = this.monsters.filter((m) => m.alive && Math.hypot(m.cx - h.cx, m.cy - h.cy) <= SPELL_RADIUS);
     switch (spell.kind) {
       case 'blast': {
-        const dmg = blastDamage(spell, this.attrs.magic);
+        const dmg = blastDamage(spell, this.eff.magic);
         this.snd(spell.sound);
         for (const m of near) {
-          this.damageMonster(m, dmg);
+          this.damageMonster(m, Math.round(dmg * (1 + familyBonus(def.bonus, m.stats.race ?? 0))));
           if (spell.stun && m.alive) m.setState('hit');
         }
         this.say(`${def.name}: ${near.length ? `${near.length} enemies take ${dmg}` : 'no enemy in sight'}`);
@@ -437,7 +453,27 @@ export class Game {
     return true;
   }
 
-  /** Clicking an inventory slot: drink potions, wear equipment. */
+  /** Number of backpack slots reachable by the 1-4 keys (manual: "direct access objects"; guess: the first four slots). */
+  static readonly QUICK_SLOTS = 4;
+
+  /**
+   * Mouse use of a backpack slot. Manual: parchments (and potions) are used with the right button; here the left button
+   * wears equipment and only reminds you about consumables, so a stray click cannot burn a scroll.
+   */
+  activate(index: number, button: 'left' | 'right'): void {
+    const id = this.inventory.slots[index];
+    const def = id ? this.inventory.def(id) : undefined;
+    if (!def || !this.hero.alive) return;
+    if (button === 'left' && (def.kind === 'potion' || def.kind === 'scroll')) { this.say(`Right-click to use the ${def.name}`); return; }
+    this.useSlot(index);
+  }
+
+  /** Keys 1-4. */
+  useQuick(n: number): void {
+    if (n >= 1 && n <= Game.QUICK_SLOTS) this.useSlot(n - 1);
+  }
+
+  /** Using an inventory slot: drink potions, read parchments, wear equipment. */
   useSlot(index: number): void {
     const id = this.inventory.slots[index];
     const def = id ? this.inventory.def(id) : undefined;
@@ -513,6 +549,8 @@ export class Game {
 
   /** Applies hero damage to a monster: hurt/die sounds, loot, kill count and experience. */
   private damageMonster(m: Creature, dmg: number): void {
+    if (dmg < 0) { m.hp = Math.min(m.stats.hp, m.hp - dmg); return; } // a family bonus below -1 heals (fire on demons)
+    if (dmg === 0) return;
     const killed = m.hurt(dmg);
     this.msnd(m, killed ? 2 : 3);
     if (killed) {
@@ -548,7 +586,9 @@ export class Game {
       hit = true;
       const [lo, hi] = h.stats.damage;
       const sneak = this.effectiveStance === 'stealth' && this.unaware.has(m);
-      const dmg = Math.max(1, (lo + Math.floor(this.rnd() * (hi - lo + 1))) * (sneak ? SNEAK_MULT : 1) - m.stats.armor);
+      const mult = this.inventory.weaponVs(m.stats.race ?? 0);
+      const roll = (lo + Math.floor(this.rnd() * (hi - lo + 1))) * (sneak ? SNEAK_MULT : 1);
+      const dmg = mult <= 0 ? Math.round(roll * mult) : Math.max(1, Math.round(roll * mult) - m.stats.armor);
       if (sneak) this.say('Sneak attack!');
       const flesh = this.data.actors[this.idOf.get(m) ?? '']?.Sonidos?.Carne !== 0;
       this.snd(this.pick(flesh ? 59 : 62, 3)); // c_carne / c_nocarne
@@ -582,7 +622,30 @@ export class Game {
     const died = h.hurt(Math.max(1, lo + Math.floor(this.rnd() * (hi - lo + 1)) - h.stats.armor));
     const sb = CLASSES[this.classId].sound;
     this.snd(died ? sb : this.pick(sb + 1, 2)); // <class>_morir / _recibir
-    if (died) this.say('You have died');
+    if (died) this.die();
+  }
+
+  /**
+   * Manual: "When you die, your hero will lose the objects that he/she is carrying in their inventory and one point from
+   * each separate ability." Applied at once, so the character window shows it. Guesses: worn equipment counts as carried,
+   * gold is kept, an ability never drops below 1, level and unspent points are kept.
+   */
+  private die(): void {
+    const lost = this.inventory.slots.filter(Boolean).length + Object.keys(this.inventory.equipped).length;
+    this.inventory.slots.fill(0);
+    for (const k of Object.keys(this.inventory.equipped) as (keyof typeof this.inventory.equipped)[]) delete this.inventory.equipped[k];
+    for (const k of ['strength', 'skill', 'resistance', 'magic'] as const) this.attrs[k] = Math.max(1, this.attrs[k] - 1);
+    this.dead = true;
+    this.version++;
+    this.say(`You have died: ${lost} item${lost === 1 ? '' : 's'} lost and one point from each ability`);
+  }
+
+  /** True once the hero has died and paid the penalty. */
+  dead = false;
+
+  /** The hero as the next attempt starts with it. */
+  save(): HeroSave {
+    return { attrs: { ...this.attrs }, level: this.level, xp: this.xp, points: this.points, gold: this.inventory.gold };
   }
 
   /** @param move cell-space unit vector from the keyboard, or null */
@@ -600,8 +663,13 @@ export class Game {
     for (const m of this.monsters) m.update(dt);
   }
 
-  get maxStamina(): number { return this.attrs.resistance * STAMINA_PER_RESISTANCE; }
-  get maxMana(): number { return this.attrs.magic * MANA_PER_POWER; }
+  /** Attributes with worn-item bonuses; requirements use the plain `attrs`, everything derived (life, stamina, mana, spells) uses these. */
+  get eff(): NonNullable<GameOptions['attrs']> {
+    const w = this.inventory.worn();
+    return { strength: this.attrs.strength + w.strength, skill: this.attrs.skill + w.skill, resistance: this.attrs.resistance + w.resistance, magic: this.attrs.magic + w.magic };
+  }
+  get maxStamina(): number { return Math.max(1, this.eff.resistance * STAMINA_PER_RESISTANCE); }
+  get maxMana(): number { return Math.max(0, this.eff.magic * MANA_PER_POWER); }
 
   /** What the hero still lacks to use an item (empty = usable, otherwise the item shows a red border). */
   missing(def: ItemDef): string[] { return missingReqs(def, this.attrs, this.level); }
