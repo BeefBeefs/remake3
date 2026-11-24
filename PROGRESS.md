@@ -428,3 +428,8 @@ Read the use-item routine for type-512 items in `Nightstone.exe` (all 18 cases).
 - **Life** adds 2 life and 1 stamina per mana point. **Restoration** repairs only the worn weapon, shield and armour.
 - Not decoded: the exact range test in the area routine (0x41e150) and the extra visual effects of the freeze and storm callbacks.
 - 147 tests.
+
+- **Master armour (Turn 19 follow-up).** The "+1 / +2 armour in some poses" was really by *actor id*: the receive routine adds 1 armour
+  for actors 48 (troll warrior master), 51 (Lord of Ailm), 52 and 58 (orc masters) and 2 for 61 (orc general), after the difficulty
+  scaling. Implemented (`MASTER_ARMOR`). Actor 63 (Naya, the Princess) takes no damage from heroes; she is an NPC here, so nothing to
+  change. `SangreFX` is not read by that routine. 148 tests.

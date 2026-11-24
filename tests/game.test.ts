@@ -750,6 +750,20 @@ test('difficulty changes monster armour (halved / doubled) and attack delay (x1.
   assert.ok(Math.abs(easy.cd[0] - normal.cd[0] * 1.5) < 1e-9 && Math.abs(hard.cd[1] - normal.cd[1] * 2 / 3) < 1e-9);
 });
 
+test('the orc general (61) has 2 extra armour in the executable, an orc master (52) 1; ordinary monsters none', () => {
+  const avg = (id: string) => {
+    const g = makeGame({ classId: 100, attrs: { strength: 60, skill: 24, resistance: 30, magic: 12 }, spawns: [{ id, cx: 300, cy: 300 }] });
+    const m = g.monsters[0]!; m.hp = 1e6; m.stats.hp = 1e6; m.stats.armor = 0; m.stats.block = 0; m.stats.stun = 0;
+    const hit = g as unknown as { heroHitMonster(m: unknown, s: boolean, ranged?: boolean): void };
+    let t = 0;
+    for (let i = 0; i < 600; i++) { m.hp = 1e6; g.inventory.repairAll(); hit.heroHitMonster(m, false, true); t += 1e6 - m.hp; }
+    return t / 600;
+  };
+  const plain = avg('8'), master = avg('52'), general = avg('61');
+  assert.ok(Math.abs(plain - master - 1) < 0.3, `master ${master} vs ${plain}`);
+  assert.ok(Math.abs(plain - general - 2) < 0.3, `general ${general} vs ${plain}`);
+});
+
 test('the monster receive routine: a blow from behind is tripled, an almost-behind one doubled, ranged ones never; armour comes off after', () => {
   const g = makeGame({ spawns: [{ id: '1', cx: 300, cy: 300 }] });
   const m = g.monsters[0]!; m.hp = 1e6; m.stats.hp = 1e6; m.stats.armor = 0; m.stats.block = 0; m.stats.stun = 0;

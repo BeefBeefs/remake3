@@ -116,6 +116,9 @@ const STEALTH_HEARING = 0.5;
 const BLOCK_COST = 2;
 /** Bows shoot an arrow that flies this many cells; it is aimed at the nearest monster within ~25 degrees of the aim. */
 const BOW_RANGE = 7;
+/** The executable adds armour to the troll warrior master (48), Lord of Ailm (51), the two orc masters (52, 58) and the orc general (61, +2). */
+const MASTER_ARMOR: Record<string, number> = { '48': 1, '51': 1, '52': 1, '58': 1, '61': 2 };
+
 /** Monsters that shoot from a distance (INI Tipo_IA 3): what they fire, how far, and the closest they like to stand. */
 const RANGED: Record<string, { kind: ProjKind; range: number; keep: number; color: number }> = {
   '23': { kind: 'arrow', range: 8, keep: 3.5, color: 0xffffff }, // Arquero
@@ -798,7 +801,7 @@ export class Game {
     let dmg = total, mult = 1;
     if (total > 0) {
       if (!ranged) { const turn = Math.abs(this.hero.dir - m.dir); mult = turn === 0 ? 3 : turn === 1 || turn === 7 ? 2 : 1; }
-      dmg = Math.max(1, total * mult - m.stats.armor);
+      dmg = Math.max(1, total * mult - m.stats.armor - (MASTER_ARMOR[this.idOf.get(m) ?? ''] ?? 0));
       const covering = m.state === 'hit' || m.state === 'block';
       if (!ranged && mult === 1 && !covering && Math.floor(this.rnd() * 1000) * 0.1 <= (m.stats.block ?? 0)) {
         this.snd(this.pick(53, 4)); // the monster covers: the blow does nothing (c_cubrir)
