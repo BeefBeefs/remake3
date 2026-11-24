@@ -572,6 +572,7 @@ export class Game {
     if (h.cooldown > 0 || h.state === 'attack' || h.state === 'hit' || this.blocking) return false;
     h.face(this.facing.x, this.facing.y);
     this.unaware = new Set(this.monsters.filter((m) => !this.alerted.has(m)));
+    h.secondAttack = !!h.def.anims.Atacar2 && !h.secondAttack; // the Barbarian alternates his two swings
     h.setState('attack');
     h.cooldown = 0.35;
     return true;

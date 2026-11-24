@@ -1396,3 +1396,17 @@ test('heroes run with Extra, sneak with Vigilar, and the target plate follows th
   run(g, 5);
   assert.equal(g.focus, null);
 });
+
+test('the Barbarian alternates his two swings, the other heroes have one', () => {
+  const g = makeGame({ spawns: [] });
+  const strip = () => (g.hero as any).anim('attack') as { start: number };
+  const seen: number[] = [];
+  for (let i = 0; i < 4; i++) {
+    g.swing();
+    seen.push(strip().start);
+    run(g, 3);
+  }
+  const has2 = !!g.hero.def.anims.Atacar2;
+  assert.equal(new Set(seen).size, has2 ? 2 : 1);
+  if (has2) assert.notEqual(seen[0], seen[1]);
+});
