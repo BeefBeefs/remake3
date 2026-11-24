@@ -267,3 +267,28 @@ yet; they hold the 72 actor and 141 item definitions.
 - `MAN/Manual.pdf` (6.7 MB) is scanned images – no text layer (needs OCR for the controls/skills reference).
 - Engine strings (`Nightstone.exe`): `CActorSpider`, `Actors\Gfx\{Amazon,Barbarian,Sorceress,Rat,Spider,Stone}`,
   `@NHS@%d.map`, `Loading Actor IA:: 72 actors`, `Loading Items: 141 items` (Debug.txt).
+
+## 6. GUI art (`GDI/Graphics/*.b16`, `System/Menu.ini`, `System/Fnt*.dat`) ✅
+
+All GUI banks are ordinary B16 (RGB565, magenta key) and are converted to atlases `atlas/gdi/graphics/<bank>.{png,json}`.
+Frame ids that the remake uses (`src/ui/*.ts`):
+
+| Bank | Frames |
+|------|--------|
+| `NQuest` | 17 title background (logo on black, 640×480), 4 same with the words baked in, 1-3 words, 11/12 stone frames |
+| `Menu` | 2 New game, 3 Multiplayer, 4 Load game, 5 Controls, 6 Credits, 7 Exit (302×46); 12 Start game, 13 Select map, 14 Return (252×32); 60/61 Accept/Cancel (67×20); 62 Difficulty dialog (308×199, buttons 222×27 at local 43,55 / 43,95 / 43,135; 63-65 are their pressed images); 59 Ability panel; 333-338 hero portraits |
+| `MapGFX` | 32 Select Hero dialog (308×192, portraits at local x 62/132/202, y 75; Accept/Cancel at y 156), 10 Options menu (132×189: Load 40, Save 70, Return 100, Exit 131; x 22), 333-338 portraits (alive / dead grey) |
+| `Overlay` | 50 Controls window (308×452), 51 Return (121×20), 66 stone panel, 200-207 font sheets, 30/250 hand cursors |
+| `Score` | **HUD**: 0 minimap ring (151×119; hole x 21-104, y 14-93), 10-17 globe (86×86), 2-9 the four ring buttons (22×22, pairs normal/hover, at x 32/56/80/104, y 95), 30 portrait frame (95×54; portrait at 19,1; bar wells at x 67/77/87, 6 px wide), 29 ornament, 18/19/43 life / stamina / mana bars (9×36), 31-36 portraits, 1 message frame (202×91; text hole 34,18 - 183,73), 83 Allies dialog |
+| `Inventory` | 0 inventory window (255×420), 1 backpack side panel, 41 quick bar (190×53; slots 36×36 at x 24+40·i, y 13), 3/5/7 slot backgrounds, 20-32 body / hand silhouettes, 10-13 Heavy / Light objects tabs |
+| `HDP` | 0 character window (255×420), 1-3 "+" buttons |
+
+`Menu.ini` gives the 640×480 button coordinates (`CNewGame={0,251}`, `CStartGame={194,302}`, `[Preferences]` slider and box
+positions…). `NightStone_1.tga` / `NightStone_2.tga` in the install root are screenshots of the real HUD at 1024×768.
+
+**Bitmap font:** `Overlay` frame 200 (and 201, 204-207 in other colours) is a 256×256 sheet of 16×16 cells in Windows-1252
+order (code `c` at column `c & 15`, row `c >> 4`, white on black); `System/Fnt.dat`, `FntBold.dat`, `FntMenu.dat`,
+`BigFont.dat`, `SmallFnt.dat` are 256 bytes of per-character advances in pixels (`data/fonts.json`). The big menu words and
+buttons carry a black backdrop and look right when added to the picture (`mix-blend-mode: screen`).
+
+Spell effect textures live in `GDI/3D/*.bmp` (64-72 torches, 100-104 rings, 118/119 flares, 120-133 smoke), not used yet.

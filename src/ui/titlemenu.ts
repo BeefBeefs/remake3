@@ -150,7 +150,7 @@ export class TitleMenu {
     // the key assignments (the manual says they can be changed; ours are fixed for now)
     [['Left button', 292], ['Ctrl + click', 328], ['Shift + click', 364], ['Right button', 400]].forEach(([label, y]) => {
       const t = this.skin.text(String(label), { color: '#d8caa0' });
-      t.style.cssText += `;position:absolute;left:${257 + 60 - this.skin.textWidth(String(label)) / 2}px;top:${Number(y) - 1}px`;
+      t.style.cssText += `;position:absolute;left:${257 + 60 - this.skin.textWidth(String(label)) / 2}px;top:${Number(y) - 4}px`;
       this.stage.appendChild(t);
     });
     this.button('overlay', 51, 261, 431, () => this.main());

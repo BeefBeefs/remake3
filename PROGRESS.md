@@ -23,6 +23,15 @@ Each working session appends an entry below (newest first). Format knowledge liv
 | Skills/magic, dialogue, quests (`.adv`), multiplayer, editor | ⬜ not started |
 | Combat + monster AI | 🟡 first pass (placeholder numbers) |
 
+### Turn 11 — main menu and GUI with the original art
+
+Found the interface art already converted in the atlases (and the installer screenshots `NightStone_1/2.tga`, which show the real HUD), decoded which frame is which (see `docs/FORMATS.md` section 6) and rebuilt the screens on it:
+- **Title menu** (`src/ui/titlemenu.ts`): logo background, the six original menu words at the `Menu.ini` coordinates, New game → Start game → **Select Hero** dialog → **Difficulty** dialog (Apprentice / Expert / Hero scale monster life and damage 0.7 / 1 / 1.4 and 0.7 / 1 / 1.3, guesses), **Controls** window with working music and fx volume, gamma and background-sound settings (stored in localStorage), Credits. Multiplayer, Load game and Select map are dimmed. Menu music plays on the first click.
+- **HUD** (`src/ui/hud.ts`): minimap ring with a radar (hero, monsters red, NPCs yellow, goal blue) and four buttons (objectives, inventory, options, character), portrait with life / stamina / mana bars and the "+N" level-up badge, quick bar (keys 1-4) over a message box, all in the original layout and drawn with the original bitmap font (`src/ui/skin.ts`).
+- **Options menu** (Esc, `src/ui/gamemenu.ts`): Return and Exit work, Load and Save are dimmed; the game pauses while it is open.
+- `gui.html` is a preview page that shows each screen without WebGL (the cloud browser has none), so I could check them against the originals by eye. Start-up errors are now printed on screen.
+- Not done: the inventory, character and shop windows still use plain DOM boxes (art is available: Inventory 0, HDP 0), the stance icons, hover/pressed states beyond brightness, per-hero ability setup screen.
+
 ### Turn 10 — equipment bonuses, death penalty, right-click use
 
 **Equipment bonuses ✅.** `items.json` has a `Bonificadores` block I had not read: attribute bonuses (`B_Fuerza/Destreza/Resistencia/Magia/Poder`), `B_Armadura`, and damage multipliers per monster family. Wearing items now changes the effective abilities (life, stamina, mana, spell damage), armour, and weapon/parchment damage against a family (`Raza` in the actor INI is a bit mask: 1 goblin, 2 orc, 4 undead, 8 beast, 16 troll, 32 demon, 64 human). Requirements still use invested points so a bonus item cannot unlock itself. The parchments carry their own family bonuses (storm +40% vs humans, incineration 0 vs demons), so the spell numbers are now partly data-driven.
