@@ -103,6 +103,12 @@ export function missingReqs(def: ItemDef, attrs: { strength: number; skill: numb
   return out;
 }
 
+/** Manual: "Heavy objects" (weapons, shields, body armour) and "Light objects" (everything else) have separate inventory pages. */
+export function isHeavy(def: ItemDef): boolean {
+  const s = slotOf(def);
+  return s === 'weapon' || s === 'shield' || s === 'armor';
+}
+
 export function slotOf(def: ItemDef): Slot | null {
   switch (def.kind) {
     case 'weapon': case 'shield': case 'armor': case 'ring': case 'amulet': return def.kind;
@@ -145,6 +151,19 @@ export class Inventory {
   }
 
   canUse(def: ItemDef): boolean { return def.character === 0 || def.character === this.character; }
+
+  /** Backpack indices of the heavy / light objects, in slot order. */
+  indicesOf(heavy: boolean): number[] {
+    const out: number[] = [];
+    this.slots.forEach((id, i) => {
+      const d = id ? this.defs.get(id) : undefined;
+      if (d && isHeavy(d) === heavy) out.push(i);
+    });
+    return out;
+  }
+
+  /** The "direct access" objects of keys 1-4 (manual: any light item): the first four light objects. */
+  quick(): number[] { return this.indicesOf(false).slice(0, 4); }
 
   /** Equips the item in slot `index` (swapping with what is worn). Returns false if it can't be worn. */
   equip(index: number): boolean {

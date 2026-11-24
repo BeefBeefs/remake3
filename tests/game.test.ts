@@ -732,12 +732,14 @@ test('left click still wears a weapon, and right click does too', () => {
   assert.equal(g.inventory.equipped.weapon, w0);
 });
 
-test('keys 1-4 use the first four backpack slots', () => {
+test('keys 1-4 use the first four light objects, skipping heavy gear in the backpack', () => {
   const g = makeGame({ classId: 100 });
-  assert.equal(g.inventory.slots[0] && g.inventory.def(g.inventory.slots[0]!)!.kind, 'potion');
+  g.inventory.slots[0] = 2; // a sword in the first slot is a heavy object and does not count
+  g.inventory.slots[1] = 104;
   g.hero.hp = 5;
   g.useQuick(1);
-  assert.ok(g.hero.hp > 5);
+  assert.ok(g.hero.hp > 5, 'key 1 drank the first light object');
+  assert.equal(g.inventory.slots[0], 2, 'the sword was not touched');
   const before = g.inventory.slots.slice();
   g.useQuick(0); g.useQuick(5);
   assert.deepEqual(g.inventory.slots, before, 'only 1-4 are quick keys');

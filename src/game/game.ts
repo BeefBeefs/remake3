@@ -472,7 +472,7 @@ export class Game {
     return true;
   }
 
-  /** Number of backpack slots reachable by the 1-4 keys (manual: "direct access objects"; guess: the first four slots). */
+  /** Keys 1-4 reach the first four light objects (manual: "direct access objects ... any light items"). */
   static readonly QUICK_SLOTS = 4;
 
   /**
@@ -489,7 +489,8 @@ export class Game {
 
   /** Keys 1-4. */
   useQuick(n: number): void {
-    if (n >= 1 && n <= Game.QUICK_SLOTS) this.useSlot(n - 1);
+    const at = this.inventory.quick()[n - 1];
+    if (n >= 1 && n <= Game.QUICK_SLOTS && at !== undefined) this.useSlot(at);
   }
 
   /** Using an inventory slot: drink potions, read parchments, wear equipment. */

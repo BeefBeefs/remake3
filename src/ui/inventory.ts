@@ -1,25 +1,38 @@
+/**
+ * Inventory window (key I) on the original art: Inventory.b16 frame 0 has the equipment slots on the left and the five
+ * "heavy object" slots on the right, frame 1 is the 2 x 10 grid of "light objects". Heavy = weapons, shields and body
+ * armour; the rest is light. Coordinates were measured from the frames (docs/FORMATS.md section 6).
+ */
 import type { Atlas } from '../assets/atlas.ts';
 import { Game } from '../game/game.ts';
-import { slotOf, type ItemDef, type Slot } from '../game/items.ts';
+import { isHeavy, slotOf, type ItemDef, type Slot } from '../game/items.ts';
+import type { Skin } from './skin.ts';
 
-const SLOTS: Slot[] = ['weapon', 'shield', 'armor', 'ring', 'amulet'];
+/** Equipment slots: big ones are 64x64, small 34x32 (frame 0 coordinates) and the silhouette frame shown when empty. */
+const EQUIP: { slot: Slot; x: number; y: number; big: boolean; ghost: number | null }[] = [
+  { slot: 'weapon', x: 22, y: 54, big: true, ghost: 21 },
+  { slot: 'armor', x: 22, y: 122, big: true, ghost: 20 },
+  { slot: 'shield', x: 22, y: 190, big: true, ghost: 22 },
+  { slot: 'ring', x: 103, y: 69, big: false, ghost: null },
+  { slot: 'amulet', x: 103, y: 137, big: false, ghost: null },
+];
+const HEAVY_X = 163, HEAVY_Y = [29, 98, 166, 235, 304], HEAVY_PAGE = 5;
+const GRID_X = 255 + 11, GRID_Y = 25 + 13, CELL_W = 35, CELL_H = 33.5;
 
-/** Plain-DOM inventory / equipment panel (toggle with I). Icons are cropped from the IListData atlas via CSS. */
 export class InventoryPanel {
   private readonly root = document.createElement('div');
-  private readonly body = document.createElement('div');
   private readonly logEl = document.createElement('div');
   private seen = -1;
   private open = false;
+  private page = 0;
 
-  constructor(private readonly game: Game, private readonly icons: Atlas, private readonly base: string) {
-    this.root.style.cssText =
-      'position:fixed;right:8px;top:8px;width:340px;padding:8px;background:rgba(14,10,6,.92);border:2px solid #6b5426;color:#e9dfb8;font:12px ui-monospace,Menlo,monospace;display:none;user-select:none';
-    this.root.appendChild(this.body);
+  constructor(private readonly game: Game, private readonly icons: Atlas, private readonly base: string, private readonly skin: Skin) {
+    this.root.style.cssText = 'position:fixed;right:0;top:50%;width:344px;height:420px;display:none;user-select:none;z-index:8;transform-origin:right center';
     document.body.appendChild(this.root);
-    this.logEl.style.cssText =
-      'position:fixed;left:8px;bottom:26px;font:12px ui-monospace,Menlo,monospace;color:#d8caa0;text-shadow:0 1px 2px #000;pointer-events:none;white-space:pre';
-    document.body.appendChild(this.logEl);
+    this.logEl.style.cssText = 'display:none';
+    const fit = () => { this.root.style.transform = `translateY(-50%) scale(${window.innerHeight / 480})`; };
+    window.addEventListener('resize', fit);
+    fit();
   }
 
   /** The HUD's message box shows the log instead. */
@@ -31,22 +44,15 @@ export class InventoryPanel {
     this.seen = -1;
   }
 
-  private icon(def: ItemDef, size = 56): HTMLDivElement {
-    const [x, y, w, h] = this.icons.rect(def.id);
-    const d = document.createElement('div');
-    d.style.cssText = `width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center`;
-    const i = document.createElement('div');
-    i.style.cssText = `width:${w}px;height:${h}px;background:url(${this.base}${this.icons.json.image}) -${x}px -${y}px;image-rendering:pixelated`;
-    d.appendChild(i);
-    return d;
-  }
-
   private tip(def: ItemDef): string {
     const parts = [def.name];
     if (def.kind === 'weapon') parts.push(`damage ${def.power[0]}-${def.power[1]}`);
     if (def.kind === 'shield') parts.push(`protection ${def.power[0]}`);
     if (def.kind === 'armor') parts.push(`armour level ${def.level}`);
     if (def.kind === 'potion' && def.data === 1) parts.push(`heals ${def.power[0]}-${def.power[1]}`);
+    const b = def.bonus;
+    const bonus = [['Strength', b.strength], ['Skill', b.skill], ['Resistance', b.resistance], ['Power', b.magic], ['armour', b.armor]].filter(([, v]) => v).map(([k, v]) => `${Number(v) > 0 ? '+' : ''}${v} ${k}`);
+    if (bonus.length) parts.push(bonus.join(', '));
     if (def.price) parts.push(`worth ${def.price}`);
     if (!this.game.inventory.canUse(def)) parts.push('not for your class');
     const lacks = this.game.missing(def);
@@ -54,52 +60,95 @@ export class InventoryPanel {
     return parts.join(' · ');
   }
 
-  private cell(def: ItemDef | undefined, onClick?: () => void, highlight = false, onRight?: () => void, label?: string): HTMLDivElement {
+  /** The item's icon centred in a w x h box, shrunk to fit. */
+  private icon(def: ItemDef, w: number, h: number): HTMLDivElement {
+    const box = document.createElement('div');
+    box.style.cssText = `position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none`;
+    if (!this.icons.has(def.id)) return box;
+    const [x, y, iw, ih] = this.icons.rect(def.id);
+    const i = document.createElement('div');
+    const k = Math.min(1, (w - 4) / iw, (h - 4) / ih);
+    i.style.cssText = `width:${iw}px;height:${ih}px;background:url(${this.base}${this.icons.json.image}) -${x}px -${y}px;image-rendering:pixelated;transform:scale(${k});flex:none`;
+    box.appendChild(i);
+    return box;
+  }
+
+  /** A slot hit area with an optional item: red backing if it cannot be used, blue under the pointer. */
+  private cell(x: number, y: number, w: number, h: number, def: ItemDef | undefined, big: boolean, left?: () => void, right?: () => void, ghost?: number | null): HTMLDivElement {
     const c = document.createElement('div');
-    c.style.cssText = `width:60px;height:60px;box-sizing:border-box;background:#1d160d;border:1px solid ${highlight ? '#d8b24a' : def && this.game.blocked(def) ? '#b32020' : '#4a3a1c'};cursor:${def && onClick ? 'pointer' : 'default'}`;
-    c.style.position = 'relative';
-    if (label) {
-      const n = document.createElement('span');
-      n.textContent = label;
-      n.style.cssText = 'position:absolute;left:2px;top:0;font-size:10px;color:#8d7c52;pointer-events:none';
-      c.appendChild(n);
-    }
+    c.style.cssText = `position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;cursor:${def && left ? 'pointer' : 'default'}`;
+    const bg = (id: number | null) => {
+      c.querySelector('[data-bg]')?.remove();
+      if (id === null) return;
+      const s = this.skin.sprite('inventory', id, 0, 0);
+      s.dataset.bg = '1';
+      s.style.pointerEvents = 'none';
+      if (!big) s.style.transform = 'none';
+      c.prepend(s);
+    };
+    if (def && this.game.blocked(def)) bg(big ? 7 : 6);
+    else if (!def && ghost) { const g = this.skin.sprite('inventory', ghost, 0, 0); g.style.opacity = '0.55'; g.style.pointerEvents = 'none'; c.appendChild(g); }
     if (def) {
-      c.appendChild(this.icon(def));
+      c.appendChild(this.icon(def, w, h));
       c.title = this.tip(def);
-      if (onClick) c.addEventListener('click', onClick);
-      if (onRight) c.addEventListener('contextmenu', (e) => { e.preventDefault(); onRight(); });
+      if (left) c.addEventListener('click', left);
+      if (right) c.addEventListener('contextmenu', (e) => { e.preventDefault(); right(); });
+      c.addEventListener('pointerenter', () => { c.style.boxShadow = 'inset 0 0 0 1px #e8c85a'; });
+      c.addEventListener('pointerleave', () => { c.style.boxShadow = ''; });
     }
     return c;
   }
 
   update(): void {
-    this.logEl.textContent = this.game.log.join('\n');
     if (!this.open || this.seen === this.game.version) return;
     this.seen = this.game.version;
-    const inv = this.game.inventory;
-    this.body.replaceChildren();
-    const head = document.createElement('div');
-    head.textContent = `${this.game.hero.stats.name} L${this.game.level} · gold ${inv.gold} · damage ${inv.damage().join('-')} · armour ${inv.armor()}\nSTR ${this.game.attrs.strength} · SKL ${this.game.attrs.skill} · RES ${this.game.attrs.resistance} · MAG ${this.game.attrs.magic}`;
-    head.style.cssText = 'margin-bottom:6px;white-space:pre';
-    this.body.appendChild(head);
-    const eq = document.createElement('div');
-    eq.style.cssText = 'display:flex;gap:4px;margin-bottom:8px';
-    for (const slot of SLOTS) {
-      const id = inv.equipped[slot];
-      eq.appendChild(this.cell(id ? inv.def(id) : undefined, () => this.game.unequip(slot), true, () => this.game.unequip(slot)));
-    }
-    this.body.appendChild(eq);
-    const grid = document.createElement('div');
-    grid.style.cssText = 'display:grid;grid-template-columns:repeat(5,60px);gap:4px';
-    inv.slots.forEach((id, i) => {
+    const g = this.game, inv = g.inventory, sk = this.skin;
+    this.root.replaceChildren(sk.sprite('inventory', 0, 0, 0), sk.sprite('inventory', 1, 255, 25));
+    // equipment
+    for (const e of EQUIP) {
+      const id = inv.equipped[e.slot];
       const def = id ? inv.def(id) : undefined;
-      grid.appendChild(this.cell(def, () => this.game.activate(i, 'left'), !!def && slotOf(def) === null && (def.kind === 'potion' || def.kind === 'scroll'), () => this.game.activate(i, 'right'), i < Game.QUICK_SLOTS ? String(i + 1) : undefined));
+      const size = e.big ? 64 : 34;
+      this.root.appendChild(this.cell(e.x, e.y, size, e.big ? 64 : 32, def, e.big, () => g.unequip(e.slot), () => g.unequip(e.slot), g.classId === 100 ? e.ghost : e.ghost === 20 ? 30 : e.ghost === 21 ? 31 : e.ghost === 22 ? 32 : null));
+    }
+    // heavy objects: five big slots, paged when there are more
+    const heavy = inv.indicesOf(true);
+    const pages = Math.max(1, Math.ceil(heavy.length / HEAVY_PAGE));
+    this.page = Math.min(this.page, pages - 1);
+    HEAVY_Y.forEach((y, k) => {
+      const at = heavy[this.page * HEAVY_PAGE + k];
+      const def = at !== undefined ? inv.def(inv.slots[at]!) : undefined;
+      this.root.appendChild(this.cell(HEAVY_X, y, 65, 64, def, true, at !== undefined ? () => g.activate(at, 'left') : undefined, at !== undefined ? () => g.activate(at, 'right') : undefined));
     });
-    this.body.appendChild(grid);
-    const hint = document.createElement('div');
-    hint.textContent = 'click to wear · right-click to drink / read · keys 1-4 use the first four slots · click a worn item to take it off · I closes';
-    hint.style.cssText = 'margin-top:6px;color:#8d7c52';
-    this.body.appendChild(hint);
+    if (pages > 1) {
+      const arrow = (id: number, x: number, d: number) => {
+        const a = sk.sprite('inventory', id, x, 372);
+        a.style.cursor = 'pointer';
+        a.addEventListener('click', () => { this.page = (this.page + d + pages) % pages; this.seen = -1; });
+        this.root.appendChild(a);
+      };
+      arrow(53, 175, -1);
+      arrow(54, 205, 1);
+    }
+    // light objects: the 2 x 10 grid
+    inv.indicesOf(false).forEach((at, n) => {
+      const col = n % 2, row = Math.floor(n / 2);
+      const def = inv.def(inv.slots[at]!);
+      this.root.appendChild(this.cell(GRID_X + col * CELL_W, GRID_Y + row * CELL_H, 33, 33, def, false, () => g.activate(at, 'left'), () => g.activate(at, 'right')));
+    });
+    // gold
+    const gold = sk.text(String(inv.gold), { color: '#f1d98a' });
+    gold.style.cssText += `;position:absolute;left:${29 + (102 - sk.textWidth(String(inv.gold))) / 2}px;top:304px`;
+    this.root.appendChild(gold);
+    // the recessed plate at the bottom closes the window
+    const close = document.createElement('div');
+    close.style.cssText = 'position:absolute;left:40px;top:335px;width:80px;height:20px;cursor:pointer';
+    const ct = sk.text('Close', { color: '#d8caa0' });
+    ct.style.cssText += `;position:absolute;left:${(80 - sk.textWidth('Close')) / 2}px;top:0`;
+    close.appendChild(ct);
+    close.addEventListener('click', () => this.toggle());
+    this.root.appendChild(close);
   }
 }
+
+export { isHeavy, slotOf };

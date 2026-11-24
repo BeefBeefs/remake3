@@ -140,7 +140,8 @@ export class Hud {
       this.seenVersion = g.version;
       this.quick.forEach((slot, i) => {
         slot.replaceChildren();
-        const id = g.inventory.slots[i];
+        const at = g.inventory.quick()[i];
+        const id = at !== undefined ? g.inventory.slots[at] : 0;
         const def = id ? g.inventory.def(id) : undefined;
         slot.title = def ? def.name : '';
         if (def && this.icons.has(def.id)) {
