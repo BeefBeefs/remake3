@@ -12,15 +12,16 @@ Each working session appends an entry below (newest first). Format knowledge liv
 | Asset conversion (`tools/convert_assets.py`) | ✅ B16 banks → PNG atlases, BMP → PNG, WAV/`.dt` → Ogg, strings → JSON, maps copied |
 | Tile / item / UI images (B16) | ✅ decoded |
 | Audio, text (`Idioma.bdt`) | ✅ decoded |
-| Character / enemy / scenery sprites (`.P16`) | ✅ decoded (51,448 frames); hero layouts fully mapped (hit, block, death, extras); 20 monsters only walk/idle/attack |
+| Character / enemy / scenery sprites (`.P16`) | ✅ decoded (51,448 frames); every actor's animation layout mapped (hit, block, death, taunt, rise, extras) |
 | Map layout (`.map`) | ✅ terrain, objects, **actor/hero-start markers**, zones & script tables located; decor layer + script commands only partly understood |
 | Adventure container (`.adv`) | ✅ texts, hero attributes, embedded map; hero inventories not decoded |
-| Renderer + game loop (three.js) | 🟡 real Lost Forrest, all three heroes (Barbarian, Amazon, Sorceress), monsters, melee combat (milestone 2) — **never run in a browser** |
-| NHS data / animation layouts | ✅ 72 actors, 141 items; 17 monsters fully or ambiguously mapped, 20 partial |
+| Renderer + game loop (three.js) | 🟡 real Lost Forrest, all three heroes, monsters, combat, spells with effects; now run headlessly in Chrome (`tools/browser/`) — forest wall slices still draw wrongly |
+| NHS data / animation layouts | ✅ 72 actors, 141 items; all layouts mapped |
 | Items, inventory, equipment | 🟡 working in code (drops, pickup, equip, potions); UI never browser-tested |
 | Tile surfaces | 🟡 inferred from tile colour (footsteps) |
 | NPCs, shops, character window | 🟡 working in code; no NPC in the playable map (Inn map not in install) |
-| Skills/magic, dialogue, quests (`.adv`), multiplayer, editor | ⬜ not started |
+| Spells + effects, saving between missions, title/world map/HUD/windows on the original art | ✅ (numbers are guesses) |
+| Dialogue, quests/scripts (`.adv`), multiplayer, editor | ⬜ not started |
 | Combat + monster AI | 🟡 first pass (placeholder numbers) |
 
 ### Turn 11 — main menu and GUI with the original art
