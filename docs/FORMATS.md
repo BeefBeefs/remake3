@@ -72,19 +72,39 @@ foot at the bottom-centre of the bitmap (assumed – looks right in the demo).
 `Scenary/*/*.Ofs` = 1023 rows × 12 × int16. `-16` = flat; a few ground tiles carry `-5`, `-22`, `-7` … → per-vertex
 height offsets for sloped terrain tiles (prop rows are all zero). Not used yet.
 
-### P16 sprite packs 🟡 (actors, scenery packs, magic effects)
-Layout found for `Actors/Rat.P16` (208 frames, 65,948 bytes):
+### P16 sprite packs ✅ — `tools/p16.py`, `tools/convert_p16.py`
+Layout taken from the sprite loader in `Nightstone.exe` (0x40aa50); decodes **all 134 packs / 51,448 frames** with
+zero malformed rows. Entries are numbered 1..1023 (there is no entry 0 in the tables):
 
 ```
-u16 width[1024]      (bytes 0x0000..0x07ff)  e.g. 23,23,24,24,24,24,22,24,23,22,23,24 …
-u16 height[1024]     (bytes 0x0800..0x0fff)  e.g. 7,7,7,8,7,8,7,8,7,7,7,8 …
-u32 offset[1022]     (bytes 0x1000..0x1ff7)  123,243,366,489,622,750,875,1001 …  (≈ cumulative, 120–180 apart)
-pixel words from byte 0x1ff8 (u16 index 4092):  0xFFxx runs, 0x0000, 0x0841, 0xF81F (colour key) …
+0x0000  u16 width [1023]
+0x07fe  u16 height[1023]
+0x0ffc  u32 offset[1023]        into the data words, in u16 units
+0x1ff8  i16 hotspot_x[1023]     offset of the bitmap's LEFT edge   (raw, see below)
+0x27f6  i16 hotspot_y[1023]     offset of the bitmap's TOP edge
+0x2ff4  u32 N                   number of data words;  file size == 0x2ff8 + 2*N
+0x2ff8  u16 data[N]
 ```
-Open: the pixel words are *not* a plain `w*h` RGB565 raster — Σ(w·h) ≠ body size and offsets advance ≈76 % of `w·h`,
-so frames look RLE/trimmed. Next step is disassembling `Nightstone.exe` (sprite loader), or fitting the encoding
-against the in-game look. Same family: `Actors/<id>-<class>.P16` (Barbarian/Sorceress/Amazon animation sets, 1.2–2.4 MB
-each), `Actors/<n>E|X.P16` (enemies/NPCs), `Scenary/*/Pack*.P16` (tile variants), `GDI/Graphics/Magic*.P16`.
+
+Each frame is `height` rows. A row is a sequence of tokens until `width` pixels are covered, then the terminator
+`F81F F81F`:
+
+```
+F81F n        skip n transparent pixels            (0xF81F is the colour key)
+n  px×n       n RGB565 pixels   (n < 0xF81F, n >= 1)
+```
+
+**Hotspots.** `(hx, hy)` is the offset of the bitmap's top-left corner from the engine's reference point. For actors
+the feet are at x≈−128, y≈−17 (Barbarian median −127.75/−17; Sorceress −128.5/−7; Amazon −131/−15). Anchoring a
+sprite at a cell centre (or an actor's feet) gives `topLeft = anchor + (hx + 128, hy + 16)` in screen px, which lines
+up the Lost Forrest camp (barrels, fires, tents, flags) and the walk cycle correctly (`docs/preview-milestone1.png`).
+Cliff/forest *wall slices* (Pack2 ids 611–616, 32 px wide) carry offsets of −200…−270 px and render high above their
+cell with this rule — probably intended as a tall backdrop, not verified.
+
+**Animation layout** (Barbarian `000-Barbarian.P16`, 564 frames = 47 × 12): walk cycle = ids `dir*12 + 1 .. 12` for
+`dir` 0..7, order **NW, N, NE, E, SE, S, SW, W** (by eye). Other animation blocks (idle, run, attack, death…) are not
+mapped yet. Packs: `Actors/<id>-<Class>.P16` (player skins/animations), `Actors/<n>E|X.P16` (monsters/NPCs),
+`Actors/Rat|Spider|Stone.P16`, `Scenary/<tileset>/Pack1|2|3|Cell.P16`, `GDI/Graphics/Magic*.P16`, `ActorOverlay.P16`.
 
 ### `GDI/3D/**/*.bmp`, `Scenary/*/3D/*.BMP` ✅
 Ordinary 24-bit BMPs, 16–256 px: Direct3D textures (spell effects, menu/logo art, score icons).
@@ -108,16 +128,30 @@ White Goddess), ID-100 Terak, ID-101 Rhelia.
 `Maps/*.map`, `Adv/*.adv` are **gzip**. Decompressed "Lost Forrest" = 1,655,172 bytes:
 
 ```
-0x0000  u32 100                (map size? same in all maps)
-0x0004  "Outside\0…"           tileset name (64-byte field) -> Scenary/<name>/
-0x0044  u32 2
-0x0048… zeros up to 0x4000 (16 KiB header region; purpose unknown)
-0x4000  cell data: 1,638,788 bytes. Strong 12-byte periodicity; u32 values include 339, 385, 1000… which are ids that
-        exist in Outside VTiles. 136,565 12-byte records + 8 bytes; no 2-D stride found yet (likely several layers).
+0x00000  u32 100
+0x00004  "Outside\0…"   tileset name -> Scenary/<name>/
+0x00044  u32 2
+0x00048… zeros up to 0x4000 (16 KiB header region; the rest unknown)
+0x04000  terrain: 256×256 cells × 12 bytes, row-major (index = cy*256+cx). First u32 = VTiles id (0 = void, 19 such
+         cells); the other 8 bytes are zero.   ids: 109–124 dark grass, 141–146 bridge planks, 147–191 dirt,
+         330–407 grass variants, 511 = water (NOT a VTiles frame; Overlay bank has a 22×30 sprite with that id),
+         549/550/606–611 misc.
+0xC4000  72 bytes (6 more 12-byte records, ids like 402/365…; meaning unknown)
+0xC4048  objects: 256×256 u32, row-major. value = (pack << 10) | frameId, pack 0..3 = PackCell, Pack1, Pack2, Pack3
+         .P16 of the tileset (95 % of ids resolve; the rest are probably markers: 0, 99, 999…).  2,280 objects.
+...      further sparse u32 layers (e.g. flags with value 2048 in alternating columns) – not decoded.
 ```
+Reading the objects shows the playable area is a rectangle (≈ rows 60–140, cols 81–242) ringed by cliff/forest wall
+slices; a 3-wide river runs east–west along rows 165–167 with plank bridges (141–146). Terrain checked visually
+(grass/dirt transitions are seamless); the stray 6 records and the layers after the objects are open.
 The campaign map is `Lost Forrest.map` (+ `.dsc`: "Find the tomb of Donmir the great that is guarded by Erramus the high
 mage…"); five multiplayer maps (`{4P-D1}`, `{8P-C2}` …) are in `Maps/Multiplayer`. `Adv/Test.adv` begins with the
 plain-text intro, so adventures embed mission text.
+
+## 5b. `.Nhs` archives 🟡
+`AData.Nhs`, `WData.Nhs`, `NightStone.NHS`: a name directory (64-byte stride, INI-like file names) followed by
+offset/size tables; payloads are stored as **bitwise NOT** of plain text (`~byte`). Record boundaries are not parsed
+yet; they hold the 72 actor and 141 item definitions.
 
 ## 6. Other
 - `System/Game.cfg`, `NightStone.cfg`, `Server.cfg` (port 27068), `Menu.ini` (menu button coordinates, 640×480): plain text.

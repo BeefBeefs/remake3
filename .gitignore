@@ -8,3 +8,4 @@ dist/
 /Install-NST.exe
 /nst_raw/
 /scratch/
+__pycache__/

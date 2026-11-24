@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 
-export type Rect = [x: number, y: number, w: number, h: number];
+/** B16 atlases store [x,y,w,h]; P16 atlases add the raw hotspot [x,y,w,h,hx,hy]. */
+export type Rect = [x: number, y: number, w: number, h: number, hx?: number, hy?: number];
 
 export interface AtlasJson {
   image: string;
@@ -31,6 +32,12 @@ export class Atlas {
     tex.minFilter = THREE.NearestFilter;
     tex.generateMipmaps = false;
     return new Atlas(json, tex);
+  }
+
+  /** Raw P16 hotspot (offset of the bitmap's top-left corner, see tools/convert_p16.py). */
+  hotspot(id: number): [number, number] {
+    const r = this.rect(id);
+    return [r[4] ?? 0, r[5] ?? 0];
   }
 
   has(id: number): boolean {

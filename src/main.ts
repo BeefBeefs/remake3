@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { Atlas } from './assets/atlas.ts';
-import { World, GRID } from './game/world.ts';
+import { World } from './game/world.ts';
+import { ActorSprite, screenDir } from './game/actor.ts';
+import { gunzip, parseMap } from './formats/map.ts';
 import { cellToWorld, worldToCell, depthOf } from './iso.ts';
 
 const BASE = `${import.meta.env.BASE_URL}assets/`;
@@ -27,26 +29,30 @@ window.addEventListener('resize', resize);
 resize();
 
 async function boot() {
-  hud.textContent = 'Loading original tile data…';
-  const [tiles, props] = await Promise.all([
+  hud.textContent = 'Loading original map and sprite data…';
+  const [tiles, packCell, pack1, pack2, pack3, barbarian, mapBytes] = await Promise.all([
     Atlas.load(BASE, 'atlas/scenary/outside/vtiles.json'),
-    Atlas.load(BASE, 'atlas/scenary/outside/packcell.json'),
+    Atlas.load(BASE, 'p16/scenary/outside/packcell.json'),
+    Atlas.load(BASE, 'p16/scenary/outside/pack1.json'),
+    Atlas.load(BASE, 'p16/scenary/outside/pack2.json'),
+    Atlas.load(BASE, 'p16/scenary/outside/pack3.json'),
+    Atlas.load(BASE, 'p16/actors/barbarian0.json'),
+    fetch(`${BASE}maps/lost_forrest.map`).then((r) => r.arrayBuffer()).then(gunzip),
   ]);
-  const world = new World(tiles, props);
+  const map = parseMap(mapBytes);
+  const world = new World(map, tiles, [packCell, pack1, pack2, pack3]);
   scene.add(world.group);
 
-  // Placeholder hero (the real Barbarian/Sorceress/Amazon .P16 sprite packs are not decoded yet).
-  const hero = new THREE.Group();
-  const shadow = new THREE.Mesh(new THREE.CircleGeometry(14, 24), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.45 }));
-  shadow.scale.y = 0.5;
-  const body = new THREE.Mesh(new THREE.PlaneGeometry(16, 40), new THREE.MeshBasicMaterial({ color: 0xc9a227 }));
-  body.position.y = 22;
-  const head = new THREE.Mesh(new THREE.CircleGeometry(7, 16), new THREE.MeshBasicMaterial({ color: 0xe8c9a0 }));
-  head.position.y = 48;
-  hero.add(shadow, body, head);
+  // The Barbarian walk cycle: 8 directions x 12 frames (P16 ids 1..96).
+  const hero = new ActorSprite(barbarian);
+  let heroDir = 5; // facing the camera (S)
+  hero.setWalkFrame(heroDir, 0);
   scene.add(hero);
 
-  const pos = { cx: world.start.cx, cy: world.start.cy };
+  // Start in the camp area of the map (the real spawn point lives in the adventure file, not decoded yet).
+  const spawn = world.findOpenCell(152, 78);
+  const pos = { cx: spawn.cx, cy: spawn.cy };
+  world.update(pos.cx, pos.cy);
   const startW = cellToWorld(pos.cx, pos.cy);
   camera.position.x = startW.x; camera.position.y = startW.y;
   let target: { cx: number; cy: number } | null = null;
@@ -78,6 +84,7 @@ async function boot() {
     void wind.play().catch(() => undefined);
   }
 
+  let walkT = 0;
   const clock = new THREE.Clock();
   function frame() {
     const dt = Math.min(clock.getDelta(), 0.1);
@@ -105,17 +112,23 @@ async function boot() {
       else if (world.isWalkable(nx, pos.cy)) pos.cx = nx;
       else if (world.isWalkable(pos.cx, ny)) pos.cy = ny;
       else target = null;
-      pos.cx = Math.min(Math.max(pos.cx, 0), GRID - 1);
-      pos.cy = Math.min(Math.max(pos.cy, 0), GRID - 1);
-    }
+      pos.cx = Math.min(Math.max(pos.cx, 0), world.dim - 1);
+      pos.cy = Math.min(Math.max(pos.cy, 0), world.dim - 1);
+      // face the screen-space direction of travel and advance the walk cycle
+      const sx = (vx - vy) * 32, sy = -(vx + vy) * 16;
+      heroDir = screenDir(sx, sy);
+      walkT += dt * 14;
+    } else walkT = 0;
+    hero.setWalkFrame(heroDir, Math.floor(walkT));
     const w = cellToWorld(pos.cx, pos.cy);
-    hero.position.set(w.x, w.y, depthOf(pos.cx, pos.cy));
+    hero.position.set(w.x, w.y, depthOf(pos.cx, pos.cy) + 0.3);
+    world.update(pos.cx, pos.cy);
     camera.position.x += (w.x - camera.position.x) * Math.min(1, dt * 6);
     camera.position.y += (w.y - camera.position.y) * Math.min(1, dt * 6);
     renderer.render(scene, camera);
     requestAnimationFrame(frame);
   }
-  hud.textContent = 'NightStone remake · milestone 0 · click / hold to walk, or WASD · placeholder hero';
+  hud.textContent = 'NightStone remake · milestone 1 · real Lost Forrest terrain + scenery · Barbarian · click / hold to walk, or WASD';
   frame();
 }
 
