@@ -23,6 +23,13 @@ Each working session appends an entry below (newest first). Format knowledge liv
 | Skills/magic, dialogue, quests (`.adv`), multiplayer, editor | ⬜ not started |
 | Combat + monster AI | 🟡 first pass (placeholder numbers) |
 
+### Turn 9 — stamina and stances, item requirements (from the manual), then block/hold
+
+**Step 1 ✅ Stamina, mana, run and stealth.** Stamina = 2 × Resistance, mana = 2 × Power (ratios guessed); bars under the HP bar. Ctrl = run (×2, running footsteps 162/166/170, drains stamina, impossible at 0),
+Shift = stealth (×0.5, silent, unaware monsters hear you from half as far, first blow on one doubles). Potions use the item `Data` bit mask (1 life, 2 stamina, 4 magic; Vitality = all three and can hurt).
+**Step 2 ✅ Item requirements.** `R_Fuerza / R_Destreza (Skill) / R_Resistencia / R_Magia (Power) / R_Nivel` now block equipping with a message, and show a red border + tooltip; a test checks each class can use its starting weapon.
+Spending level-up points to reach a weapon's Strength now has a purpose (Barbarian's Sword #3 needs 36, he has 32).
+
 ### Turn 8 — tile surfaces, NPCs, shops and the character window
 
 **Step 1 ✅ Tile types.** `System/*.CDt` turned out to be the editor's brush catalogue (see FORMATS), so tile surfaces are *inferred* from tile colour

@@ -45,12 +45,15 @@ export class InventoryPanel {
     if (def.kind === 'armor') parts.push(`armour level ${def.level}`);
     if (def.kind === 'potion' && def.data === 1) parts.push(`heals ${def.power[0]}-${def.power[1]}`);
     if (def.price) parts.push(`worth ${def.price}`);
+    if (!this.game.inventory.canUse(def)) parts.push('not for your class');
+    const lacks = this.game.missing(def);
+    if (lacks.length) parts.push(`needs ${lacks.join(', ')}`);
     return parts.join(' · ');
   }
 
   private cell(def: ItemDef | undefined, onClick?: () => void, highlight = false): HTMLDivElement {
     const c = document.createElement('div');
-    c.style.cssText = `width:60px;height:60px;box-sizing:border-box;background:#1d160d;border:1px solid ${highlight ? '#d8b24a' : '#4a3a1c'};cursor:${def && onClick ? 'pointer' : 'default'}`;
+    c.style.cssText = `width:60px;height:60px;box-sizing:border-box;background:#1d160d;border:1px solid ${highlight ? '#d8b24a' : def && this.game.blocked(def) ? '#b32020' : '#4a3a1c'};cursor:${def && onClick ? 'pointer' : 'default'}`;
     if (def) {
       c.appendChild(this.icon(def));
       c.title = this.tip(def);

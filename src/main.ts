@@ -96,15 +96,20 @@ async function boot() {
     const wy = camera.top - ny * (camera.top - camera.bottom) + camera.position.y;
     return worldToCell(wx, wy);
   };
+  // Ctrl = run, Shift = stealth (manual); read from every mouse and key event.
+  const mods = { ctrl: false, shift: false };
+  const readMods = (e: { ctrlKey: boolean; shiftKey: boolean }) => { mods.ctrl = e.ctrlKey; mods.shift = e.shiftKey; };
+  window.addEventListener('blur', () => { mods.ctrl = false; mods.shift = false; });
   let held = false;
   let last: { cx: number; cy: number } | null = null;
-  canvas.addEventListener('pointerdown', (e) => { held = true; last = pointerToCell(e); game.click(last.cx, last.cy); startAudio(); });
-  canvas.addEventListener('pointermove', (e) => { last = pointerToCell(e); if (held) game.click(last.cx, last.cy); });
+  canvas.addEventListener('pointerdown', (e) => { readMods(e); held = true; last = pointerToCell(e); game.click(last.cx, last.cy); startAudio(); });
+  canvas.addEventListener('pointermove', (e) => { readMods(e); last = pointerToCell(e); if (held) game.click(last.cx, last.cy); });
   window.addEventListener('pointerup', () => { held = false; });
 
   // Keyboard: arrows/WASD move along the screen axes (up = towards the top of the screen); space swings.
   const keys = new Set<string>();
   window.addEventListener('keydown', (e) => {
+    readMods(e);
     keys.add(e.key.toLowerCase());
     if (e.key === 'Escape') shop.close();
     if (e.key === ' ') { if (!shop.isOpen) game.swing(); e.preventDefault(); }
@@ -113,7 +118,7 @@ async function boot() {
     if (e.key.toLowerCase() === 'r' && !game.hero.alive) location.reload();
     startAudio();
   });
-  window.addEventListener('keyup', (e) => keys.delete(e.key.toLowerCase()));
+  window.addEventListener('keyup', (e) => { readMods(e); keys.delete(e.key.toLowerCase()); });
 
   const sfx = new Sfx(BASE, (await (await fetch(`${BASE}data/sfx.json`)).json()) as Record<string, string>);
   game.onSound = (id) => sfx.play(id);
@@ -131,9 +136,10 @@ async function boot() {
   // HUD: hero health bar + kill counter (plain DOM over the canvas)
   const bar = document.createElement('div');
   bar.style.cssText = 'position:fixed;left:8px;top:8px;font:12px ui-monospace,Menlo,monospace;color:#e9dfb8;text-shadow:0 1px 2px #000;pointer-events:none';
-  bar.innerHTML = '<div id="hpname"></div><div style="width:180px;height:10px;background:#2a0d0d;border:1px solid #000"><div id="hpfill" style="height:100%;background:#b32020"></div></div><div id="hpinfo"></div>';
+  bar.innerHTML = '<div id="hpname"></div><div style="width:180px;height:10px;background:#2a0d0d;border:1px solid #000"><div id="hpfill" style="height:100%;background:#b32020"></div></div><div style="width:180px;height:6px;margin-top:2px;background:#1d2a0d;border:1px solid #000"><div id="stfill" style="height:100%;background:#9ab32a"></div></div><div style="width:180px;height:6px;margin-top:2px;background:#0d1a2a;border:1px solid #000"><div id="mpfill" style="height:100%;background:#2a5cb3"></div></div><div id="hpinfo"></div>';
   document.body.appendChild(bar);
   const hpname = bar.querySelector('#hpname') as HTMLDivElement, hpfill = bar.querySelector('#hpfill') as HTMLDivElement, hpinfo = bar.querySelector('#hpinfo') as HTMLDivElement;
+  const stfill = bar.querySelector('#stfill') as HTMLDivElement, mpfill = bar.querySelector('#mpfill') as HTMLDivElement;
   const banner = document.createElement('div');
   banner.style.cssText = 'position:fixed;left:0;right:0;top:40%;text-align:center;font:24px ui-monospace,Menlo,monospace;color:#e9c27a;text-shadow:0 2px 4px #000;pointer-events:none;display:none';
   document.body.appendChild(banner);
@@ -153,6 +159,7 @@ async function boot() {
       const l = Math.hypot(c.cx, c.cy) || 1;
       move = { x: c.cx / l, y: c.cy / l };
     }
+    game.setStance(mods.ctrl, mods.shift);
     game.update(dt, move);
     panel.update();
     charPanel.update();
@@ -162,6 +169,8 @@ async function boot() {
     camera.position.y += (w.y - camera.position.y) * Math.min(1, dt * 6);
     hpname.textContent = hero.stats.name;
     hpfill.style.width = `${(100 * hero.hp) / hero.stats.hp}%`;
+    stfill.style.width = `${(100 * game.stamina) / game.maxStamina}%`;
+    mpfill.style.width = `${(100 * game.mana) / game.maxMana}%`;
     hpinfo.textContent = `HP ${hero.hp}/${hero.stats.hp}  gold ${game.inventory.gold}  kills ${game.kills}  xp ${game.xp}  L${game.level}${game.points ? `  +${game.points} points (C)` : ''}`;
     const left = game.monsters.filter((m) => m.alive).length;
     banner.style.display = !hero.alive || left === 0 ? 'block' : 'none';
@@ -170,7 +179,7 @@ async function boot() {
     renderer.render(scene, camera);
     requestAnimationFrame(frame);
   }
-  hud.textContent = 'NightStone remake · milestone 2 · click ground to walk, click a monster (or Space) to fight · WASD moves · I inventory · C character';
+  hud.textContent = 'NightStone remake · milestone 2 · click ground to walk, click a monster (or Space) to fight · WASD moves · Ctrl run · Shift stealth · I inventory · C character';
   frame();
 }
 

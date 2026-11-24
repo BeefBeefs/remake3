@@ -29,7 +29,7 @@ export class CharacterPanel {
     const line = (t: string) => { const d = document.createElement('div'); d.textContent = t; this.root.appendChild(d); };
     line(`${h.stats.name} · level ${g.level}`);
     line(`Experience ${g.xp} · next level ${xpForLevel(g.level + 1)}`);
-    line(`Life ${Math.ceil(h.hp)}/${h.stats.hp}`);
+    line(`Life ${Math.ceil(h.hp)}/${h.stats.hp} · Stamina ${Math.floor(g.stamina)}/${g.maxStamina} · Mana ${Math.floor(g.mana)}/${g.maxMana}`);
     if (g.points > 0) line(`Points to spend: ${g.points}`);
     for (const [key, label] of ROWS) {
       const r = document.createElement('div');

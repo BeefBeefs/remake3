@@ -34,12 +34,16 @@ export interface ItemDef {
   data: number;
   /** INI `CofreLv`: the chest level an item can come out of (0 = never from chests) */
   chestLevel: number;
+  /** attribute and level requirements (INI R_Fuerza, R_Destreza = skill, R_Resistencia, R_Magia = power, R_Nivel) */
+  req: Requirements;
 }
+
+export interface Requirements { strength: number; skill: number; resistance: number; magic: number; level: number }
 
 interface RawItem {
   title?: string;
   General?: { Tipo?: number; Potencia?: [number, number]; Nivel?: number; Precio?: number; Data?: number; CofreLv?: number };
-  Requerimientos?: { Character?: number };
+  Requerimientos?: { Character?: number; R_Fuerza?: number; R_Destreza?: number; R_Resistencia?: number; R_Magia?: number; R_Nivel?: number };
 }
 
 export function buildItems(raw: Record<string, RawItem>, names: Record<string, string>): Map<number, ItemDef> {
@@ -59,8 +63,20 @@ export function buildItems(raw: Record<string, RawItem>, names: Record<string, s
       character: v.Requerimientos?.Character ?? 0,
       data: g.Data ?? 0,
       chestLevel: g.CofreLv ?? 0,
+      req: { strength: v.Requerimientos?.R_Fuerza ?? 0, skill: v.Requerimientos?.R_Destreza ?? 0, resistance: v.Requerimientos?.R_Resistencia ?? 0, magic: v.Requerimientos?.R_Magia ?? 0, level: v.Requerimientos?.R_Nivel ?? 0 },
     });
   }
+  return out;
+}
+
+/** What a hero lacks to use an item ("red border" in the manual): e.g. ['Strength 36']. Empty = usable. */
+export function missingReqs(def: ItemDef, attrs: { strength: number; skill: number; resistance: number; magic: number }, level: number): string[] {
+  const out: string[] = [];
+  if (def.req.strength > attrs.strength) out.push(`Strength ${def.req.strength}`);
+  if (def.req.skill > attrs.skill) out.push(`Skill ${def.req.skill}`);
+  if (def.req.resistance > attrs.resistance) out.push(`Resistance ${def.req.resistance}`);
+  if (def.req.magic > attrs.magic) out.push(`Power ${def.req.magic}`);
+  if (def.req.level > level) out.push(`Level ${def.req.level}`);
   return out;
 }
 

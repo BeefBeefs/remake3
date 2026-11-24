@@ -97,9 +97,9 @@ test('a life potion heals up to the maximum and is used up; equipping changes da
   g.useSlot(slot);
   assert.ok(g.hero.hp > 10 && g.hero.hp <= g.hero.stats.hp);
   assert.equal(g.inventory.slots.filter((i) => i === 104).length, 1);
-  g.inventory.add(4);
-  g.useSlot(g.inventory.slots.indexOf(4));
-  assert.deepEqual(g.hero.stats.damage, [3, 7]);
+  g.inventory.add(2); // no requirements (sword #4 needs Strength 43)
+  g.useSlot(g.inventory.slots.indexOf(2));
+  assert.deepEqual(g.hero.stats.damage, [3, 4]);
 });
 
 test('monsters drop loot sometimes when they die', () => {
@@ -344,4 +344,115 @@ test('level-up points: spending raises the attribute, Resistance also raises lif
   assert.equal(g.attrs.magic, 12);
   assert.equal(g.spend('magic'), false);
   assert.equal(g.points, 0);
+});
+
+test('running is twice as fast, drains stamina, uses the running footsteps and stops when stamina is empty', () => {
+  const walk = makeGame(), runner = makeGame();
+  runner.setStance(true, false);
+  const heard: number[] = [];
+  runner.onSound = (id) => heard.push(id);
+  const s0 = runner.stamina;
+  walk.click(walk.hero.cx + 30, walk.hero.cy);
+  runner.click(runner.hero.cx + 30, runner.hero.cy);
+  run(walk, 1); run(runner, 1);
+  const dw = walk.hero.cx - 128, dr = runner.hero.cx - 128;
+  assert.ok(Math.abs(dr / dw - 2) < 0.1, `ratio ${dr / dw}`);
+  assert.ok(runner.stamina < s0 - 4, 'running tires the hero');
+  assert.ok(heard.some((id) => id === 162 || id === 163), 'j_correr_hierba');
+  assert.ok(!heard.some((id) => id === 160 || id === 161));
+  runner.stamina = 0;
+  const x = runner.hero.cx;
+  run(runner, 1);
+  assert.ok(Math.abs(runner.hero.cx - x - 3.2) < 0.2, 'out of stamina: back to walking pace');
+});
+
+test('standing still recovers stamina; stealth is slow and silent', () => {
+  const g = makeGame();
+  g.stamina = 10;
+  run(g, 2);
+  assert.ok(g.stamina > 14);
+  const heard: number[] = [];
+  g.onSound = (id) => heard.push(id);
+  g.setStance(false, true);
+  const x = g.hero.cx;
+  g.click(x + 30, g.hero.cy);
+  run(g, 2);
+  assert.ok(Math.abs(g.hero.cx - x - 3.2) < 0.3, `stealth speed ${g.hero.cx - x}`);
+  assert.equal(heard.filter((id) => id >= 160 && id <= 171).length, 0, 'no footsteps');
+});
+
+test('stealth hides you from monsters at half range and the first blow on an unaware one is doubled', () => {
+  const mk = (stealth: boolean, gx: number) => { const g = makeGame({ spawns: [{ id: '1', cx: gx, cy: 128 }] }); g.setStance(false, stealth); return g; };
+  // a goblin 7 cells away: a walking hero is heard (hearing + 3 > 7?) only if inside range; stealth halves it
+  const range = (stealth: boolean) => {
+    for (let d = 14; d >= 2; d--) { const g = mk(stealth, 128 + d); run(g, 0.3); if (g.monsters[0]!.state !== 'idle' && g.monsters[0]!.cx < 128 + d - 0.05) return d; }
+    return 0;
+  };
+  const walkRange = range(false), sneakRange = range(true);
+  assert.ok(walkRange > 0 && sneakRange > 0 && sneakRange < walkRange, `walk hears at ${walkRange}, stealth at ${sneakRange}`);
+  // identical seeds: same damage roll, so the sneak blow must be exactly double (before armour)
+  const blow = (stealth: boolean) => {
+    const g = mk(stealth, 129);
+    const m = g.monsters[0]!;
+    m.hp = 10000; m.stats.hp = 10000; m.stats.armor = 0;
+    g.target = null;
+    g.hero.face(1, 0); (g as unknown as { facing: { x: number; y: number } }).facing = { x: 1, y: 0 };
+    g.swing();
+    run(g, 0.6);
+    return 10000 - m.hp;
+  };
+  const normal = blow(false), sneak = blow(true);
+  assert.ok(normal > 0);
+  assert.equal(sneak, normal * 2);
+});
+
+test('stamina, mana and the vitality potion: mask bits restore each pool; vitality can hurt', () => {
+  const g = makeGame();
+  g.stamina = 0; g.mana = 0;
+  g.inventory.add(106); // small stamina potion 40-60
+  g.inventory.add(108); // small magic potion 20-40
+  g.useSlot(g.inventory.slots.indexOf(106));
+  assert.ok(g.stamina >= 40 && g.stamina <= Math.min(60, g.maxStamina));
+  g.useSlot(g.inventory.slots.indexOf(108));
+  assert.ok(g.mana >= 20 && g.mana <= Math.min(40, g.maxMana));
+  g.inventory.add(110);
+  const hp = g.hero.hp;
+  g.useSlot(g.inventory.slots.indexOf(110));
+  assert.ok(g.hero.hp >= 1 && g.hero.hp !== hp + 100);
+  assert.equal(g.inventory.slots.includes(110), false, 'consumed');
+});
+
+test('item requirements: too little Strength blocks equipping (red border) until points are spent', () => {
+  const g = makeGame({ attrs: { strength: 32, skill: 24, resistance: 30, magic: 11 } });
+  const sword3 = g.inventory.def(3)!; // needs Strength 36
+  assert.equal(sword3.req.strength, 36);
+  assert.deepEqual(g.missing(sword3), ['Strength 36']);
+  assert.equal(g.blocked(sword3), true);
+  g.inventory.add(3);
+  const slot = g.inventory.slots.indexOf(3);
+  g.useSlot(slot);
+  assert.notEqual(g.inventory.equipped.weapon, 3);
+  assert.match(g.log.at(-1)!, /You need Strength 36/);
+  g.points = 4;
+  for (let i = 0; i < 4; i++) g.spend('strength');
+  assert.deepEqual(g.missing(sword3), []);
+  g.useSlot(g.inventory.slots.indexOf(3));
+  assert.equal(g.inventory.equipped.weapon, 3);
+  assert.equal(g.hero.stats.damage[1], sword3.power[1]);
+});
+
+test('every class can use its own starting weapon with the attributes of the adventure file', () => {
+  const heroes = json('data/adventure.json').heroes;
+  for (const [i, id] of [100, 101, 102].entries()) {
+    const g = makeGame({ classId: id as 100, attrs: heroes[i] });
+    const w = g.inventory.def(g.inventory.equipped.weapon ?? 0)!;
+    assert.ok(w, `${id} has a weapon`);
+    assert.deepEqual(g.missing(w), [], `${id} ${w.name}`);
+  }
+});
+
+test('class gear of another hero is blocked', () => {
+  const g = makeGame({ classId: 102 });
+  assert.equal(g.blocked(g.inventory.def(3)!), true);
+  assert.equal(g.blocked(g.inventory.def(56)!), false);
 });

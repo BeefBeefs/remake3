@@ -3,7 +3,7 @@ import { Atlas } from '../assets/atlas.ts';
 import { type AnimData } from './anims.ts';
 import { STEP_SOUND, type Surface } from './surface.ts';
 import { Creature, type Stats } from './creature.ts';
-import { Inventory, rollByMask, rollDrop, type ItemDef } from './items.ts';
+import { Inventory, missingReqs, rollByMask, rollDrop, slotOf, type ItemDef } from './items.ts';
 import { cellToWorld, depthOf } from '../iso.ts';
 import { World } from './world.ts';
 
@@ -75,6 +75,19 @@ export const POINTS_PER_LEVEL = 4;
 export type Attr = 'strength' | 'skill' | 'resistance' | 'magic';
 /** Hit points per point of Resistance (the manual only says life is tied to Resistance; 2 is a guess). */
 export const HP_PER_RESISTANCE = 2;
+/** Stamina follows Resistance and mana follows Power (manual); the per-point ratios and all rates below are guesses. */
+export const STAMINA_PER_RESISTANCE = 2;
+export const MANA_PER_POWER = 2;
+export type Stance = 'walk' | 'run' | 'stealth';
+/** Speed multipliers: run = twice as fast, stealth = half (manual). */
+export const STANCE_SPEED: Record<Stance, number> = { walk: 1, run: 2, stealth: 0.5 };
+/** Stamina drained per second while moving in each stance ("running tires you out", stealth "consumes less"). */
+const STAMINA_DRAIN: Record<Stance, number> = { walk: 0.5, run: 6, stealth: 0.2 };
+const STAMINA_REGEN = 3; // per second when standing still
+const MANA_REGEN = 0.25; // per second
+/** Stealth: unaware monsters notice you from half as far, and the first blow on one of them does double damage. */
+const STEALTH_HEARING = 0.5;
+const SNEAK_MULT = 2;
 /** Bows shoot: the swing hits the nearest monster in front within this many cells (no projectile is drawn yet). */
 const BOW_RANGE = 7;
 const HERO_SPEED = 3.2; // cells per second
@@ -111,6 +124,10 @@ export class Game {
   level = 1;
   /** Unspent attribute points (4 per level, see `spend`). */
   points = 0;
+  stamina = 0;
+  mana = 0;
+  /** current movement stance as asked by the player (run needs stamina) */
+  stance: Stance = 'walk';
   readonly inventory: Inventory;
   readonly ground: GroundItem[] = [];
   /** most recent messages, newest last (for the HUD) */
@@ -133,6 +150,9 @@ export class Game {
   goalReached = false;
   private readonly surfaceAt: (cx: number, cy: number) => Surface;
   private stepClock = 0;
+  private moving = false;
+  /** monsters that had not noticed the hero when the current swing began (they take sneak damage) */
+  private unaware = new Set<Creature>();
   private stepFoot = 0;
   /** Sound hook: numeric id of a GDI/Audio file (see data/sfx.json). Set by the front end. */
   onSound?: (id: number) => void;
@@ -154,6 +174,8 @@ export class Game {
     this.inventory.add(cls.weapon); this.inventory.equip(0);
     this.inventory.add(104); this.inventory.add(104);
     this.hero = this.make(String(this.classId), start.cx, start.cy, { hp: this.attrs.resistance * HP_PER_RESISTANCE, damage: [2, 4], speed: HERO_SPEED, name: data.names[String(this.classId)] ?? cls.name });
+    this.stamina = this.maxStamina;
+    this.mana = this.maxMana;
     this.refreshHeroStats();
     this.hero.onStrike = () => this.heroStrike();
     this.group.add(this.hero.sprite);
@@ -307,6 +329,7 @@ export class Game {
     const h = this.hero;
     if (h.cooldown > 0 || h.state === 'attack' || h.state === 'hit') return false;
     h.face(this.facing.x, this.facing.y);
+    this.unaware = new Set(this.monsters.filter((m) => !this.alerted.has(m)));
     h.setState('attack');
     h.cooldown = 0.35;
     return true;
@@ -347,14 +370,20 @@ export class Game {
     const def = id ? this.inventory.def(id) : undefined;
     if (!def || !this.hero.alive) return;
     if (def.kind === 'potion') {
-      if (def.data === 1) {
+      if (def.data & 7) {
+        // Data is a bit mask: 1 life, 2 stamina, 4 magic (the Vitality potion, 7, does all three and can hurt: -35..75)
         const [lo, hi] = def.power;
-        const heal = lo + Math.floor(this.rnd() * (hi - lo + 1));
-        this.hero.hp = Math.min(this.hero.stats.hp, this.hero.hp + heal);
+        const parts: string[] = [];
+        const roll = () => lo + Math.floor(this.rnd() * (hi - lo + 1));
+        if (def.data & 1) { const v = roll(); this.hero.hp = Math.max(1, Math.min(this.hero.stats.hp, this.hero.hp + v)); parts.push(`${v >= 0 ? '+' : ''}${v} HP`); }
+        if (def.data & 2) { const v = roll(); this.stamina = Math.max(0, Math.min(this.maxStamina, this.stamina + v)); parts.push(`${v >= 0 ? '+' : ''}${v} stamina`); }
+        if (def.data & 4) { const v = roll(); this.mana = Math.max(0, Math.min(this.maxMana, this.mana + v)); parts.push(`${v >= 0 ? '+' : ''}${v} mana`); }
         this.inventory.take(index);
         this.snd(9);
-        this.say(`You drink the ${def.name}: +${heal} HP`);
-      } else this.say(`${def.name}: stamina and magic are not in the game yet`);
+        this.say(`You drink the ${def.name}: ${parts.join(', ')}`);
+      } else this.say(`${def.name}: its magic is not understood yet`);
+    } else if (slotOf(def) && this.inventory.canUse(def) && this.missing(def).length) {
+      this.say(`You need ${this.missing(def).join(', ')} to use the ${def.name}`);
     } else if (this.inventory.equip(index)) {
       this.say(`You equip the ${def.name}`);
     } else if (!this.inventory.canUse(def) && def.kind !== 'scroll' && def.kind !== 'book' && def.kind !== 'key' && def.kind !== 'quest') {
@@ -429,7 +458,9 @@ export class Game {
       }
       hit = true;
       const [lo, hi] = h.stats.damage;
-      const dmg = Math.max(1, lo + Math.floor(this.rnd() * (hi - lo + 1)) - m.stats.armor);
+      const sneak = this.effectiveStance === 'stealth' && this.unaware.has(m);
+      const dmg = Math.max(1, (lo + Math.floor(this.rnd() * (hi - lo + 1))) * (sneak ? SNEAK_MULT : 1) - m.stats.armor);
+      if (sneak) this.say('Sneak attack!');
       const flesh = this.data.actors[this.idOf.get(m) ?? '']?.Sonidos?.Carne !== 0;
       this.snd(this.pick(flesh ? 59 : 62, 3)); // c_carne / c_nocarne
       const killed = m.hurt(dmg);
@@ -466,7 +497,9 @@ export class Game {
   /** @param move cell-space unit vector from the keyboard, or null */
   update(dt: number, move: { x: number; y: number } | null): void {
     const h = this.hero;
+    this.moving = false;
     this.updateHero(dt, move);
+    this.tickResources(dt);
     this.pickups();
     this.checkGoal();
     for (const m of this.monsters) this.updateMonster(m, dt);
@@ -474,6 +507,21 @@ export class Game {
     h.update(dt);
     for (const m of this.monsters) m.update(dt);
   }
+
+  get maxStamina(): number { return this.attrs.resistance * STAMINA_PER_RESISTANCE; }
+  get maxMana(): number { return this.attrs.magic * MANA_PER_POWER; }
+
+  /** What the hero still lacks to use an item (empty = usable, otherwise the item shows a red border). */
+  missing(def: ItemDef): string[] { return missingReqs(def, this.attrs, this.level); }
+
+  /** True when the item cannot be used by this hero right now: wrong class or attributes too low. */
+  blocked(def: ItemDef): boolean { return !this.inventory.canUse(def) || this.missing(def).length > 0; }
+
+  /** Ctrl+click = run, Shift+click = stealth (manual); run wins if both are held. */
+  setStance(run: boolean, stealth: boolean): void { this.stance = run ? 'run' : stealth ? 'stealth' : 'walk'; }
+
+  /** The stance actually in effect: you cannot run on empty. */
+  private get effectiveStance(): Stance { return this.stance === 'run' && this.stamina < 0.5 ? 'walk' : this.stance; }
 
   /** Spends one level-up point on an attribute. Life follows Resistance (and the hero is healed by the gain). */
   spend(attr: Attr): boolean {
@@ -483,6 +531,13 @@ export class Game {
     if (attr === 'resistance') { this.hero.stats.hp += HP_PER_RESISTANCE; this.hero.hp += HP_PER_RESISTANCE; }
     this.version++;
     return true;
+  }
+
+  private tickResources(dt: number): void {
+    if (!this.hero.alive) return;
+    if (this.moving) this.stamina = Math.max(0, this.stamina - STAMINA_DRAIN[this.effectiveStance] * dt);
+    else this.stamina = Math.min(this.maxStamina, this.stamina + STAMINA_REGEN * dt);
+    this.mana = Math.min(this.maxMana, this.mana + MANA_REGEN * dt);
   }
 
   private checkLevel(): void {
@@ -546,10 +601,17 @@ export class Game {
       this.facing = { x: vx, y: vy };
       h.face(vx, vy);
       h.setState('walk');
-      this.stepClock += dt;
-      if (this.stepClock >= STEP_EVERY) { this.stepClock -= STEP_EVERY; this.snd(STEP_SOUND[this.surfaceAt(h.cx, h.cy)] + (this.stepFoot ^= 1)); }
+      const stance = this.effectiveStance;
+      this.stepClock += dt * STANCE_SPEED[stance];
+      if (this.stepClock >= STEP_EVERY) {
+        this.stepClock -= STEP_EVERY;
+        this.stepFoot ^= 1;
+        // stealth is silent; running uses the j_correr_* pair (id + 2)
+        if (stance !== 'stealth') this.snd(STEP_SOUND[this.surfaceAt(h.cx, h.cy)] + this.stepFoot + (stance === 'run' ? 2 : 0));
+      }
+      this.moving = true;
       const before = { x: h.cx, y: h.cy };
-      this.step(h, vx, vy, h.stats.speed, dt);
+      this.step(h, vx, vy, h.stats.speed * STANCE_SPEED[stance], dt);
       if (!this.target && !this.targetBox && Math.hypot(h.cx - before.x, h.cy - before.y) < 1e-4) this.walkTarget = null; // blocked
       else if (this.targetBox && Math.hypot(h.cx - before.x, h.cy - before.y) < 1e-4) this.targetBox = null;
     } else { this.stepClock = 0; if (h.state === 'walk') h.setState('idle'); }
@@ -575,7 +637,7 @@ export class Game {
     const h = this.hero;
     if (m.state === 'attack' || m.state === 'hit') return;
     const ex = h.cx - m.cx, ey = h.cy - m.cy, d = Math.hypot(ex, ey);
-    const aggro = m.stats.hearing + 3;
+    const aggro = (m.stats.hearing + 3) * (this.alerted.has(m) || this.effectiveStance !== 'stealth' ? 1 : STEALTH_HEARING);
     if (!h.alive || d > aggro) { this.patrol(m, dt); return; }
     if (!this.alerted.has(m)) { this.alerted.add(m); this.msnd(m, 1); }
     m.face(ex, ey);
