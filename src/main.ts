@@ -25,8 +25,9 @@ const hud = document.getElementById('hud') as HTMLDivElement;
 // anything that goes wrong after start-up is shown instead of leaving the screen black
 window.addEventListener('error', (e) => { hud.textContent = `Error: ${e.message}`; hud.style.opacity = '1'; });
 window.addEventListener('unhandledrejection', (e) => { hud.textContent = `Error: ${String((e.reason as Error)?.message ?? e.reason)}`; hud.style.opacity = '1'; });
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: false });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+let glRenderer: THREE.WebGLRenderer | null = null;
+try { glRenderer = new THREE.WebGLRenderer({ canvas, antialias: false }); glRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); } catch { /* no WebGL: the menus still work, the game itself needs it */ }
+const renderer = glRenderer as THREE.WebGLRenderer;
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x05060a);
 const camera = new THREE.OrthographicCamera(-320, 320, VIEW_H / 2, -VIEW_H / 2, 0.1, 3000);
@@ -34,7 +35,7 @@ camera.position.z = 1500;
 
 function resize() {
   const w = window.innerWidth, h = window.innerHeight;
-  renderer.setSize(w, h, false);
+  glRenderer?.setSize(w, h, false);
   const halfH = VIEW_H / 2, halfW = halfH * (w / h);
   camera.left = -halfW; camera.right = halfW; camera.top = halfH; camera.bottom = -halfH;
   camera.updateProjectionMatrix();
@@ -73,6 +74,7 @@ async function boot() {
     menuMusic.pause();
     window.removeEventListener('pointerdown', startMenuMusic);
   }
+  if (!glRenderer) { hud.textContent = 'This browser cannot create a WebGL context, which the game needs to draw the world.'; return; }
   hud.textContent = 'Loading original map and sprite data…';
   const [tiles, packCell, pack1, pack2, pack3, mapBytes] = await Promise.all([
     Atlas.load(BASE, 'atlas/scenary/outside/vtiles.json'),

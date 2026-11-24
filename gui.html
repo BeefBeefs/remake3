@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NightStone GUI preview</title>
+    <style>
+      html, body { margin: 0; height: 100%; background: #05060a; overflow: hidden; color: #cbb26a; font: 12px ui-monospace, Menlo, monospace; }
+      #note { position: fixed; left: 8px; top: 6px; z-index: 30; }
+      #note a { color: #8ab4ff; }
+    </style>
+  </head>
+  <body>
+    <div id="note"><a href="./index.html">&larr; game</a> · GUI preview: <a href="?screen=title">title</a> · <a href="?screen=hud">hud</a> · <a href="?screen=hud&dead=1">hud (dead)</a> · <a href="?screen=options">options menu</a></div>
+    <script type="module" src="/src/guipreview.ts"></script>
+  </body>
+</html>
