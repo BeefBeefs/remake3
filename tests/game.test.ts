@@ -115,3 +115,25 @@ test('monsters drop loot sometimes when they die', () => {
   }
   assert.ok(drops >= 1, 'with 45% item + 25% gold over 8 kills at least one drop is expected');
 });
+
+test('monsters with a route wander between its points until the hero is near', () => {
+  const g = makeGame();
+  const far = new Game(flatWorld(), (g as unknown as { data: GameData }).data, { cx: 10, cy: 10 }, { spawns: [{ id: '1', cx: 200, cy: 200, route: [{ cx: 204, cy: 200 }] }] });
+  const m = far.monsters[0]!;
+  let moved = 0;
+  for (let t = 0; t < 30; t += 1 / 60) { const x = m.cx, y = m.cy; far.update(1 / 60, null); moved += Math.hypot(m.cx - x, m.cy - y); }
+  assert.ok(moved > 3, `moved ${moved}`);
+  assert.ok(m.cx >= 199.9 && m.cx <= 204.1);
+});
+
+test('combat emits the original sound ids (goblin SndBase 200: attack/alarm/die/hurt)', () => {
+  const g = makeGame();
+  const played: number[] = [];
+  g.onSound = (id) => played.push(id);
+  const m = g.monsters[0]!;
+  g.hero.cx = m.cx - 1; g.hero.cy = m.cy; // beside it
+  g.click(m.cx, m.cy);
+  run(g, 6);
+  assert.ok(played.some((id) => id >= 59 && id <= 64), `flesh/no-flesh hit sound in ${played}`);
+  assert.ok(played.some((id) => id >= 200 && id <= 270), `a monster sound in ${played}`);
+});

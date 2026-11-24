@@ -21,6 +21,17 @@ Each working session appends an entry below (newest first). Format knowledge liv
 | Skills/magic, dialogue, quests (`.adv`), sound effects, shops, multiplayer, editor | ⬜ not started |
 | Combat + monster AI | 🟡 first pass (placeholder numbers) |
 
+### Turn 6, continued — routes and sound
+- **Zone records = wander routes.** Each of the 32 records is keyed by a monster's marker cell and lists points near it;
+  unaware monsters now stroll between them (slow, pausing 1.5–5 s) until you come within hearing range. The 16 trailing
+  dwords per record (multiples of 35…) are still unexplained.
+- **Sound effects** (`src/audio/sfx.ts`, `tools/build_sfx_index.py` → `data/sfx.json`, 136 sounds): the file numbers follow
+  the actor INI `SndBase` (+0 attack, +1 alarm, +2 die, +3 hurt), so monsters shout when they notice you, grunt when hit and
+  scream on death; flesh vs. no-flesh hit sounds come from the INI `Carne` flag; hero hurt/death, pickup and potion sounds
+  too. Whooshes for a missed swing and the footsteps are not hooked up. The game only emits ids (`Game.onSound`), tests
+  check them; **never listened to in a browser**.
+- Tests: 33 pass.
+
 ## Turn 6 — 2026-11-24 · the `.adv` format and real monster placement
 
 - **`.adv` decoded** (`tools/adv.py`, `src/formats/adv.ts`, `tests/adv.test.ts`): a gzip *container* with the intro and

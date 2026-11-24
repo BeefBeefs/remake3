@@ -142,6 +142,12 @@ NightStone, NHS logos, intro). The 76 `Pack/*.g16` files are different/unknown.
 - `System/{Cave,Combat,Dungeon,Map,Menu,OutSide,Psda}.dt`: **RIFF WAVE music** (44.1 kHz stereo 16-bit) despite the
   extension; `TK_EX.dt` is also WAVE. All are converted to Ogg Vorbis (`public/assets/audio/**`).
 
+### Sound ids
+Files `GDI/Audio/NNN_*.wav` → `audio/gdi/audio/NNN_*.ogg`, indexed by `data/sfx.json`. Actor INI `Sonidos.SndBase` = B:
+B+0 attack, B+1 alarm (notices you), B+2 die, B+3 hurt (e.g. 200–203 goblin); `Carne` 1/0 = flesh vs. no-flesh hit sound
+(59–61 `c_carne` / 62–64 `c_nocarne`). Hero: 100 die, 101–102 hurt, 103 level up (Amazon 120–123, Sorceress 140–143);
+57/58 sword, 65–70 `c_sesgo` (used for a swing that hits nothing – a guess), 8 pick up, 7 item drop, 9 drink, 53–56 block.
+
 ## 4. Text ✅
 `System/Idioma.bdt`: Latin-1 blocks `<< KEY >>\r\ntext&\r\n`. Keys: `ACTORS\ID-<n>` (name), `ACTORS\ID-<n>*` (dialogue,
 replies as `$0 …`, `$1 …`). 576 entries → `public/assets/text/idioma.json`. Example: ID-1 Goblin, ID-27 Innkeeper (Inn of the
@@ -166,6 +172,7 @@ White Goddess), ID-100 Terak, ID-101 Rhelia.
          3072 …) and u16[2] is 2048 (+32·k) on ~3,400 cells – flag/height-like; none of it rendered or understood yet.
 0x184048 zones: 255 records × 196 bytes. u32 key = packed cell (y<<8 | x) of a PackCell object, then up to 32 packed
          cells (u32 each, 0-terminated), then 16 u32 of unknown data (values like 140, 175, 350, 875…).
+         Read as a **wander route** of the monster at the key cell (points within ~13 cells of it; used by the game).
          32 are used in Lost Forrest; all 32 keys are cells holding a pack-0 object (verified).
 0x190384 scripts: 64 records × 248 bytes: u32 type at +0, 8 command ids (u32) at +0x38, then 8 × 4 u32 args at +0x78.
          Command 1 = "roll a random item of type mask a, quality b" (args like 100,3 / 32,3 / 1024,3 / 0xE000,2); the

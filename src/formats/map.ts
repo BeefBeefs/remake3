@@ -59,7 +59,11 @@ export const SCRIPT_SIZE = 248;
 export const START_IDS = { 100: 'Barbarian', 101: 'Amazon', 102: 'Sorceress' } as const;
 
 /** A pack-0 object: an actor spawn (id = actor IA number) or a start point (100..102) or an unknown marker. */
-export interface Marker { id: number; cx: number; cy: number }
+export interface Marker {
+  id: number; cx: number; cy: number;
+  /** points from the marker's zone record (a few cells around it): the monster's wander/patrol route */
+  route?: { cx: number; cy: number }[];
+}
 
 export interface GameMap {
   dim: number;
@@ -90,6 +94,23 @@ export function parseMap(body: Uint8Array): GameMap {
     const o = dv.getUint32(OBJECTS_OFFSET + i * 4, true);
     if (o && o >> 10 === 0) markers.push({ id: o & 1023, cx: i % MAP_DIM, cy: Math.floor(i / MAP_DIM) });
     else objects[i] = o;
+  }
+  // Zone records: key = packed marker cell (y<<8|x), then up to 32 packed cells. Read as a patrol route (see FORMATS.md).
+  if (body.byteLength >= SCRIPTS_OFFSET) {
+    for (let z = 0; z < 255; z++) {
+      const o = ZONES_OFFSET + z * ZONE_SIZE;
+      const key = dv.getUint32(o, true);
+      if (!key) continue;
+      const m = markers.find((k) => k.cx === (key & 255) && k.cy === key >> 8);
+      if (!m) continue;
+      const route: { cx: number; cy: number }[] = [];
+      for (let j = 0; j < 32; j++) {
+        const v = dv.getUint32(o + 4 + j * 4, true);
+        if (!v) break;
+        route.push({ cx: v & 255, cy: v >> 8 });
+      }
+      if (route.length) m.route = route;
+    }
   }
   return { dim: MAP_DIM, tileset: header.tileset, terrain, objects, markers };
 }

@@ -12,6 +12,7 @@ interface ActorIni {
   HDP?: { Vida?: number; Fuerza?: Range; Armadura?: number; Pts_Experiencia?: Range; Velocidad?: number };
   IA?: { Oido?: number };
   Items?: { IDItem?: number[]; PItem?: number[] };
+  Sonidos?: { SndBase?: number; Carne?: number };
 }
 
 /** Everything the simulation needs to be loaded from /assets (see main.ts). */
@@ -28,7 +29,7 @@ export interface GameData {
 /** Per-adventure parameters (see adventure.json / the map's markers). */
 export interface GameOptions {
   /** actor spawns from the map's pack-0 markers; omitted = scatter a few monsters around the start */
-  spawns?: { id: string; cx: number; cy: number }[];
+  spawns?: { id: string; cx: number; cy: number; route?: { cx: number; cy: number }[] }[];
   /** hero attributes from the .adv file (strength, skill, resistance, magic) */
   attrs?: { strength: number; skill: number; resistance: number; magic: number };
 }
@@ -38,6 +39,7 @@ export interface GroundItem { id: number; cx: number; cy: number; mesh: THREE.Ob
 const HERO_ID = '100';
 const HERO_SPEED = 3.2; // cells per second
 const MONSTER_SPEED = 1.7;
+const PATROL_SPEED = 0.45; // fraction of chase speed
 const MELEE = 1.35; // cells
 const HIT_RANGE = 1.9; // hero swing reach, cells
 const PICKUP = 0.9; // cells
@@ -73,6 +75,12 @@ export class Game {
   private facing = { x: 0, y: 1 };
   private readonly rnd = mulberry32(0x4e53);
   private readonly idOf = new Map<Creature, string>();
+  /** monsters that have noticed the hero (they shout once) */
+  private readonly alerted = new Set<Creature>();
+  /** Sound hook: numeric id of a GDI/Audio file (see data/sfx.json). Set by the front end. */
+  onSound?: (id: number) => void;
+  /** wander routes of unaware monsters (the map's zone records) */
+  private readonly patrols = new Map<Creature, { pts: { cx: number; cy: number }[]; i: number; wait: number }>();
 
   /** hero attributes of the adventure (shown in the inventory panel; only resistance feeds back into HP, see below) */
   readonly attrs: NonNullable<GameOptions['attrs']>;
@@ -111,7 +119,7 @@ export class Game {
   }
 
   /** Real placement: one monster per pack-0 marker whose actor we have art and animations for. */
-  private spawnFromMap(spawns: { id: string; cx: number; cy: number }[]): void {
+  private spawnFromMap(spawns: NonNullable<GameOptions['spawns']>): void {
     for (const sp of spawns) {
       const def = this.data.anims.actors[sp.id];
       if (!def || !this.data.atlases.has(def.pack)) continue;
@@ -120,6 +128,7 @@ export class Game {
       m.dir = Math.floor(this.rnd() * 8);
       this.monsters.push(m);
       this.group.add(m.sprite);
+      if (sp.route?.length) this.patrols.set(m, { pts: [{ cx: sp.cx, cy: sp.cy }, ...sp.route], i: 0, wait: this.rnd() * 3 });
     }
   }
 
@@ -168,6 +177,14 @@ export class Game {
     return true;
   }
 
+  private snd(id: number): void { this.onSound?.(id); }
+  private pick(base: number, n: number): number { return base + Math.floor(this.rnd() * n); }
+  /** Monster sound: SndBase + 0 attack, 1 alarm, 2 die, 3 hurt (file names 200_goblin_atacar … 203_goblin_recibir). */
+  private msnd(m: Creature, k: number): void {
+    const base = this.data.actors[this.idOf.get(m) ?? '']?.Sonidos?.SndBase;
+    if (base) this.snd(base + k);
+  }
+
   say(msg: string): void {
     this.log.push(msg);
     if (this.log.length > 6) this.log.shift();
@@ -191,6 +208,7 @@ export class Game {
         const heal = lo + Math.floor(this.rnd() * (hi - lo + 1));
         this.hero.hp = Math.min(this.hero.stats.hp, this.hero.hp + heal);
         this.inventory.take(index);
+        this.snd(9);
         this.say(`You drink the ${def.name}: +${heal} HP`);
       } else this.say(`${def.name}: stamina and magic are not in the game yet`);
     } else if (this.inventory.equip(index)) {
@@ -236,6 +254,7 @@ export class Game {
         this.say(`+${amount} gold`);
       } else if (!this.inventory.add(g.id)) { this.say('Your pack is full'); continue; }
       else this.say(`Picked up ${def?.name ?? 'an item'}`);
+      this.snd(8);
       this.group.remove(g.mesh);
       this.ground.splice(i, 1);
       this.version++;
@@ -244,26 +263,35 @@ export class Game {
 
   private heroStrike(): void {
     const h = this.hero;
+    let hit = false;
     for (const m of this.monsters) {
       if (!m.alive) continue;
       const dx = m.cx - h.cx, dy = m.cy - h.cy, d = Math.hypot(dx, dy);
       if (d > HIT_RANGE) continue;
       if (d > 0.6 && (dx * this.facing.x + dy * this.facing.y) / d < 0.2) continue; // must be in front
+      hit = true;
       const [lo, hi] = h.stats.damage;
       const dmg = Math.max(1, lo + Math.floor(this.rnd() * (hi - lo + 1)) - m.stats.armor);
-      if (m.hurt(dmg)) {
+      const flesh = this.data.actors[this.idOf.get(m) ?? '']?.Sonidos?.Carne !== 0;
+      this.snd(this.pick(flesh ? 59 : 62, 3)); // c_carne / c_nocarne
+      const killed = m.hurt(dmg);
+      this.msnd(m, killed ? 2 : 3);
+      if (killed) {
         this.dropLoot(m, this.idOf.get(m) ?? '');
         this.kills++;
         this.xp += m.stats.xp[0] + Math.floor(this.rnd() * (m.stats.xp[1] - m.stats.xp[0] + 1));
       }
     }
+    if (!hit) this.snd(this.pick(65, 6)); // c_sesgo: a swing that hits nothing (guess: whoosh)
   }
 
   private monsterStrike(m: Creature): void {
     const h = this.hero;
     if (!h.alive || Math.hypot(h.cx - m.cx, h.cy - m.cy) > MELEE + 0.5) return;
     const [lo, hi] = m.stats.damage;
-    h.hurt(Math.max(1, lo + Math.floor(this.rnd() * (hi - lo + 1)) - h.stats.armor));
+    this.msnd(m, 0);
+    const died = h.hurt(Math.max(1, lo + Math.floor(this.rnd() * (hi - lo + 1)) - h.stats.armor));
+    this.snd(died ? 100 : this.pick(101, 2)); // barbarian morir / recibir
   }
 
   /** @param move cell-space unit vector from the keyboard, or null */
@@ -311,13 +339,29 @@ export class Game {
     } else if (h.state === 'walk') h.setState('idle');
   }
 
+  /** Unaware monsters stroll between their route points, pausing at each. */
+  private patrol(m: Creature, dt: number): void {
+    const p = this.patrols.get(m);
+    if (!p) { if (m.state === 'walk') m.setState('idle'); return; }
+    if (p.wait > 0) { p.wait -= dt; if (m.state === 'walk') m.setState('idle'); return; }
+    const t = p.pts[p.i]!;
+    const ex = t.cx - m.cx, ey = t.cy - m.cy, d = Math.hypot(ex, ey);
+    if (d < 0.15) { p.i = (p.i + 1) % p.pts.length; p.wait = 1.5 + this.rnd() * 3.5; return; }
+    m.face(ex, ey);
+    m.setState('walk');
+    const before = { x: m.cx, y: m.cy };
+    this.step(m, ex / d, ey / d, m.stats.speed * PATROL_SPEED, dt);
+    if (Math.hypot(m.cx - before.x, m.cy - before.y) < 1e-4) { p.i = (p.i + 1) % p.pts.length; p.wait = 1; } // blocked: next point
+  }
+
   private updateMonster(m: Creature, dt: number): void {
     if (!m.alive) return;
     const h = this.hero;
     if (m.state === 'attack' || m.state === 'hit') return;
     const ex = h.cx - m.cx, ey = h.cy - m.cy, d = Math.hypot(ex, ey);
     const aggro = m.stats.hearing + 3;
-    if (!h.alive || d > aggro) { if (m.state === 'walk') m.setState('idle'); return; }
+    if (!h.alive || d > aggro) { this.patrol(m, dt); return; }
+    if (!this.alerted.has(m)) { this.alerted.add(m); this.msnd(m, 1); }
     m.face(ex, ey);
     if (d > MELEE) {
       m.setState('walk');

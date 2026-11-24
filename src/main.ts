@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Atlas } from './assets/atlas.ts';
 import { World } from './game/world.ts';
+import { Sfx } from './audio/sfx.ts';
 import { Game, type GameData } from './game/game.ts';
 import type { AnimData } from './game/anims.ts';
 import { buildItems } from './game/items.ts';
@@ -56,7 +57,7 @@ async function boot() {
   const icons = await Atlas.load(BASE, 'atlas/system/ilistdata.json');
   const adv = (await (await fetch(`${BASE}data/adventure.json`)).json()) as { mission_text: string; heroes: { strength: number; skill: number; resistance: number; magic: number }[] };
   // Hero + every monster kind the map places (pack-0 markers).
-  const spawns = map.markers.filter((m) => animData.actors[String(m.id)] && m.id < 100).map((m) => ({ id: String(m.id), cx: m.cx, cy: m.cy }));
+  const spawns = map.markers.filter((m) => animData.actors[String(m.id)] && m.id < 100).map((m) => ({ id: String(m.id), cx: m.cx, cy: m.cy, route: m.route }));
   const atlases = new Map<string, Atlas>();
   await Promise.all(['100', ...new Set(spawns.map((s) => s.id))].map(async (id) => {
     const pack = animData.actors[id]!.pack;
@@ -98,10 +99,13 @@ async function boot() {
   });
   window.addEventListener('keyup', (e) => keys.delete(e.key.toLowerCase()));
 
+  const sfx = new Sfx(BASE, (await (await fetch(`${BASE}data/sfx.json`)).json()) as Record<string, string>);
+  game.onSound = (id) => sfx.play(id);
   let audioOn = false;
   function startAudio() {
     if (audioOn) return;
     audioOn = true;
+    sfx.enabled = true;
     const music = new Audio(`${BASE}audio/system/outside.ogg`); music.loop = true; music.volume = 0.35;
     const wind = new Audio(`${BASE}audio/gdi/audio/ambsounds/05_viento2.ogg`); wind.loop = true; wind.volume = 0.4;
     void music.play().catch(() => undefined);

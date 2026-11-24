@@ -67,3 +67,12 @@ test('every zone record key is a pack-0 marker cell (y<<8|x)', () => {
   }
   assert.equal(n, 32);
 });
+
+test('zone records become wander routes on the markers', () => {
+  const withRoute = map.markers.filter((m) => m.route);
+  assert.equal(withRoute.length, 32);
+  const mage = map.markers.find((m) => m.cx === 158 && m.cy === 77)!;
+  assert.equal(mage.route!.length, 8);
+  assert.deepEqual(mage.route![0], { cx: 157, cy: 81 });
+  for (const m of withRoute) for (const r of m.route!) assert.ok(Math.hypot(r.cx - m.cx, r.cy - m.cy) < 20, `route far from marker ${m.id}`);
+});
