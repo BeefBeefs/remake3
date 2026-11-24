@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { Game, type GameData } from '../src/game/game.ts';
+import { Game, type GameData, type GameOptions } from '../src/game/game.ts';
 import { World } from '../src/game/world.ts';
 import type { Atlas } from '../src/assets/atlas.ts';
 import type { GameMap } from '../src/formats/map.ts';
@@ -17,12 +17,12 @@ function flatWorld(): World {
   return new World(map, fakeAtlas, []);
 }
 
-function makeGame(): Game {
+function makeGame(opts: GameOptions = {}): Game {
   const anims = json('data/anims.json');
   const atlases = new Map<string, Atlas>();
   for (const a of Object.values(anims.actors) as { pack: string }[]) atlases.set(a.pack, fakeAtlas);
   const data: GameData = { anims, actors: json('data/actors.json'), names: { '100': 'Terak', '1': 'Goblin' }, atlases, items: buildItems(json('data/items.json'), {}), icons: fakeAtlas };
-  return new Game(flatWorld(), data, { cx: 128, cy: 128 });
+  return new Game(flatWorld(), data, { cx: 128, cy: 128 }, opts);
 }
 
 const run = (g: Game, seconds: number, move: { x: number; y: number } | null = null) => {
@@ -156,4 +156,36 @@ test('opening a chest rolls its script: a level-3 potion chest drops a life poti
   assert.equal(map.objects[128 * dim + 130], (3 << 10) | 404); // open now
   assert.equal(g.ground.length, 1);
   assert.equal(data.items.get(g.ground[0]!.id)!.kind, 'potion');
+});
+
+test('the Amazon starts with a short bow and shoots from a distance', () => {
+  const g = makeGame({ classId: 101, attrs: { strength: 20, skill: 27, resistance: 22, magic: 15 }, spawns: [{ id: '1', cx: 133, cy: 128 }] });
+  assert.equal(g.classId, 101);
+  assert.equal(g.inventory.equipped.weapon, 40);
+  assert.ok(g.ranged);
+  assert.equal(g.hero.stats.hp, 44); // 2 x resistance
+  const m = g.monsters[0]!;
+  const hp0 = m.hp;
+  g.click(m.cx, m.cy);
+  run(g, 4);
+  assert.ok(m.hp < hp0 || !m.alive, 'the goblin took arrow damage');
+  assert.ok(Math.hypot(g.hero.cx - m.cx, g.hero.cy - m.cy) > 2.5, 'she kept her distance');
+});
+
+test('the Sorceress starts with a staff and cannot wear the Barbarian scimitar', () => {
+  const g = makeGame({ classId: 102, attrs: { strength: 19, skill: 23, resistance: 21, magic: 30 } });
+  assert.equal(g.inventory.equipped.weapon, 56);
+  assert.ok(!g.ranged);
+  assert.equal(g.hero.stats.hp, 42);
+  g.inventory.add(1);
+  assert.equal(g.inventory.equip(g.inventory.slots.indexOf(1)), false);
+});
+
+test('all three heroes have animations and the class sprite packs exist', () => {
+  const anims = json('data/anims.json');
+  for (const id of ['100', '101', '102']) {
+    const a = anims.actors[id];
+    assert.ok(a.anims.Andar && a.anims.Respirar && a.anims.Atacar, id);
+    json(`p16/actors/${a.pack}.json`);
+  }
 });

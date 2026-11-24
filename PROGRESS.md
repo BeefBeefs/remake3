@@ -15,11 +15,27 @@ Each working session appends an entry below (newest first). Format knowledge liv
 | Character / enemy / scenery sprites (`.P16`) | ✅ decoded (51,448 frames); animation blocks beyond the walk cycle not mapped |
 | Map layout (`.map`) | ✅ terrain, objects, **actor/hero-start markers**, zones & script tables located; decor layer + script commands only partly understood |
 | Adventure container (`.adv`) | ✅ texts, hero attributes, embedded map; hero inventories not decoded |
-| Renderer + game loop (three.js) | 🟡 real Lost Forrest, Barbarian, monsters, melee combat (milestone 2) — **never run in a browser** |
+| Renderer + game loop (three.js) | 🟡 real Lost Forrest, all three heroes (Barbarian, Amazon, Sorceress), monsters, melee combat (milestone 2) — **never run in a browser** |
 | NHS data / animation layouts | ✅ 72 actors, 141 items; 17 monsters fully or ambiguously mapped, 20 partial |
 | Items, inventory, equipment | 🟡 working in code (drops, pickup, equip, potions); UI never browser-tested |
 | Skills/magic, dialogue, quests (`.adv`), sound effects, shops, multiplayer, editor | ⬜ not started |
 | Combat + monster AI | 🟡 first pass (placeholder numbers) |
+
+### Turn 6, continued — the other playable classes
+
+- **Hero chooser**: a plain-DOM menu before the game starts (STR/SKL/RES/MAG from the `.adv` heroes); `?class=amazon|sorceress|barbarian` skips it.
+  Each class starts at its own map marker (101 `(235,123)`, 102 `(234,118)`) and loads its own sprite pack.
+- **Sprites**: `001-Amazon.P16` (516 frames) and `001-Sorceress.P16` (536 frames) converted and added to `anims.json` with the same
+  partial layout as the Barbarian (Andar / Respirar / Atacar from the first three direction blocks; feet from the bare 000 pack).
+  Amazon attack is 14 frames, Sorceress 14. Hit and death frames are still unmapped for every hero (contact sheets were inconclusive).
+- **`Game` is class-aware** (`classId`, exported `CLASSES`): inventory character id (so class gear restrictions work), starting
+  weapon (scimitar 1 / short bow 40 / staff 56), hurt and death sound ids (100 / 120 / 140 +1,+2).
+- **Amazon bow**: while a bow (type bit 32) is wielded, attacks hit the nearest monster in line within 7 cells (no arrow sprite yet) and play the
+  `c_arco` sound (ids 50–52 — a guess). The Sorceress staff is melee for now; **no magic or skills yet**.
+- Tests: 38 passing (bow shoots at range, Sorceress can't wear the scimitar, all hero packs exist).
+- **About link**: README now links the Pages site. Setting the repo's *About → Website* field via the API was **refused** (the proxy blocks
+  repository settings writes) — set it in the GitHub UI: repo → ⚙ next to About → Website → `https://beefbeefs.github.io/remake3/` (or tick “Use your GitHub Pages website”).
+- **Unverified**: nothing run in a browser; class stats→HP (2×RES), starting weapons 40/56 and the bow sound ids are guesses.
 
 ### Turn 6, continued — routes and sound
 - **Zone records = wander routes.** Each of the 32 records is keyed by a monster's marker cell and lists points near it;

@@ -1259,6 +1259,62 @@
     -128.0,
     -15.0
    ]
+  },
+  "101": {
+   "title": "ARQUERA- B\u00c1SICA",
+   "pack": "amazon1",
+   "frames": 516,
+   "verified": false,
+   "partial": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 10,
+     "speed": 7
+    },
+    "Respirar": {
+     "start": 81,
+     "frames": 8,
+     "speed": 8
+    },
+    "Atacar": {
+     "start": 145,
+     "frames": 14,
+     "speed": 2
+    }
+   },
+   "foot": [
+    -135.0,
+    -12.0
+   ]
+  },
+  "102": {
+   "title": "HECHICERA- B\u00c1SICA",
+   "pack": "sorceress1",
+   "frames": 536,
+   "verified": false,
+   "partial": true,
+   "anims": {
+    "Andar": {
+     "start": 1,
+     "frames": 10,
+     "speed": 7
+    },
+    "Respirar": {
+     "start": 81,
+     "frames": 8,
+     "speed": 8
+    },
+    "Atacar": {
+     "start": 145,
+     "frames": 14,
+     "speed": 2
+    }
+   },
+   "foot": [
+    -130.5,
+    -4.0
+   ]
   }
  }
 }

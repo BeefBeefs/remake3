@@ -32,6 +32,8 @@ export interface GameOptions {
   spawns?: { id: string; cx: number; cy: number; route?: { cx: number; cy: number }[] }[];
   /** hero attributes from the .adv file (strength, skill, resistance, magic) */
   attrs?: { strength: number; skill: number; resistance: number; magic: number };
+  /** which hero to play (default 100, the Barbarian) */
+  classId?: ClassId;
   /** text shown when the mission's goal object is reached */
   finalText?: string;
 }
@@ -49,7 +51,15 @@ const DROP_SPOTS: [number, number][] = [[0, 0.6], [0.7, 0.4], [-0.7, 0.4], [0, 1
 
 interface Box { cx: number; cy: number; id: number; chest: boolean; done: boolean }
 
-const HERO_ID = '100';
+/** Playable classes: INI actor id, first weapon, and the base of the class's sound ids (die; +1,+2 hurt). */
+export const CLASSES = {
+  100: { name: 'Barbarian', weapon: 1, sound: 100 },
+  101: { name: 'Amazon', weapon: 40, sound: 120 },
+  102: { name: 'Sorceress', weapon: 56, sound: 140 },
+} as const;
+export type ClassId = keyof typeof CLASSES;
+/** Bows shoot: the swing hits the nearest monster in front within this many cells (no projectile is drawn yet). */
+const BOW_RANGE = 7;
 const HERO_SPEED = 3.2; // cells per second
 const MONSTER_SPEED = 1.7;
 const PATROL_SPEED = 0.45; // fraction of chase speed
@@ -103,15 +113,18 @@ export class Game {
 
   /** hero attributes of the adventure (shown in the inventory panel; only resistance feeds back into HP, see below) */
   readonly attrs: NonNullable<GameOptions['attrs']>;
+  readonly classId: ClassId;
 
   constructor(private readonly world: World, private readonly data: GameData, start: { cx: number; cy: number }, opts: GameOptions = {}) {
     this.attrs = opts.attrs ?? { strength: 30, skill: 24, resistance: 30, magic: 11 };
     this.finalText = opts.finalText ?? 'Mission complete.';
-    this.inventory = new Inventory(data.items, 100);
-    // starting kit: the INI lists the Barbarian's items; we start with a scimitar in hand and two life potions
-    this.inventory.add(1); this.inventory.equip(0);
+    this.classId = opts.classId ?? 100;
+    const cls = CLASSES[this.classId];
+    this.inventory = new Inventory(data.items, this.classId);
+    // starting kit: the class's first weapon in hand and two life potions
+    this.inventory.add(cls.weapon); this.inventory.equip(0);
     this.inventory.add(104); this.inventory.add(104);
-    this.hero = this.make(HERO_ID, start.cx, start.cy, { hp: this.attrs.resistance * 2 /* guess: 60 hp for the Barbarian's 30 resistance */, damage: [2, 4], speed: HERO_SPEED, name: data.names[HERO_ID] ?? 'Hero' });
+    this.hero = this.make(String(this.classId), start.cx, start.cy, { hp: this.attrs.resistance * 2 /* guess: 60 hp for the Barbarian's 30 resistance */, damage: [2, 4], speed: HERO_SPEED, name: data.names[String(this.classId)] ?? cls.name });
     this.refreshHeroStats();
     this.hero.onStrike = () => this.heroStrike();
     this.group.add(this.hero.sprite);
@@ -267,6 +280,13 @@ export class Game {
     if (this.log.length > 6) this.log.shift();
   }
 
+  /** True while a bow is wielded (Amazon). */
+  get ranged(): boolean {
+    const id = this.inventory.equipped.weapon;
+    const def = id ? this.inventory.def(id) : undefined;
+    return !!def && (def.tipo & 32) !== 0;
+  }
+
   /** Damage and armour follow the equipment. */
   refreshHeroStats(): void {
     this.hero.stats.damage = this.inventory.damage();
@@ -291,7 +311,7 @@ export class Game {
     } else if (this.inventory.equip(index)) {
       this.say(`You equip the ${def.name}`);
     } else if (!this.inventory.canUse(def) && def.kind !== 'scroll' && def.kind !== 'book' && def.kind !== 'key' && def.kind !== 'quest') {
-      this.say(`${def.name} is not for a Barbarian`);
+      this.say(`${def.name} is not for a ${CLASSES[this.classId].name}`);
     } else this.say(def.name);
     this.refreshHeroStats();
   }
@@ -341,11 +361,25 @@ export class Game {
   private heroStrike(): void {
     const h = this.hero;
     let hit = false;
+    const bow = this.ranged;
+    if (bow) this.snd(this.pick(50, 3)); // c_arco
+    let nearest: Creature | null = null, nd = Infinity;
+    if (bow) {
+      for (const m of this.monsters) {
+        if (!m.alive) continue;
+        const dx = m.cx - h.cx, dy = m.cy - h.cy, d = Math.hypot(dx, dy);
+        if (d > BOW_RANGE || (d > 0.6 && (dx * this.facing.x + dy * this.facing.y) / d < 0.9)) continue; // within ~25 degrees of the aim
+        if (d < nd) { nd = d; nearest = m; }
+      }
+    }
     for (const m of this.monsters) {
       if (!m.alive) continue;
       const dx = m.cx - h.cx, dy = m.cy - h.cy, d = Math.hypot(dx, dy);
-      if (d > HIT_RANGE) continue;
-      if (d > 0.6 && (dx * this.facing.x + dy * this.facing.y) / d < 0.2) continue; // must be in front
+      if (bow) { if (m !== nearest) continue; }
+      else {
+        if (d > HIT_RANGE) continue;
+        if (d > 0.6 && (dx * this.facing.x + dy * this.facing.y) / d < 0.2) continue; // must be in front
+      }
       hit = true;
       const [lo, hi] = h.stats.damage;
       const dmg = Math.max(1, lo + Math.floor(this.rnd() * (hi - lo + 1)) - m.stats.armor);
@@ -367,7 +401,7 @@ export class Game {
       hit = true;
       this.openBox(b);
     }
-    if (!hit) this.snd(this.pick(65, 6)); // c_sesgo: a swing that hits nothing (guess: whoosh)
+    if (!hit && !bow) this.snd(this.pick(65, 6)); // c_sesgo: a swing that hits nothing (guess: whoosh)
   }
 
   private monsterStrike(m: Creature): void {
@@ -376,7 +410,8 @@ export class Game {
     const [lo, hi] = m.stats.damage;
     this.msnd(m, 0);
     const died = h.hurt(Math.max(1, lo + Math.floor(this.rnd() * (hi - lo + 1)) - h.stats.armor));
-    this.snd(died ? 100 : this.pick(101, 2)); // barbarian morir / recibir
+    const sb = CLASSES[this.classId].sound;
+    this.snd(died ? sb : this.pick(sb + 1, 2)); // <class>_morir / _recibir
   }
 
   /** @param move cell-space unit vector from the keyboard, or null */
@@ -418,7 +453,7 @@ export class Game {
     } else if (this.target && this.target.alive) {
       const ex = this.target.cx - h.cx, ey = this.target.cy - h.cy, d = Math.hypot(ex, ey);
       this.facing = { x: ex / (d || 1), y: ey / (d || 1) };
-      if (d <= MELEE) { this.tryAttack(); }
+      if (d <= (this.ranged ? BOW_RANGE - 1 : MELEE)) { this.tryAttack(); }
       else { vx = ex / d; vy = ey / d; }
     } else if (this.targetBox && !this.targetBox.done) {
       const b = this.targetBox, ex = b.cx - h.cx, ey = b.cy - h.cy, d = Math.hypot(ex, ey);

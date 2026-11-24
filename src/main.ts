@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { Atlas } from './assets/atlas.ts';
 import { World } from './game/world.ts';
 import { Sfx } from './audio/sfx.ts';
-import { Game, type GameData } from './game/game.ts';
+import { CLASSES, type ClassId, Game, type GameData } from './game/game.ts';
 import type { AnimData } from './game/anims.ts';
 import { buildItems } from './game/items.ts';
 import { InventoryPanel } from './ui/inventory.ts';
@@ -56,18 +56,21 @@ async function boot() {
   const items = buildItems((await (await fetch(`${BASE}data/items.json`)).json()) as Parameters<typeof buildItems>[0], itemNames);
   const icons = await Atlas.load(BASE, 'atlas/system/ilistdata.json');
   const adv = (await (await fetch(`${BASE}data/adventure.json`)).json()) as { mission_text: string; final: string; heroes: { strength: number; skill: number; resistance: number; magic: number }[] };
+  // Which hero? ?class=amazon skips the menu.
+  const byName: Record<string, ClassId> = { barbarian: 100, amazon: 101, sorceress: 102 };
+  const classId: ClassId = byName[new URLSearchParams(location.search).get('class')?.toLowerCase() ?? ''] ?? (await chooseClass(adv.heroes));
   // Hero + every monster kind the map places (pack-0 markers).
   const spawns = map.markers.filter((m) => animData.actors[String(m.id)] && m.id < 100).map((m) => ({ id: String(m.id), cx: m.cx, cy: m.cy, route: m.route }));
   const atlases = new Map<string, Atlas>();
-  await Promise.all(['100', ...new Set(spawns.map((s) => s.id))].map(async (id) => {
+  await Promise.all([String(classId), ...new Set(spawns.map((s) => s.id))].map(async (id) => {
     const pack = animData.actors[id]!.pack;
     if (!atlases.has(pack)) atlases.set(pack, await Atlas.load(BASE, `p16/actors/${pack.toLowerCase()}.json`));
   }));
 
-  // The Barbarian start marker (id 100) of the map; fall back to the old camp guess for maps without one.
-  const st = startOf(map, 100);
+  // The chosen hero's start marker (100 Barbarian, 101 Amazon, 102 Sorceress) of the map; fall back to the old camp guess for maps without one.
+  const st = startOf(map, classId);
   const spawn = world.findOpenCell(st?.cx ?? 152, st?.cy ?? 78);
-  const game = new Game(world, { anims: animData, actors: actorsIni, names, atlases, items, icons }, spawn, { spawns, attrs: adv.heroes[0], finalText: adv.final.startsWith('Enter the final text') ? 'You have found the Tomb of Donmir!' : adv.final });
+  const game = new Game(world, { anims: animData, actors: actorsIni, names, atlases, items, icons }, spawn, { spawns, attrs: adv.heroes[classId - 100], classId, finalText: adv.final.startsWith('Enter the final text') ? 'You have found the Tomb of Donmir!' : adv.final });
   game.say(adv.mission_text);
   const panel = new InventoryPanel(game, icons, BASE);
   scene.add(game.group);
@@ -156,3 +159,24 @@ async function boot() {
 }
 
 boot().catch((err) => { hud.textContent = `Failed to start: ${String(err)}`; console.error(err); });
+
+/** Plain-DOM hero selection shown before the game starts. */
+function chooseClass(heroes: { strength: number; skill: number; resistance: number; magic: number }[]): Promise<ClassId> {
+  return new Promise((resolve) => {
+    const root = document.createElement('div');
+    root.style.cssText = 'position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(10,7,4,.94);color:#e9dfb8;font:14px ui-monospace,Menlo,monospace;z-index:10';
+    root.innerHTML = '<div style="font-size:22px;letter-spacing:2px">NIGHTSTONE</div><div>Choose your hero</div>';
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;gap:12px;flex-wrap:wrap;justify-content:center';
+    for (const id of [100, 101, 102] as const) {
+      const h = heroes[id - 100]!;
+      const b = document.createElement('button');
+      b.style.cssText = 'width:170px;padding:12px;background:#241a0e;color:#e9dfb8;border:2px solid #6b5426;font:inherit;cursor:pointer;line-height:1.6';
+      b.innerHTML = `<b>${CLASSES[id].name}</b><br>STR ${h.strength} · SKL ${h.skill}<br>RES ${h.resistance} · MAG ${h.magic}`;
+      b.onclick = () => { root.remove(); resolve(id); };
+      row.appendChild(b);
+    }
+    root.appendChild(row);
+    document.body.appendChild(root);
+  });
+}

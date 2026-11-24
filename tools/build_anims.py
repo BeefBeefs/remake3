@@ -86,11 +86,12 @@ if __name__ == '__main__':
                     'anims': build(an, c[0])}
         res[aid]['foot'] = foot(p16, res[aid]['anims'])
     # The player characters are layered packs (see docs/FORMATS.md): same layout in every Barbarian pack.
-    for aid, pack in (('100', 'barbarian2'),):
+    # (the packs are full-body sprites: first digit = armour tier, last two = weapon; the 001 packs hold the first weapon)
+    for aid, pack, bare in (('100', 'barbarian2', '000-Barbarian'), ('101', 'amazon1', '000-Amazon'), ('102', 'sorceress1', '000-Sorceress')):
         an = actors[aid]['Animaciones']
-        res[aid] = {'title': actors[aid]['title'], 'pack': pack, 'frames': 564, 'verified': False, 'partial': True,
-                    'anims': build(an, REQUIRED)}
-        # feet from the bare body pack: the sword in 002 skews the bbox centre
-        res[aid]['foot'] = foot(P16(os.path.join(game, 'Actors', '000-Barbarian.P16')), res[aid]['anims'])
+        res[aid] = {'title': actors[aid]['title'], 'pack': pack, 'frames': len(P16(os.path.join(game, 'Actors', bare + '.P16')).ids()),
+                    'verified': False, 'partial': True, 'anims': build(an, REQUIRED)}
+        # feet from the bare body pack: weapons skew the bbox centre
+        res[aid]['foot'] = foot(P16(os.path.join(game, 'Actors', bare + '.P16')), res[aid]['anims'])
     json.dump({'dirs': DIRS, 'actors': res}, open(os.path.join(out, 'data', 'anims.json'), 'w'), indent=1)
     print(stats, len(res), 'actors')
