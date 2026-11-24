@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
-/** B16 atlases store [x,y,w,h]; P16 atlases add the raw hotspot [x,y,w,h,hx,hy]. */
-export type Rect = [x: number, y: number, w: number, h: number, hx?: number, hy?: number];
+/** B16 atlases store [x,y,w,h]; P16 atlases add the raw hotspot [x,y,w,h,hx,hy], and narrow wall slices a 7th field: the lean of their bottom edge (+1 down-right, -1 down-left, 0 flat). */
+export type Rect = [x: number, y: number, w: number, h: number, hx?: number, hy?: number, slope?: number];
 
 export interface AtlasJson {
   image: string;
@@ -38,6 +38,11 @@ export class Atlas {
   hotspot(id: number): [number, number] {
     const r = this.rect(id);
     return [r[4] ?? 0, r[5] ?? 0];
+  }
+
+  /** Lean of a narrow wall slice's bottom edge: +1 runs down-right (along +cx), -1 down-left (along +cy), 0 flat / not a slice. */
+  slope(id: number): number {
+    return this.rect(id)[6] ?? 0;
   }
 
   has(id: number): boolean {

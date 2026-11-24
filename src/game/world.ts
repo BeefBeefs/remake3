@@ -22,19 +22,37 @@ const LOAD_RADIUS = 3;
 /** Sprites at least this tall (px) block movement (trees, walls, barrels...). */
 const BLOCK_HEIGHT = 30;
 
-/** Pack2 border-wall slices (one per cell along the map edge) and the invisible blocker that fills the gaps between them. */
+const WATER = new THREE.MeshBasicMaterial({ color: 0x1c3446, side: THREE.DoubleSide });
+
+/** The empty frame (Outside Pack2 #599) that sits between wall slices along the map border; it blocks like a wall. */
 export const WALL_PACK = 2;
-export const WALL_FIRST = 600;
-export const WALL_LAST = 625;
 export const WALL_BLOCKER = 599;
-export const isWallSlice = (pack: number, id: number): boolean => pack === WALL_PACK && id >= WALL_FIRST && id <= WALL_LAST;
+
+/**
+ * Wall slices: the cliff / hedge / cave walls are strips 32 px wide and 70-230 px tall, one per cell along a run. Their
+ * hotspots do not follow the usual rule: they put the strip 6-7 cells (about 100 px up and 200 px sideways, or well
+ * below) away from the cell that carries it, i.e. into the playable area where it hides the hero. Drawn standing on
+ * its own cell the run closes up into a seamless wall (verified on the Lost Forrest border and the cave maps).
+ */
+export function isSlabFrame(w: number, h: number, hx: number, hy: number): boolean {
+  if (w > 34 || h < 70) return false;
+  const left = hx + HOTSPOT_X, bottom = -(hy + HOTSPOT_Y) - h; // offsets from the cell centre, y up
+  return Math.abs(left) > 70 || bottom > 50 || bottom < -45;
+}
 
 /** Screen rectangle (x of left edge, y of bottom edge, y up) of a wall slice standing on the cell centred at p. */
 export function wallRect(p: { x: number; y: number }, w: number): { x: number; bottom: number } {
   return { x: p.x - w / 2, bottom: p.y - 12 };
 }
 
-const WATER = new THREE.MeshBasicMaterial({ color: 0x1c3446, side: THREE.DoubleSide });
+/**
+ * Whether a slice must be mirrored: runs along +cx go down-right on screen and need slices whose bottom edge leans
+ * that way (+1), runs along +cy need -1. The art is drawn for the opposite direction for the most part.
+ */
+export function slabFlip(slope: number, alongCx: boolean, alongCy: boolean): boolean {
+  if (!slope || alongCx === alongCy) return false;
+  return slope !== (alongCx ? 1 : -1);
+}
 
 export class World {
   readonly group = new THREE.Group();
@@ -42,6 +60,8 @@ export class World {
   readonly blocked: Uint8Array;
   private readonly chunks = new Map<number, THREE.Group>();
   private readonly chunksPerRow: number;
+  /** the border-wall slices (and their empty-frame blocker) exist only in the Outside packs */
+  private readonly walls: boolean;
 
   /** @param packs scenery atlases indexed by the map's pack number (PackCell, Pack1, Pack2, Pack3). */
   constructor(
@@ -50,6 +70,7 @@ export class World {
     private readonly packs: Atlas[],
   ) {
     this.dim = map.dim;
+    this.walls = map.tileset.toLowerCase() === 'outside';
     this.chunksPerRow = Math.ceil(map.dim / CHUNK);
     this.blocked = new Uint8Array(map.dim * map.dim);
     for (let i = 0; i < this.blocked.length; i++) {
@@ -60,8 +81,42 @@ export class World {
         const atlas = packs[o >> 10];
         const id = o & 1023;
         if (atlas && atlas.has(id) && atlas.rect(id)[3] >= BLOCK_HEIGHT) this.blocked[i] = 1;
-        if (o >> 10 === WALL_PACK && id === WALL_BLOCKER) this.blocked[i] = 1;
+        if (this.walls && o >> 10 === WALL_PACK && id === WALL_BLOCKER) this.blocked[i] = 1;
       }
+    }
+    this.findSlabs();
+  }
+
+  /** The map's wall line has an empty frame (599) between slices; a plain slice stands in for it so the wall has no holes. */
+  private stand(o: number, cx: number, cy: number): number {
+    return this.walls && o === ((WALL_PACK << 10) | WALL_BLOCKER) ? (WALL_PACK << 10) | (cx + cy & 1 ? 610 : 600) : o;
+  }
+
+  /** 0 = ordinary cell, 1 = wall slice, 2 = wall slice drawn mirrored. */
+  private slab!: Uint8Array;
+
+  private findSlabs(): void {
+    const dim = this.dim, cand = new Uint8Array(dim * dim);
+    for (let i = 0; i < cand.length; i++) {
+      const o = this.map.objects[i]!;
+      if (!o) continue;
+      const atlas = this.packs[o >> 10], id = o & 1023;
+      if (this.walls && o >> 10 === WALL_PACK && id === WALL_BLOCKER) { cand[i] = 1; continue; }
+      if (o >> 10 === 0 || !atlas || !atlas.has(id)) continue;
+      const [, , w, h, hx = 0, hy = 0] = atlas.rect(id);
+      if (isSlabFrame(w, h, hx, hy)) cand[i] = 1;
+    }
+    this.slab = new Uint8Array(dim * dim);
+    for (let cy = 0; cy < dim; cy++) for (let cx = 0; cx < dim; cx++) {
+      const i = cy * dim + cx;
+      if (!cand[i]) continue;
+      const at = (x: number, y: number) => (x >= 0 && y >= 0 && x < dim && y < dim ? cand[y * dim + x]! : 0);
+      const alongCx = !!(at(cx - 1, cy) || at(cx + 1, cy)), alongCy = !!(at(cx, cy - 1) || at(cx, cy + 1));
+      if (!alongCx && !alongCy) continue; // a lone tall thing is a tree or a pillar, not a wall
+      const o = this.stand(this.map.objects[i]!, cx, cy);
+      const id = o & 1023, atlas = this.packs[o >> 10];
+      const slope = atlas && atlas.has(id) ? atlas.slope(id) : 0;
+      this.slab[i] = slabFlip(slope, alongCx, alongCy) ? 2 : 1;
     }
   }
 
@@ -150,17 +205,15 @@ export class World {
           // tiles are 64x31 but the grid steps by 16 px: stretch to 32 to close the seams
           ground.add(t, p.x - 32, p.y - 16, 64, 32, -1000);
         }
-        let o = this.map.objects[i]!;
-        // The map's wall line has an empty frame (599) between slices; a plain slice stands in so the wall has no holes.
-        if (o === ((WALL_PACK << 10) | WALL_BLOCKER)) o = (WALL_PACK << 10) | (cx + cy & 1 ? 610 : 600);
+        const o = this.stand(this.map.objects[i]!, cx, cy);
         if (o) {
           const atlas = this.packs[o >> 10], id = o & 1023;
           if (atlas && atlas.has(id)) {
             const [, , w, h] = atlas.rect(id);
             const [hx, hy] = atlas.hotspot(id);
-            if (isWallSlice(o >> 10, id)) {
+            if (this.slab[i]) {
               const r = wallRect(p, w);
-              scenery[o >> 10]!.add(id, r.x, r.bottom, w, h, depthOf(cx, cy), true);
+              scenery[o >> 10]!.add(id, r.x, r.bottom, w, h, depthOf(cx, cy), this.slab[i] === 2);
             } else {
               const top = p.y - (hy + HOTSPOT_Y);
               scenery[o >> 10]!.add(id, p.x + hx + HOTSPOT_X, top - h, w, h, depthOf(cx, cy));

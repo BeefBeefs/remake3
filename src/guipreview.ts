@@ -12,6 +12,7 @@ import { CharacterPanel } from './ui/character.ts';
 import { ShopWindow } from './ui/shop.ts';
 import { WorldMap } from './ui/worldmap.ts';
 import { pickSlot } from './ui/saveslots.ts';
+import { pickMap } from './ui/mappicker.ts';
 import { SaveStore, newCareer } from './game/career.ts';
 
 const BASE = `${import.meta.env.BASE_URL}assets/`;
@@ -34,6 +35,12 @@ if (screen === 'worldmap') {
 } else if (screen === 'slots') {
   const r = await pickSlot(skin, demoStore, (q.get('mode') as 'save' | 'load' | null) ?? 'load');
   document.body.append(`picked ${r}`);
+} else if (screen === 'maps') {
+  const stage = document.createElement('div');
+  stage.style.cssText = 'position:relative;width:640px;height:480px;background:#000 center/cover';
+  document.body.appendChild(stage);
+  const r = await pickMap(skin, stage);
+  document.body.append(`picked ${r?.id ?? 'nothing'}`);
 } else if (screen === 'title') {
   const menu = new TitleMenu(skin, { ...DEFAULT_PREFS }, () => undefined, ['Barbarian', 'Amazon', 'Sorceress'], demoStore);
   const r = await menu.run((q.get('at') as Parameters<TitleMenu['run']>[0] | null) ?? 'main');

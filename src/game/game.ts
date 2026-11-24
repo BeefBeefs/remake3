@@ -294,11 +294,12 @@ export class Game {
   private initContainers(): void {
     const map = this.world.map;
     const scripts = new Map(map.scripts.map((sc) => [sc.index, sc]));
+    const outside = map.tileset.toLowerCase() === 'outside';
     for (let i = 0; i < map.objects.length; i++) {
       const o = map.objects[i]!;
       const cx = i % map.dim, cy = Math.floor(i / map.dim);
       const id = o & 1023;
-      if (o >> 10 === CONTAINER_PACK && (CHESTS.has(id) || id in BREAKABLES)) {
+      if (outside && o >> 10 === CONTAINER_PACK && (CHESTS.has(id) || id in BREAKABLES)) { // (the chest ids are the Outside pack's; Cave and Dungeon packs are not mapped yet)
         const chest = CHESTS.has(id);
         this.boxes.push({ cx, cy, id, chest, done: false });
         if (chest) this.world.setObject(cx, cy, (CONTAINER_PACK << 10) | (id - 1)); // show it closed

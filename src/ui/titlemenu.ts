@@ -7,18 +7,21 @@ import type { Skin } from './skin.ts';
 import type { Prefs } from './prefs.ts';
 import type { Career, SaveStore } from '../game/career.ts';
 import { pickSlot } from './saveslots.ts';
+import { pickMap } from './mappicker.ts';
+import type { MapEntry } from '../game/maplist.ts';
 
 export type Difficulty = 0 | 1 | 2;
 export const DIFFICULTY_NAMES = ['Apprentice', 'Expert', 'Hero'] as const;
 
 /** A new game (hero + difficulty) or a saved career picked with Load game. */
-export interface MenuResult { hero: number; difficulty: Difficulty; load?: Career }
+export interface MenuResult { hero: number; difficulty: Difficulty; load?: Career; /** a map chosen with Select map: played on its own, outside the career */ map?: MapEntry }
 
 export class TitleMenu {
   private readonly root = document.createElement('div');
   private readonly stage = document.createElement('div');
   private done: ((r: MenuResult) => void) | null = null;
   private hero = 0;
+  private map: MapEntry | undefined;
 
   constructor(private readonly skin: Skin, private readonly prefs: Prefs, private readonly onPrefs: (p: Prefs) => void, private readonly heroNames: string[], private readonly store?: SaveStore) {
     this.root.style.cssText = 'position:fixed;inset:0;background:#000;z-index:20;display:flex;align-items:center;justify-content:center;user-select:none;overflow:hidden';
@@ -78,8 +81,10 @@ export class TitleMenu {
   /** "New game" submenu: Start game / Select map / Return (Menu.ini CStartGame, CCustomGame, CBackNewGame). */
   private newGame(): void {
     this.clear();
-    this.button('menu', 12, 194, 302, () => this.selectHero());
-    this.button('menu', 13, 194, 338, () => undefined, false, 'Only the Lost Forrest is playable so far');
+    this.button('menu', 12, 194, 302, () => { this.map = undefined; this.selectHero(); });
+    this.button('menu', 13, 194, 338, () => {
+      void pickMap(this.skin, this.stage).then((m) => { if (m) { this.map = m; this.selectHero(); } });
+    });
     this.button('menu', 14, 194, 374, () => this.main());
   }
 
@@ -115,7 +120,7 @@ export class TitleMenu {
       z.title = ['Easy', 'Normal', 'Hard'][d]!;
       z.addEventListener('pointerenter', () => { z.style.background = 'rgba(255,230,150,.18)'; });
       z.addEventListener('pointerleave', () => { z.style.background = ''; });
-      z.addEventListener('click', () => this.done?.({ hero: this.hero, difficulty: d as Difficulty }));
+      z.addEventListener('click', () => this.done?.({ hero: this.hero, difficulty: d as Difficulty, ...(this.map ? { map: this.map } : {}) }));
       this.stage.appendChild(z);
     });
     this.button('menu', 61, x0 + 120, y0 + 172, () => this.selectHero());

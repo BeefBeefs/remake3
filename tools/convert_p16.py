@@ -23,6 +23,14 @@ PACKS = {
     'scenary/outside/pack2': 'Scenary/OutSide/Pack2.P16',
     'scenary/outside/pack3': 'Scenary/OutSide/Pack3.P16',
     'scenary/outside/packcell': 'Scenary/OutSide/PackCell.P16',
+    'scenary/cave/pack1': 'Scenary/Cave/Pack1.P16',
+    'scenary/cave/pack2': 'Scenary/Cave/Pack2.P16',
+    'scenary/cave/pack3': 'Scenary/Cave/Pack3.P16',
+    'scenary/cave/packcell': 'Scenary/Cave/PackCell.P16',
+    'scenary/dungeon/pack1': 'Scenary/Dungeon/Pack1.P16',
+    'scenary/dungeon/pack2': 'Scenary/Dungeon/Pack2.P16',
+    'scenary/dungeon/pack3': 'Scenary/Dungeon/Pack3.P16',
+    'scenary/dungeon/packcell': 'Scenary/Dungeon/PackCell.P16',
     'actors/barbarian0': 'Actors/000-Barbarian.P16',
     'actors/barbarian2': 'Actors/002-Barbarian.P16',
     'actors/sorceress0': 'Actors/000-Sorceress.P16',
@@ -34,6 +42,23 @@ PACKS = {
     'actors/stone': 'Actors/Stone.P16',
 }
 ATLAS_W = 2048
+PACK_SLOPES = True  # 7th frame field for narrow slices (see edge_slope)
+
+
+def edge_slope(rgba):
+    """Narrow wall slices (<= 34 px wide) lean along one isometric diagonal: the bottom edge of the right-hand columns
+    sits lower (+1: runs down-right) or higher (-1: runs down-left) than that of the left-hand ones. 0 = flat/unknown."""
+    a = rgba[..., 3] > 0
+    w = a.shape[1]
+    if w < 8 or not a.any():
+        return 0
+    def bottom(col):
+        r = np.where(a[:, col])[0]
+        return int(r.max()) if len(r) else None
+    l, r = bottom(2), bottom(w - 3)
+    if l is None or r is None or abs(r - l) < 4:
+        return 0
+    return 1 if r > l else -1
 
 
 def shelf_pack(sizes):
@@ -66,6 +91,8 @@ def convert(src, dst_base, quantize=False):
         w, h = sizes[fid]
         atlas[y:y + h, x:x + w] = imgs[fid]
         frames[str(fid)] = [x, y, w, h, int(p.x[fid - 1]), int(p.y[fid - 1])]
+        if w <= 34 and h >= 40 and PACK_SLOPES:
+            frames[str(fid)].append(edge_slope(imgs[fid]))
     fx = [p.x[i - 1] + p.w[i - 1] / 2 for i in p.ids()]
     fy = [p.y[i - 1] + p.h[i - 1] for i in p.ids()]
     ref = [float(np.median(fx)), float(np.median(fy))] if fx else [0.0, 0.0]

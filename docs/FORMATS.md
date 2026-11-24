@@ -98,8 +98,26 @@ n  px×n       n RGB565 pixels   (n < 0xF81F, n >= 1)
 the feet are at x≈−128, y≈−17 (Barbarian median −127.75/−17; Sorceress −128.5/−7; Amazon −131/−15). Anchoring a
 sprite at a cell centre (or an actor's feet) gives `topLeft = anchor + (hx + 128, hy + 16)` in screen px, which lines
 up the Lost Forrest camp (barrels, fires, tents, flags) and the walk cycle correctly (`docs/preview-milestone1.png`).
-Cliff/forest *wall slices* (Pack2 ids 611–616, 32 px wide) carry offsets of −200…−270 px and render high above their
-cell with this rule — probably intended as a tall backdrop, not verified.
+**Wall slices do not follow it.** Cliff / hedge / palisade / cave / dungeon walls are strips ≤ 34 px wide and 70–230 px
+tall, one per cell along a run (Lost Forrest: a rectilinear border of 417 cells, 1 cell thick, ids Pack2 600–625; an
+empty frame #599 fills gaps). Their hotspots put them 6–7 cells (≈ 100 px up and 200 px left) away from their own cell
+— into the playable area, where they hid the hero. Drawn *standing on their own cell* (`left = cell.x − w/2`,
+`bottom = cell.y − 12`) the runs close into seamless walls on every tileset (verified on Lost Forrest, cave and dungeon
+missions). The strips lean along one diagonal (bottom edge lower on the right = runs along +cx, `slope +1`; the other
+way = +cy, `−1`), and most are drawn for the *opposite* direction to the run they sit in, so a run is mirrored when its
+slices' lean differs from the run's direction (`slabFlip`). Slice detection (`isSlabFrame`): width ≤ 34, height ≥ 70 and
+an implied position far from the cell, with at least one 4-neighbour that is also one. The lean is the 7th frame field
+(`[x,y,w,h,hx,hy,slope]`, `tools/convert_p16.py edge_slope`, `tools/add_slopes.py`). Why the hotspots are like this is
+unknown (perhaps a different anchor convention for multi-cell structures).
+
+**Cave and Dungeon scenery** (`Scenary/Cave|Dungeon/Pack1-3 + PackCell.P16`) are converted to
+`p16/scenary/<tileset>/` like Outside; ground tiles are `atlas/scenary/<tileset>/vtiles`. The container / chest ids in
+the game code are Outside's; the other tilesets' chests are not mapped yet.
+
+**Maps in this install** (`src/game/maplist.ts`): `maps/lost_forrest.map` (solo mission), `maps/nhs/1..35.map`
+(34 unpacked from `NightStone.NHS`; 14 Outside, 9 Cave, 12 Dungeon; hero start markers 100–102, 4–159 monsters each) and
+`maps/multiplayer/*` (5 arenas; start markers 110–112, 120–122… instead of 100–102). Names of the campaign missions are
+not in anything decoded, so they are numbered. `?map=nhs/12` or `?map=mp/novus_ancestre_8p` opens one directly.
 
 **Animation layout.** Actor packs hold animations back to back, each as 8 direction blocks, *dir-major*
 (`start + dir*frames + step`). The per-animation `(speed, frames-per-direction)` pairs are in the actor INI

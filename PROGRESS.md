@@ -15,13 +15,14 @@ Each working session appends an entry below (newest first). Format knowledge liv
 | Character / enemy / scenery sprites (`.P16`) | ✅ decoded (51,448 frames); every actor's animation layout mapped (hit, block, death, taunt, rise, extras) |
 | Map layout (`.map`) | ✅ terrain, objects, **actor/hero-start markers**, zones & script tables located; decor layer + script commands only partly understood |
 | Adventure container (`.adv`) | ✅ texts, hero attributes, embedded map; hero inventories not decoded |
-| Renderer + game loop (three.js) | 🟡 real Lost Forrest, all three heroes, monsters, combat, spells with effects; now run headlessly in Chrome (`tools/browser/`) — forest wall slices still draw wrongly |
+| Renderer + game loop (three.js) | 🟡 all 41 maps load (solo, 35 campaign, 5 multiplayer) with Outside, Cave and Dungeon art; heroes, monsters (melee and ranged), combat, spells with effects; run headlessly in Chrome (`tools/browser/`) |
 | NHS data / animation layouts | ✅ 72 actors, 141 items; all layouts mapped |
 | Items, inventory, equipment | 🟡 working in code (drops, pickup, equip, potions); UI never browser-tested |
 | Tile surfaces | 🟡 inferred from tile colour (footsteps) |
 | NPCs, shops, character window | 🟡 working in code; no NPC in the playable map (Inn map not in install) |
 | Spells + effects, saving between missions, title/world map/HUD/windows on the original art | ✅ (numbers are guesses) |
-| Dialogue, quests/scripts (`.adv`), multiplayer, editor | ⬜ not started |
+| Select map (any of the 41 maps), wall slices, arrows / bolts | ✅ (maps are played on their own, outside the career) |
+| Dialogue, quests/scripts (`.adv`), multiplayer play, editor | ⬜ not started |
 | Combat + monster AI | 🟡 first pass (placeholder numbers) |
 
 ### Turn 11 — main menu and GUI with the original art
@@ -324,3 +325,21 @@ map exercises them, so none is implemented; nothing has been seen in a browser.
 - **Seen while doing that, not fixed:** the forest "wall slices" (Pack2 611-616) draw as tall dark panels that can
   hide the hero (looked at with the headless browser; not investigated further).
 - 100 tests; CI green.
+
+## Turn 14 — wall slices, ranged enemies, every map
+
+- **Wall slices fixed.** The Lost Forrest border (and every cliff, palisade, cave and dungeon wall) is a run of 32 px
+  strips whose hotspots land them ~6 cells inside the playable area — the dark panels that hid the hero. Drawn on their
+  own cell and mirrored to match the run's direction, the strips close into seamless walls (looked at on the forest
+  border, a cave and a dungeon in headless Chrome). The empty frame #599 that interrupts the forest wall now blocks and
+  is drawn as a plain slice. Details and the detection rule: `docs/FORMATS.md`.
+- **Archers, mages and bows shoot.** `projectiles.ts` / `projectileview.ts`: arrows and magic bolts fly, hit the first
+  creature or obstacle, and a raised shield stops them. Arquero, Mago and Zelos (INI `Tipo_IA` 3) keep their distance and
+  shoot; the Amazon's arrows are real projectiles now. `?mob=23,25` drops monsters near the start to try them.
+- **All 41 maps play.** Cave and Dungeon scenery converted; `maplist.ts` lists the solo mission, the 35 campaign
+  missions of `NightStone.NHS` and the 5 multiplayer arenas; **Select map** on the title menu (New game → Select map)
+  opens a stone-panel picker (Solo / Campaign / Multiplayer) and plays the choice on its own outside the career;
+  `?map=nhs/12` does the same. Each tileset gets its own ground, scenery and music. Every map was loaded headlessly
+  without errors (which caught a lost water material). Not done: the other tilesets' chests, multiplayer rules, map
+  scripts, and real names for the campaign missions.
+- 107 tests.

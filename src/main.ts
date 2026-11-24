@@ -19,7 +19,8 @@ import { Hud } from './ui/hud.ts';
 import { GameMenu } from './ui/gamemenu.ts';
 import { TitleMenu, type Difficulty } from './ui/titlemenu.ts';
 import { loadPrefs, savePrefs, type Prefs } from './ui/prefs.ts';
-import { gunzip, parseMap, startOf } from './formats/map.ts';
+import { gunzip, parseMap } from './formats/map.ts';
+import { findMap, mapStart, tilesetDir, type MapEntry } from './game/maplist.ts';
 import { cellToWorld, worldToCell } from './iso.ts';
 
 const BASE = `${import.meta.env.BASE_URL}assets/`;
@@ -60,6 +61,9 @@ async function boot() {
   };
   const carried = takeSession<{ classId: ClassId; save: HeroSave; difficulty?: Difficulty; done?: string[] }>('nst-save');
   const returning = parseCareer(takeSession<unknown>('nst-career'));
+  // a map played on its own (Select map, or ?map=nhs/12): it never touches the career's missions
+  let custom = findMap(takeSession<string>('nst-map') ?? new URLSearchParams(location.search).get('map'));
+  if (custom?.id === 'lost_forrest') custom = undefined;
   hud.textContent = 'Loading…';
   const skin = await Skin.load(BASE);
   const adv = (await (await fetch(`${BASE}data/adventure.json`)).json()) as { mission_text: string; final: string; heroes: { strength: number; skill: number; resistance: number; magic: number }[] };
@@ -85,7 +89,8 @@ async function boot() {
     const menu = new TitleMenu(skin, prefs, (p) => { savePrefs(p); if (menuMusic) menuMusic.volume = p.music; applyGamma(p); }, names, store);
     const r = await menu.run();
     career = r.load ?? newCareer((100 + r.hero) as ClassId, r.difficulty, freshHero(100 + r.hero));
-    showMap = true;
+    if (r.map) custom = r.map.id === 'lost_forrest' ? undefined : r.map; else if (r.load) custom = undefined;
+    showMap = !custom;
     stopMenuMusic = () => { menuMusic?.pause(); window.removeEventListener('pointerdown', startMenuMusic); };
   } else if (showMap) {
     const startMenuMusic = music0();
@@ -100,17 +105,18 @@ async function boot() {
   const classId = career.classId as ClassId;
   const difficulty: Difficulty = career.difficulty;
   const mission = MISSIONS[0]!;
+  const played: MapEntry = custom ?? { id: mission.id, name: mission.name, group: 'Solo', file: `maps/${mission.map}` };
   if (!glRenderer) { hud.textContent = 'This browser cannot create a WebGL context, which the game needs to draw the world.'; return; }
   hud.textContent = 'Loading original map and sprite data…';
-  const [tiles, packCell, pack1, pack2, pack3, mapBytes] = await Promise.all([
-    Atlas.load(BASE, 'atlas/scenary/outside/vtiles.json'),
-    Atlas.load(BASE, 'p16/scenary/outside/packcell.json'),
-    Atlas.load(BASE, 'p16/scenary/outside/pack1.json'),
-    Atlas.load(BASE, 'p16/scenary/outside/pack2.json'),
-    Atlas.load(BASE, 'p16/scenary/outside/pack3.json'),
-    fetch(`${BASE}maps/lost_forrest.map`).then((r) => r.arrayBuffer()).then(gunzip),
+  const map = parseMap(await fetch(`${BASE}${played.file}`).then((r) => r.arrayBuffer()).then(gunzip));
+  const ts = tilesetDir(map);
+  const [tiles, packCell, pack1, pack2, pack3] = await Promise.all([
+    Atlas.load(BASE, `atlas/scenary/${ts}/vtiles.json`),
+    Atlas.load(BASE, `p16/scenary/${ts}/packcell.json`),
+    Atlas.load(BASE, `p16/scenary/${ts}/pack1.json`),
+    Atlas.load(BASE, `p16/scenary/${ts}/pack2.json`),
+    Atlas.load(BASE, `p16/scenary/${ts}/pack3.json`),
   ]);
-  const map = parseMap(mapBytes);
   const world = new World(map, tiles, [packCell, pack1, pack2, pack3]);
   scene.add(world.group);
 
@@ -133,18 +139,18 @@ async function boot() {
   const atlases = new Map<string, Atlas>();
   await Promise.all([String(classId), ...extraNpcs, ...extraMobs, ...new Set(spawns.map((s) => s.id))].map(async (id) => {
     const pack = animData.actors[id]!.pack;
-    if (!atlases.has(pack)) atlases.set(pack, await Atlas.load(BASE, `p16/actors/${pack.toLowerCase()}.json`));
+    if (!atlases.has(pack)) { try { atlases.set(pack, await Atlas.load(BASE, `p16/actors/${pack.toLowerCase()}.json`)); } catch { /* that monster is left out of the map */ } }
   }));
 
   // The chosen hero's start marker (100 Barbarian, 101 Amazon, 102 Sorceress) of the map; fall back to the old camp guess for maps without one.
-  const st = startOf(map, classId);
+  const st = mapStart(map, classId);
   const spawn = world.findOpenCell(st?.cx ?? 152, st?.cy ?? 78);
   extraMobs.forEach((id, i) => { const c = world.findOpenCell(spawn.cx + 6 - i * 3, spawn.cy - 2 + i * 5); spawns.push({ id, cx: c.cx, cy: c.cy, route: undefined }); });
   const tileSurface = surfaceLookup((await (await fetch(`${BASE}data/tiles.json`)).json()) as TileTable, map.tileset);
   const surface = (cx: number, cy: number) => (map.terrain[Math.floor(cy) * map.dim + Math.floor(cx)] !== undefined ? tileSurface(map.terrain[Math.floor(cy) * map.dim + Math.floor(cx)]!) : 'grass');
   const npcSpawns = extraNpcs.map((id, k) => { const c = world.findOpenCell(spawn.cx + 3 + 2 * k, spawn.cy + 2); return { id, cx: c.cx, cy: c.cy }; });
   const game = new Game(world, { anims: animData, actors: actorsIni, names, atlases, items, icons }, spawn, { spawns: [...spawns, ...npcSpawns], surface, attrs: adv.heroes[classId - 100], classId, save: career.hero, difficulty, finalText: adv.final.startsWith('Enter the final text') ? 'You have found the Tomb of Donmir!' : adv.final });
-  game.say(adv.mission_text);
+  game.say(custom ? custom.name : adv.mission_text);
   if (new URLSearchParams(location.search).has('debug')) (window as unknown as { __nst: unknown }).__nst = { game }; // for scripted browser checks
   const panel = new InventoryPanel(game, icons, BASE, skin);
   const shop = new ShopWindow(game, icons, BASE, skin);
@@ -194,7 +200,7 @@ async function boot() {
     if (e.key.toLowerCase() === 'i') panel.toggle();
     if (e.key.toLowerCase() === 'c') charPanel.toggle();
     if (e.key.toLowerCase() === 'r' && !game.hero.alive) {
-      try { sessionStorage.setItem('nst-save', JSON.stringify({ classId: game.classId, save: game.save(), difficulty, done: career!.done })); } catch { /* start fresh */ }
+      try { sessionStorage.setItem('nst-save', JSON.stringify({ classId: game.classId, save: game.save(), difficulty, done: career!.done })); if (custom) sessionStorage.setItem('nst-map', JSON.stringify(custom.id)); } catch { /* start fresh */ }
       location.reload();
     }
     startAudio();
@@ -203,13 +209,13 @@ async function boot() {
 
   const sfx = new Sfx(BASE, (await (await fetch(`${BASE}data/sfx.json`)).json()) as Record<string, string>);
   game.onSound = (id) => sfx.play(id);
-  const music = new Audio(`${BASE}audio/system/outside.ogg`);
+  const music = new Audio(`${BASE}audio/system/${ts}.ogg`);
   music.loop = true;
   const wind = new Audio(`${BASE}audio/gdi/audio/ambsounds/05_viento2.ogg`);
   wind.loop = true;
   const applyPrefs = (p: Prefs) => {
     music.volume = p.music;
-    wind.volume = p.ambient ? 0.4 : 0;
+    wind.volume = p.ambient && ts === 'outside' ? 0.4 : 0;
     sfx.volume = p.fx;
     applyGamma(p);
   };
@@ -220,7 +226,7 @@ async function boot() {
     audioOn = true;
     sfx.enabled = true;
     void music.play().catch(() => undefined);
-    void wind.play().catch(() => undefined);
+    if (ts === 'outside') void wind.play().catch(() => undefined);
   }
 
   // The original HUD (minimap ring, portrait with bars, quick bar and messages) replaces the old text readout.
@@ -262,10 +268,10 @@ async function boot() {
     gui.update();
     const left = game.monsters.filter((m) => m.alive).length;
     banner.style.display = !hero.alive || left === 0 ? 'block' : 'none';
-    banner.textContent = !hero.alive ? 'You have fallen — press R to try again (items and one point of each ability are lost)' : 'The camp is clear!';
+    banner.textContent = !hero.alive ? 'You have fallen — press R to try again (items and one point of each ability are lost)' : (custom ? 'The area is clear!' : 'The camp is clear!');
     if (game.goalReached && !won) {
       won = true;
-      const done = career!.done.includes(mission.id) ? career!.done : [...career!.done, mission.id];
+      const done = custom || career!.done.includes(mission.id) ? career!.done : [...career!.done, mission.id];
       showVictory(game, hero.stats.name, { ...career!, hero: game.carry(), done, when: Date.now() }, skin, store);
     }
     fxView.sync(game.fx);

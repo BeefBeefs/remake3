@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { frameId } from '../src/game/anims.ts';
 import { Game, type GameData, type GameOptions, xpForLevel } from '../src/game/game.ts';
-import { World, isWallSlice, wallRect, WALL_BLOCKER } from '../src/game/world.ts';
+import { World, isSlabFrame, slabFlip, wallRect, WALL_BLOCKER } from '../src/game/world.ts';
 import type { Atlas } from '../src/assets/atlas.ts';
 import type { GameMap } from '../src/formats/map.ts';
 import { Mesh } from 'three';
@@ -861,8 +861,12 @@ test('a hero who finishes a mission carries everything into the next one; dying 
 });
 
 test('border wall slices stand on their own cell and the empty wall frame still blocks', () => {
-  assert.ok(isWallSlice(2, 600) && isWallSlice(2, 625));
-  assert.ok(!isWallSlice(2, 599) && !isWallSlice(1, 610) && !isWallSlice(2, 700));
+  // Lost Forrest border slice 610 (32x89, hotspot -311,-198) and a cave wall strip are slabs; a rock piece and a tree are not
+  assert.ok(isSlabFrame(32, 89, -311, -198) && isSlabFrame(32, 152, -48, -137));
+  assert.ok(!isSlabFrame(32, 62, -192, -75) && !isSlabFrame(64, 106, -128, -58));
+  // runs along +cx need slices leaning down-right (+1), runs along +cy the other way; flat ones and corners stay as they are
+  assert.ok(!slabFlip(1, true, false) && slabFlip(-1, true, false) && slabFlip(1, false, true) && !slabFlip(-1, false, true));
+  assert.ok(!slabFlip(0, true, false) && !slabFlip(1, true, true));
   const r = wallRect({ x: 100, y: -200 }, 32);
   assert.equal(r.x, 84); // centred on the cell
   assert.ok(r.bottom < -200 + 1 && r.bottom > -230); // base at the cell, not ~100 px above it as the hotspot says
@@ -926,4 +930,32 @@ test('a raised shield stops an arrow from the front', () => {
   const shots = seen.size;
   assert.ok(shots >= 1);
   assert.equal(g.hero.hp, hp0);
+});
+
+test('a world with water, wall slices and scenery builds its chunks', () => {
+  const dim = 256;
+  const terrain = new Uint16Array(dim * dim).fill(340);
+  const objects = new Uint32Array(dim * dim);
+  for (let i = 0; i < 6; i++) { terrain[(100 + i) * dim + 100] = 511; objects[(100 + i) * dim + 103] = (2 << 10) | 610; }
+  const map: GameMap = { dim, tileset: 'Outside', terrain, objects, markers: [], scripts: [], scriptAt: new Int8Array(dim * dim).fill(-1) };
+  const slab = { ...fakeAtlas, rect: () => [0, 0, 32, 89, -311, -198], slope: () => 1 } as unknown as Atlas;
+  const w = new World(map, fakeAtlas, [fakeAtlas, fakeAtlas, slab, fakeAtlas]);
+  assert.doesNotThrow(() => w.update(102, 102));
+  assert.equal(w.blocked[102 * dim + 103], 1);
+});
+
+test('the map list resolves ids, files exist and start cells fall back for multiplayer arenas', async () => {
+  const { MAPS, findMap, mapStart, tilesetDir } = await import('../src/game/maplist.ts');
+  const { existsSync } = await import('node:fs');
+  assert.equal(MAPS.length, 41);
+  for (const m of MAPS) assert.ok(existsSync(new URL(`../public/assets/${m.file}`, import.meta.url)), m.file);
+  assert.equal(findMap('nhs/12')?.name, 'Mission 12');
+  assert.equal(findMap('12')?.id, 'nhs/12');
+  assert.equal(findMap('mp/holocaust_8p')?.group, 'Multiplayer');
+  assert.equal(findMap('nope'), undefined);
+  const mk = (id: number) => ({ id, cx: id, cy: 0 });
+  assert.equal(mapStart({ markers: [mk(5), mk(101), mk(100)] }, 101)?.id, 101);
+  assert.equal(mapStart({ markers: [mk(5), mk(112), mk(110)] }, 100)?.id, 110); // arena: lowest start marker
+  assert.equal(mapStart({ markers: [mk(5)] }, 100), undefined);
+  assert.equal(tilesetDir({ tileset: 'Dungeon' }), 'dungeon');
 });
