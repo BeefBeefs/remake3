@@ -6,7 +6,7 @@ import { STEP_SOUND, type Surface } from './surface.ts';
 import { Creature, type Stats } from './creature.ts';
 import { levelUpFx, makeFx, potionFx, spellFx, stepFx, type Fx } from './effects.ts';
 import { HIT_PIXELS, PX_HERO_ARROW, PX_HERO_BOLT, PX_MONSTER_SHOT, lineClear, makeProjectile, pixelDistance, type Projectile, type ProjKind } from './projectiles.ts';
-import { Inventory, missingReqs, rollByMask, rollDrop, slotOf, type ItemDef } from './items.ts';
+import { Inventory, missingReqs, rollByMask, rollDrop, slotOf, SPECIAL, type ItemDef } from './items.ts';
 import { cellToWorld, depthOf } from '../iso.ts';
 import { World } from './world.ts';
 import {
@@ -816,6 +816,7 @@ export class Game {
     const part = potency * (this.inventory.weaponVs(m.stats.race ?? 0) - 1);
     let total = part < 0 ? Math.trunc(part) : classDamage(this.classId as ClassKey, this.eff, this.level) + potency + Math.trunc(part);
     total = minDamage(total, this.rnd());
+    if (total > 0 && this.inventory.wearing(SPECIAL.dragonShield)) total += 1; // shield: "+1 in the attack"
     const flesh = this.data.actors[this.idOf.get(m) ?? '']?.Sonidos?.Carne !== 0;
     let dmg = total, mult = 1;
     if (total > 0) {
@@ -834,6 +835,11 @@ export class Game {
     }
     this.snd(this.pick(flesh ? 59 : 62, 3)); // c_carne / c_nocarne
     const stun = m.stats.stun ?? 0;
+    if (dmg > 0 && this.inventory.equipped.weapon === SPECIAL.lightSword) m.stats.armor = Math.max(0, m.stats.armor - 1); // "Destroy enemy armor"
+    if (dmg > 0 && this.inventory.wearing(SPECIAL.blood) && this.hero.alive) { // "Rob 20% of Life"
+      const h = this.hero;
+      h.hp = Math.min(h.stats.hp, h.hp + Math.max(1, Math.round(dmg * 0.2)));
+    }
     this.damageMonster(m, dmg, ranged ? dmg > stun + 1 + Math.floor(this.rnd() * 2) : dmg >= stun);
   }
 
@@ -887,14 +893,16 @@ export class Game {
     const h = this.hero;
     if (!h.alive || Math.hypot(h.cx - m.cx, h.cy - m.cy) > MELEE + 0.5) return;
     this.msnd(m, 0);
-    this.hurtHero(m.stats.damage, m.cx - h.cx, m.cy - h.cy);
+    this.hurtHero(m.stats.damage, m.cx - h.cx, m.cy - h.cy, m, true);
   }
 
   /** Damage dealt to the hero from the direction (fromx, fromy): a raised shield stops blows from the front arc. */
-  private hurtHero([lo, hi]: [number, number], fromx: number, fromy: number): void {
+  private hurtHero([lo, hi]: [number, number], fromx: number, fromy: number, attacker?: Creature, melee = false): void {
     const h = this.hero;
     if (!h.alive) return;
     const raw = lo + Math.floor(this.rnd() * (hi - lo + 1));
+    // shield of the double edge: "-1 l.p. from the combatants" (the monster that strikes in melee loses a point)
+    if (melee && attacker?.alive && this.inventory.wearing(SPECIAL.doubleEdge)) this.damageMonster(attacker, 1, false);
     if (this.blocking) {
       const ed = Math.hypot(fromx, fromy) || 1;
       if ((fromx * this.facing.x + fromy * this.facing.y) / ed > 0) {
@@ -906,6 +914,7 @@ export class Game {
     this.bleed(h);
     const taken = hitReceived(raw, h.stats.armor);
     const died = h.hurt(taken);
+    if (taken > 0 && attacker?.alive && this.inventory.wearing(SPECIAL.vengeance)) this.damageMonster(attacker, Math.max(1, Math.round(taken * 0.15)), false); // "Return 15% of inflicted damage"
     // armour wear per class, from the executable: Barbarian 20 % of the blows, third of the damage plus a roll of up to as much;
     // Amazon 27 % and Sorceress 30 %, half the damage plus a roll plus the armour value itself (only when armour is worn)
     if (this.classId === 100) {
@@ -928,7 +937,7 @@ export class Game {
     this.msnd(m, 0);
     const from = { x: m.cx, y: m.cy };
     this.projectiles.push(makeProjectile(r.kind, m.cx + (ex / d) * 0.6, m.cy + (ey / d) * 0.6, ex, ey, PX_MONSTER_SHOT, false, (t) => {
-      if (t === h) this.hurtHero(m.stats.damage, from.x - h.cx, from.y - h.cy);
+      if (t === h) this.hurtHero(m.stats.damage, from.x - h.cx, from.y - h.cy, m);
     }, r.color));
   }
 

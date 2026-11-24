@@ -41,6 +41,12 @@ export interface ItemDef {
   bonus: Bonus;
 }
 
+/**
+ * The "Especial" items (INI `Especial=1`). The effects are the ones the game's own item texts (Idioma.bdt, `ITEMS\ID-n*`) give;
+ * the executable's code for them was not found, so the exact rounding is a guess.
+ */
+export const SPECIAL = { deathSabre: 6, lightSword: 13, doubleEdge: 28, dragonShield: 30, absorption: 81, vengeance: 82, blood: 83 } as const;
+
 /** Monster family bit masks (INI `Raza`) and the item bonus keys that refer to them. */
 export const FAMILY_BONUS: Record<string, number> = { B_Goblins: 1, B_Orcos: 2, B_NoMuertos: 4, B_Bestias: 8, B_Trolls: 16, B_Demonios: 32, B_Humanos: 64 };
 
@@ -272,8 +278,14 @@ export class Inventory {
   /** Damage multiplier of the wielded weapon against a monster family mask (1 = no bonus; below 0 heals). */
   weaponVs(race: number): number {
     const w = this.equipped.weapon ? this.defs.get(this.equipped.weapon) : undefined;
-    return 1 + familyBonus(w?.bonus, race);
+    let m = 1 + familyBonus(w?.bonus, race);
+    if (this.equipped.weapon === SPECIAL.deathSabre && race & 4) m += 0.5; // "+50% damage to Undead"
+    if (this.wearing(SPECIAL.absorption)) m += 0.2; // medallion: "+20% damage to enemies"
+    return m;
   }
+
+  /** True when the item id is worn in any slot. */
+  wearing(id: number): boolean { return Object.values(this.equipped).includes(id); }
 }
 
 /**

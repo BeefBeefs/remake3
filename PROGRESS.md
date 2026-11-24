@@ -498,3 +498,8 @@ Read the use-item routine for type-512 items in `Nightstone.exe` (all 18 cases).
 - **Item prices.** The item loader (`0x44cb3f`) shrinks any price of 300 or more by half of what is above 300 (1350 becomes 825);
   the remake now does the same on load. The loader also shows the record layout: Grafico +8, Potencia +0xc, Nivel +0x14,
   Durabilidad +0x18 (capped at 255), Peso +0x1c, CofreLv +0x20, Data +0x24, Precio +0x28, Especial +0x2c. 153 tests.
+- **Special items.** A last search of the executable (equipment accessors `0x42a2b0`–`0x42a590`, every compare against the ids
+  6/13/28/30/81–83, the receive-hit routines) found no code for the `Especial` flag, so the seven items now follow the numbers in
+  the game's own item texts: Death Sabre +50 % vs undead, Sword of Light destroys 1 armour per hit, Double Edge shield costs
+  a striking monster 1 life, Dragon shield +1 damage, Absorption +20 % damage, Vengeance returns 15 % of damage taken, Blood
+  heals 20 % of damage dealt. Rounding is a guess. 154 tests.

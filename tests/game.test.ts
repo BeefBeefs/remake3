@@ -1304,3 +1304,27 @@ test('the item loader takes half of the price above 300 off (executable 0x44cb3f
   const { loadedPrice } = await import('../src/game/items.ts');
   assert.deepEqual([0, 120, 299, 300, 301, 1350].map(loadedPrice), [0, 120, 299, 300, 301, 825]);
 });
+
+test('the Especial items act as their item texts say', () => {
+  const g = makeGame({ classId: 100 });
+  const inv = g.inventory;
+  inv.equipped.weapon = 6; // Death Sabre: +50% to undead
+  assert.equal(inv.weaponVs(4), 1.5);
+  assert.equal(inv.weaponVs(1), 1);
+  inv.equipped.amulet = 81; // Absorption: +20% to all
+  assert.ok(Math.abs(inv.weaponVs(4) - 1.7) < 1e-9 && Math.abs(inv.weaponVs(1) - 1.2) < 1e-9);
+  // Vengeance returns 15% of what the hero takes; Double Edge costs a striking monster a point
+  inv.equipped.amulet = 82; inv.equipped.shield = 28;
+  const m = g.monsters[0]!;
+  const hp = m.hp;
+  g.hero.hp = g.hero.stats.hp = 500;
+  g.hero.stats.armor = 0;
+  (g as any).hurtHero([20, 20], 1, 0, m, true);
+  const taken = 500 - g.hero.hp;
+  assert.ok(taken >= 15 && taken <= 20);
+  assert.equal(m.hp, hp - 1 - Math.round(taken * 0.15)); // 1 from the double edge, 15% of the damage taken from vengeance
+  // Blood steals 20% of the damage dealt
+  inv.equipped.amulet = 83; g.hero.hp = 100; g.hero.stats.hp = 500;
+  (g as any).heroHitMonster(m, false);
+  assert.ok(g.hero.hp > 100);
+});
