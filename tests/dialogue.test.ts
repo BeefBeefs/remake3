@@ -35,3 +35,22 @@ test('every speech in the language file parses into text and at least one answer
   }
   assert.ok(n >= 38, `${n} speeches`);
 });
+
+import { campaignNumber, missionBriefing, missionFinalText, applyCampaignNames, MAPS } from '../src/game/maplist.ts';
+
+test('campaign missions get their real names, briefings and final texts from the language file', () => {
+  assert.equal(campaignNumber('nhs/16'), 16);
+  assert.equal(campaignNumber('lost_forrest'), null);
+  assert.equal(missionBriefing(texts, 'nhs/16')!.title, 'The Inn of the White Goddess');
+  assert.match(missionBriefing(texts, 'nhs/22')!.text, /^It rises in front of you/);
+  assert.match(missionFinalText(texts, 'nhs/22')!, /^Zelos has been defeated/);
+  assert.equal(missionBriefing(texts, 'mp/holocaust_8p'), null);
+  applyCampaignNames(texts);
+  assert.equal(MAPS.find((m) => m.id === 'nhs/1')!.name, '1. The Mines of Nion');
+  for (let n = 1; n <= 35; n++) assert.ok(missionBriefing(texts, `nhs/${n}`)!.text.length > 40, `mission ${n}`);
+  assert.equal(MAPS.filter((m) => m.id.startsWith('nhs/') && /^\d+\. \w/.test(m.name)).length, 35);
+});
+
+test('the "$Objectives" marker of a briefing is not shown', () => {
+  assert.ok(!missionBriefing(texts, 'nhs/16')!.text.includes('$'));
+});

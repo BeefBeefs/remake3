@@ -22,7 +22,7 @@ import { GameMenu } from './ui/gamemenu.ts';
 import { TitleMenu, type Difficulty } from './ui/titlemenu.ts';
 import { loadPrefs, savePrefs, type Prefs } from './ui/prefs.ts';
 import { gunzip, parseMap } from './formats/map.ts';
-import { findMap, mapStart, tilesetDir, type MapEntry } from './game/maplist.ts';
+import { applyCampaignNames, findMap, mapStart, missionBriefing, missionFinalText, tilesetDir, type MapEntry } from './game/maplist.ts';
 import { cellToWorld, worldToCell } from './iso.ts';
 
 const BASE = `${import.meta.env.BASE_URL}assets/`;
@@ -74,6 +74,8 @@ async function boot() {
   }
   hud.textContent = 'Loading…';
   const skin = await Skin.load(BASE);
+  const idioma = (await (await fetch(`${BASE}text/idioma.json`)).json()) as Record<string, string>;
+  applyCampaignNames(idioma); // the picker and the mission banners use the real mission names
   const adv = (await (await fetch(`${BASE}data/adventure.json`)).json()) as { mission_text: string; final: string; heroes: { strength: number; skill: number; resistance: number; magic: number }[] };
   const store = new SaveStore((() => { try { return localStorage; } catch { return null; } })());
   const freshHero = (id: number): HeroSave => ({ attrs: { ...adv.heroes[id - 100]! }, level: 1, xp: 0, points: 0, gold: 0 });
@@ -133,7 +135,7 @@ async function boot() {
   const names: Record<string, string> = {};
   const speech: Record<string, string> = {};
   const itemNames: Record<string, string> = {};
-  for (const [k, v] of Object.entries((await (await fetch(`${BASE}text/idioma.json`)).json()) as Record<string, string>)) {
+  for (const [k, v] of Object.entries(idioma)) {
     const m = /^(ACTORS|ITEMS)\\ID-(\d+)$/.exec(k);
     if (m) (m[1] === 'ACTORS' ? names : itemNames)[m[2]!] = v;
     else if (k.startsWith('ACTORS\\')) speech[k] = v; // NPC speeches: ACTORS\ID-27*, ID-63** ...
@@ -159,13 +161,19 @@ async function boot() {
   const tileSurface = surfaceLookup((await (await fetch(`${BASE}data/tiles.json`)).json()) as TileTable, map.tileset);
   const surface = (cx: number, cy: number) => (map.terrain[Math.floor(cy) * map.dim + Math.floor(cx)] !== undefined ? tileSurface(map.terrain[Math.floor(cy) * map.dim + Math.floor(cx)]!) : 'grass');
   const npcSpawns = extraNpcs.map((id, k) => { const c = world.findOpenCell(spawn.cx + 3 + 2 * k, spawn.cy + 2); return { id, cx: c.cx, cy: c.cy }; });
-  const game = new Game(world, { anims: animData, actors: actorsIni, names, atlases, items, icons }, spawn, { spawns: [...spawns, ...npcSpawns], surface, attrs: adv.heroes[classId - 100], classId, save: career.hero, difficulty, finalText: adv.final.startsWith('Enter the final text') ? 'You have found the Tomb of Donmir!' : adv.final });
-  game.say(custom ? custom.name : adv.mission_text);
+  const game = new Game(world, { anims: animData, actors: actorsIni, names, atlases, items, icons }, spawn, { spawns: [...spawns, ...npcSpawns], surface, attrs: adv.heroes[classId - 100], classId, save: career.hero, difficulty, finalText: (custom && missionFinalText(idioma, custom.id)) || (adv.final.startsWith('Enter the final text') ? 'You have found the Tomb of Donmir!' : adv.final) });
+  const briefing = custom ? missionBriefing(idioma, custom.id) : null;
+  game.say(briefing ? briefing.title : custom ? custom.name : adv.mission_text);
   if (new URLSearchParams(location.search).has('debug')) (window as unknown as { __nst: unknown }).__nst = { game }; // for scripted browser checks
   const panel = new InventoryPanel(game, icons, BASE, skin);
   const shop = new ShopWindow(game, icons, BASE, skin);
   const charPanel = new CharacterPanel(game, skin);
   const talkWin = new DialogueWindow(skin);
+  const showObjective = () => {
+    if (briefing) talkWin.open(briefing.title, { text: briefing.text, replies: ['Close'] }, () => undefined);
+    else game.say(adv.mission_text);
+  };
+  if (briefing) showObjective(); // the mission text greets the hero, as in the original (Q opens it again)
   const visits = new Map<string, number>();
   game.onTalk = (npc) => {
     const n = visits.get(npc.id) ?? 0;
@@ -218,6 +226,7 @@ async function boot() {
     if (e.key === ' ') { if (!shop.isOpen && !menu.isOpen) game.swing(); e.preventDefault(); }
     if (e.key >= '1' && e.key <= '4' && !shop.isOpen) game.useQuick(Number(e.key));
     if (e.key.toLowerCase() === 'i') panel.toggle();
+    if (e.key.toLowerCase() === 'q' && !talkWin.isOpen && !shop.isOpen) showObjective();
     if (e.key.toLowerCase() === 'c') charPanel.toggle();
     if (e.key.toLowerCase() === 'r' && !game.hero.alive) {
       try { sessionStorage.setItem('nst-save', JSON.stringify({ classId: game.classId, save: game.save(), difficulty, done: career!.done })); if (custom) sessionStorage.setItem('nst-map', JSON.stringify(custom.id)); } catch { /* start fresh */ }
@@ -252,7 +261,7 @@ async function boot() {
   // The original HUD (minimap ring, portrait with bars, quick bar and messages) replaces the old text readout.
   panel.hideLog();
   const gui = new Hud(skin, game, icons, BASE, {
-    quest: () => game.say(adv.mission_text),
+    quest: () => showObjective(),
     inventory: () => panel.toggle(),
     options: () => menu.toggle(),
     character: () => charPanel.toggle(),
@@ -303,7 +312,7 @@ async function boot() {
     camera.position.x -= ox; camera.position.y -= oy;
     requestAnimationFrame(frame);
   }
-  hud.textContent = 'click to walk or fight · WASD · Space swing · Ctrl run · Shift stealth · right button block / hold · I inventory · C character · Esc menu';
+  hud.textContent = 'click to walk or fight · WASD · Space swing · Ctrl run · Shift stealth · right button block / hold · I inventory · C character · Q objective · Esc menu';
   hud.style.cssText += ';bottom:auto;top:6px;transition:opacity 2s;opacity:.8';
   setTimeout(() => { hud.style.opacity = '0'; }, 14000);
   frame();

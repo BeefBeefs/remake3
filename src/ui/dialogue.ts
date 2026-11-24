@@ -31,7 +31,7 @@ export class DialogueWindow {
     title.appendChild(sk.text(who, { color: '#f1d98a' }));
     panel.appendChild(title);
     const body = document.createElement('div');
-    body.style.cssText = 'position:relative;z-index:1';
+    body.style.cssText = 'position:relative;z-index:1;max-height:270px;overflow-y:auto;scrollbar-width:thin';
     for (const para of d.text.split('\n')) {
       const lines = para.trim() ? sk.wrap(para, W - 44) : [''];
       for (const l of lines) { const row = document.createElement('div'); row.style.cssText = 'height:17px'; if (l) row.appendChild(sk.text(l)); body.appendChild(row); }

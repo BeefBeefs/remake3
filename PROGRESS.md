@@ -364,3 +364,11 @@ map exercises them, so none is implemented; nothing has been seen in a browser.
   `.map`, and Play it in the game. `mapwriter.ts` writes maps back; unedited maps are byte-identical (all 35 tested). Not
   editable: scripts and patrol routes (shown read-only).
 - 127 tests.
+
+## Turn 16 — mission names and briefings
+
+- The language file had them all along: `MAPAS\ID-n` (place name + briefing) and `CA8\FinalMap-n` (mission accomplished) for the
+  35 campaign missions; mission n is `nhs/n` (checked: #16 has the Innkeeper and his guests, #22 Zelos, #35 the Princess). Select
+  map lists "16. The Inn of the White Goddess" etc.; a campaign map opens with its briefing in the speech window (**Q** or the HUD
+  quest button shows it again) and ends with its own final text.
+- So the **Inn exists** in this install and its shop works there. 129 tests.
