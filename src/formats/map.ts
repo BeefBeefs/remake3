@@ -52,6 +52,8 @@ export const WATER_TILE = 511;
 export const DECOR_OFFSET = OBJECTS_OFFSET + MAP_DIM * MAP_DIM * 4;
 export const ZONES_OFFSET = DECOR_OFFSET + MAP_DIM * MAP_DIM * 8;
 export const ZONE_SIZE = 196;
+/** Cells a patrol route can hold (a zone record has 32 slots). */
+export const MAX_ROUTE = 32;
 export const SCRIPTS_OFFSET = ZONES_OFFSET + 255 * ZONE_SIZE;
 export const SCRIPT_SIZE = 248;
 

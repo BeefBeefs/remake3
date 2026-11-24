@@ -341,7 +341,7 @@ Spell effect textures live in `GDI/3D/*.bmp` and are drawn additively (`src/game
 `writeMapBody(map, base)` is the inverse of `parseMap`: it patches the ground (low 16 bits of each terrain u32 — the upper half
 holds flag bits on some maps and is left alone), the object layer and the pack-0 markers into `base` (the body the map came from,
 or `blankMapBody(tileset, tile)`), keeps the header, decor layer, scripts and the zone records of markers that are still in place, and
-clears the zone record of a marker that was removed. Unedited, all 35 campaign maps come back byte for byte (tested). Maps are
+clears the zone record of a marker that was removed. Patrol routes are written too: a marker whose route changed gets its record (found by key `(y<<8)|x`, else the first free of the 255) rewritten with up to 32 packed cells, the 16 words after the cells kept; a route that did not change is left byte for byte (cell 0,0 cannot be stored: 0 ends the list). Unedited, all 35 campaign maps come back byte for byte (tested). Maps are
 gzip (`gzip()` uses `CompressionStream`). The editor (`editor.html`) edits ground, scenery, monster / NPC markers and hero starts,
 edits scripts (name and up to 8 commands with their arguments, put on / taken off cells; cell indexes 0..62 because a cell stores `index + 1` in 6 bits next to flag 0x800), shows patrol routes read-only, saves a `.map`, and **Play** passes it to `index.html?edited=1` through `sessionStorage`.
 Scripts are written record by record: an unchanged script keeps its bytes (including the unknown ones), a changed one is rewritten

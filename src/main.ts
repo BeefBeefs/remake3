@@ -20,7 +20,8 @@ import { Skin } from './ui/skin.ts';
 import { Hud } from './ui/hud.ts';
 import { GameMenu } from './ui/gamemenu.ts';
 import { TitleMenu, type Difficulty } from './ui/titlemenu.ts';
-import { loadPrefs, savePrefs, type Prefs } from './ui/prefs.ts';
+import { loadPrefs, renderScale, savePrefs, type Prefs } from './ui/prefs.ts';
+import { keyInput, mouseInput } from './ui/bindings.ts';
 import { gunzip, parseMap } from './formats/map.ts';
 import { applyCampaignNames, findMap, mapStart, missionBriefing, missionFinalText, tilesetDir, type MapEntry } from './game/maplist.ts';
 import { cellToWorld, worldToCell } from './iso.ts';
@@ -41,8 +42,17 @@ scene.background = new THREE.Color(0x05060a);
 const camera = new THREE.OrthographicCamera(-320, 320, VIEW_H / 2, -VIEW_H / 2, 0.1, 3000);
 camera.position.z = 1500;
 
+/** Graphics options of the Controls window: the share of the window the picture fills ("Screen size") and its sharpness ("Detail"). */
+const picture = { screen: 1 };
+function applyPicture(p: Prefs): void {
+  picture.screen = p.screen;
+  glRenderer?.setPixelRatio(renderScale(p.detail, window.devicePixelRatio));
+  canvas.style.cssText += `;position:fixed;left:50%;top:50%;width:${p.screen * 100}vw;height:${p.screen * 100}vh;transform:translate(-50%,-50%)`;
+  resize();
+}
+
 function resize() {
-  const w = window.innerWidth, h = window.innerHeight;
+  const w = window.innerWidth * picture.screen, h = window.innerHeight * picture.screen;
   glRenderer?.setSize(w, h, false);
   const halfH = VIEW_H / 2, halfW = halfH * (w / h);
   camera.left = -halfW; camera.right = halfW; camera.top = halfH; camera.bottom = -halfH;
@@ -55,6 +65,7 @@ async function boot() {
   const prefs = loadPrefs();
   const applyGamma = (p: Prefs) => { canvas.style.filter = p.gamma === 1 ? '' : `brightness(${p.gamma})`; };
   applyGamma(prefs);
+  applyPicture(prefs);
   // Who plays? After dying, R comes back with the hero's growth in sessionStorage; returning from a finished mission
   // brings the career back to the world map; ?class=amazon skips the menus; otherwise the title menu asks (new game or Load game).
   const byName: Record<string, ClassId> = { barbarian: 100, amazon: 101, sorceress: 102 };
@@ -200,10 +211,14 @@ async function boot() {
     const wy = camera.top - ny * (camera.top - camera.bottom) + camera.position.y;
     return worldToCell(wx, wy);
   };
-  // Ctrl = run, Shift = stealth (manual); read from every mouse and key event.
-  const mods = { ctrl: false, shift: false };
-  const readMods = (e: { ctrlKey: boolean; shiftKey: boolean }) => { mods.ctrl = e.ctrlKey; mods.shift = e.shiftKey; };
-  window.addEventListener('blur', () => { mods.ctrl = false; mods.shift = false; });
+  // The control configuration (Controls window, prefs.keys): which mouse button attacks and moves, which key runs, sneaks and
+  // blocks (Ctrl, Shift and the right button until changed). `down` holds the inputs that are held right now; the modifier flags
+  // of every mouse and key event keep Ctrl / Shift / Alt honest if a key-up was missed.
+  const down = new Set<string>();
+  const readMods = (e: { ctrlKey: boolean; shiftKey: boolean; altKey: boolean }) => {
+    for (const [on, k] of [[e.ctrlKey, 'key:control'], [e.shiftKey, 'key:shift'], [e.altKey, 'key:alt']] as const) { if (on) down.add(k); else down.delete(k); }
+  };
+  window.addEventListener('blur', () => { down.clear(); game.setGuard(false); });
   let held = false;
   let last: { cx: number; cy: number } | null = null;
   canvas.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -211,17 +226,27 @@ async function boot() {
     readMods(e);
     startAudio();
     if (menu.isOpen) return;
-    if (e.button === 2) { game.setGuard(true); return; } // right button: Barbarian blocks, others hold position
+    const input = mouseInput(e.button);
+    down.add(input);
+    if (input === prefs.keys.block) { game.setGuard(true); return; } // Barbarian blocks, the others hold position
+    if (input !== prefs.keys.attack) return;
     held = true; last = pointerToCell(e); game.click(last.cx, last.cy);
   });
   canvas.addEventListener('pointermove', (e) => { readMods(e); last = pointerToCell(e); if (held && !game.holding) game.click(last.cx, last.cy); });
-  window.addEventListener('pointerup', (e) => { if (e.button === 2) game.setGuard(false); else held = false; });
+  window.addEventListener('pointerup', (e) => {
+    const input = mouseInput(e.button);
+    down.delete(input);
+    if (input === prefs.keys.block) game.setGuard(false);
+    if (input === prefs.keys.attack) held = false;
+  });
 
   // Keyboard: arrows/WASD move along the screen axes (up = towards the top of the screen); space swings.
   const keys = new Set<string>();
   window.addEventListener('keydown', (e) => {
     readMods(e);
     keys.add(e.key.toLowerCase());
+    down.add(keyInput(e.key));
+    if (keyInput(e.key) === prefs.keys.block && !e.repeat && !menu.isOpen) game.setGuard(true);
     if (e.key === 'Escape') { if (talkWin.isOpen) talkWin.close(); else if (shop.isOpen) shop.close(); else menu.toggle(); }
     if (e.key === ' ') { if (!shop.isOpen && !menu.isOpen) game.swing(); e.preventDefault(); }
     if (e.key >= '1' && e.key <= '4' && !shop.isOpen) game.useQuick(Number(e.key));
@@ -234,7 +259,10 @@ async function boot() {
     }
     startAudio();
   });
-  window.addEventListener('keyup', (e) => { readMods(e); keys.delete(e.key.toLowerCase()); });
+  window.addEventListener('keyup', (e) => {
+    readMods(e); keys.delete(e.key.toLowerCase()); down.delete(keyInput(e.key));
+    if (keyInput(e.key) === prefs.keys.block) game.setGuard(false);
+  });
 
   const sfx = new Sfx(BASE, (await (await fetch(`${BASE}data/sfx.json`)).json()) as Record<string, string>);
   game.onSound = (id) => sfx.play(id);
@@ -247,6 +275,8 @@ async function boot() {
     wind.volume = p.ambient && ts === 'outside' ? 0.4 : 0;
     sfx.volume = p.fx;
     applyGamma(p);
+    applyPicture(p);
+    game.blood = p.blood;
   };
   applyPrefs(prefs);
   let audioOn = false;
@@ -266,7 +296,7 @@ async function boot() {
     options: () => menu.toggle(),
     character: () => charPanel.toggle(),
   });
-  const menu = new GameMenu(skin, () => location.reload());
+  const menu = new GameMenu(skin, () => location.reload(), prefs, (p) => { savePrefs(p); applyPrefs(p); });
   const banner = document.createElement('div');
   banner.style.cssText = 'position:fixed;left:0;right:0;top:40%;text-align:center;font:24px ui-monospace,Menlo,monospace;color:#e9c27a;text-shadow:0 2px 4px #000;pointer-events:none;display:none';
   document.body.appendChild(banner);
@@ -286,7 +316,7 @@ async function boot() {
       const l = Math.hypot(c.cx, c.cy) || 1;
       move = { x: c.cx / l, y: c.cy / l };
     }
-    game.setStance(mods.ctrl, mods.shift);
+    game.setStance(down.has(prefs.keys.run), down.has(prefs.keys.stealth));
     if (!menu.isOpen) game.update(dt, move);
     panel.update();
     charPanel.update();

@@ -1,5 +1,5 @@
 import {
-  type GameMap, DECOR_OFFSET, parseMap, MAP_DIM, MAP_HEADER_SIZE, OBJECTS_OFFSET, SCRIPTS_OFFSET, SCRIPT_SIZE, TERRAIN_OFFSET, ZONES_OFFSET, ZONE_SIZE,
+  type GameMap, DECOR_OFFSET, parseMap, MAP_DIM, MAP_HEADER_SIZE, MAX_ROUTE, OBJECTS_OFFSET, SCRIPTS_OFFSET, SCRIPT_SIZE, TERRAIN_OFFSET, ZONES_OFFSET, ZONE_SIZE,
 } from './map.ts';
 
 /** Size of a whole map body (the decompressed `.map`): 1,655,172 bytes. */
@@ -46,8 +46,36 @@ export function writeMapBody(map: GameMap, base: Uint8Array): Uint8Array {
     const key = dv.getUint32(o, true);
     if (key && was.has(key) && !at.has(key)) out.fill(0, o, o + ZONE_SIZE);
   }
+  writeRoutes(map, base, out, dv);
   writeScripts(map, base, out, dv);
   return out;
+}
+
+/**
+ * Patrol routes: a marker whose route differs from the one `base` holds gets its zone record rewritten (the record keyed by its
+ * packed cell `(y<<8)|x`, or the first free one among the 255); the 16 words after the cells are left as they were. A route
+ * that is unchanged leaves its record byte for byte alone; an emptied route zeroes the cells.
+ */
+function writeRoutes(map: GameMap, base: Uint8Array, out: Uint8Array, dv: DataView): void {
+  const was = parseMap(base);
+  const slotOf = (key: number): number => { for (let z = 0; z < 255; z++) if (dv.getUint32(ZONES_OFFSET + z * ZONE_SIZE, true) === key) return z; return -1; };
+  const same = (a: { cx: number; cy: number }[] | undefined, b: { cx: number; cy: number }[] | undefined) =>
+    (a?.length ?? 0) === (b?.length ?? 0) && (a ?? []).every((c, i) => c.cx === b![i]!.cx && c.cy === b![i]!.cy);
+  for (const m of map.markers) {
+    const route = (m.route ?? []).filter((c) => c.cx >= 0 && c.cy >= 0 && c.cx < MAP_DIM && c.cy < MAP_DIM && (c.cx | c.cy) !== 0).slice(0, MAX_ROUTE);
+    if (same(was.markers.find((k) => k.cx === m.cx && k.cy === m.cy)?.route, route)) continue;
+    const key = (m.cy << 8) | m.cx;
+    let z = slotOf(key);
+    if (z < 0) {
+      if (!route.length) continue;
+      z = slotOf(0);
+      if (z < 0) throw new Error('all 255 zone records are in use');
+      dv.setUint32(ZONES_OFFSET + z * ZONE_SIZE, key, true);
+    }
+    const o = ZONES_OFFSET + z * ZONE_SIZE + 4;
+    out.fill(0, o, o + MAX_ROUTE * 4);
+    route.forEach((c, i) => dv.setUint32(o + i * 4, (c.cy << 8) | c.cx, true));
+  }
 }
 
 /**

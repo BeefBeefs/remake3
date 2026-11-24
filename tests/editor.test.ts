@@ -88,3 +88,54 @@ test('editing a script of a real map changes only that script and the table limi
   for (let i = 0; i < MAX_SCRIPTS; i++) assert.ok(newScript(full));
   assert.equal(newScript(full), null);
 });
+
+import { clearRoute } from '../src/editorlogic.ts';
+import { ZONES_OFFSET, ZONE_SIZE, MAX_ROUTE } from '../src/formats/map.ts';
+
+test('patrol routes: pick a monster, click cells in order, write, read back; clear removes it', () => {
+  const body = blankMapBody('Outside', 340);
+  const map = parseMap(body);
+  const b: Brush = { size: 1, tile: 340, pack: 1, frame: 0, actor: 1, start: 100 };
+  applyBrush(map, 'actor', b, 10, 12);
+  applyBrush(map, 'route', b, 20, 20); // nothing picked yet: ignored
+  assert.equal(map.markers[0]!.route, undefined);
+  applyBrush(map, 'route', b, 10, 12); // picks the monster
+  for (const [x, y] of [[11, 12], [12, 12], [12, 12], [12, 14]] as const) applyBrush(map, 'route', b, x, y);
+  assert.deepEqual(map.markers[0]!.route, [{ cx: 11, cy: 12 }, { cx: 12, cy: 12 }, { cx: 12, cy: 14 }]); // the repeated cell is not added twice
+  const out = writeMapBody(map, body);
+  const dv = new DataView(out.buffer);
+  assert.equal(dv.getUint32(ZONES_OFFSET, true), (12 << 8) | 10, 'record keyed by the packed marker cell');
+  assert.equal(dv.getUint32(ZONES_OFFSET + 4, true), (12 << 8) | 11);
+  assert.equal(dv.getUint32(ZONES_OFFSET + 4 + 12, true), 0, 'terminated');
+  const back = parseMap(out);
+  assert.deepEqual(back.markers[0]!.route, map.markers[0]!.route);
+  // a second monster gets the next free record
+  applyBrush(map, 'actor', b, 30, 30); applyBrush(map, 'route', b, 30, 30); applyBrush(map, 'route', b, 31, 30);
+  const two = parseMap(writeMapBody(map, body));
+  assert.equal(two.markers.filter((m) => m.route).length, 2);
+  // clearing
+  clearRoute(map, 10, 12);
+  const cleared = parseMap(writeMapBody(map, out));
+  assert.equal(cleared.markers.find((m) => m.cx === 10)!.route, undefined);
+});
+
+test('a patrol route holds 32 cells at most; the unknown words of a record survive an edit', () => {
+  const body = blankMapBody('Outside', 340);
+  const dv0 = new DataView(body.buffer);
+  const map = parseMap(body);
+  const b: Brush = { size: 1, tile: 340, pack: 1, frame: 0, actor: 1, start: 100 };
+  applyBrush(map, 'actor', b, 5, 5); applyBrush(map, 'route', b, 5, 5);
+  for (let i = 0; i < 40; i++) applyBrush(map, 'route', b, 6 + i, 5);
+  assert.equal(map.markers[0]!.route!.length, MAX_ROUTE);
+  const first = writeMapBody(map, body);
+  // pretend the record has unknown data after the cells, then shorten the route
+  const dv = new DataView(first.buffer);
+  const o = ZONES_OFFSET + 4 + 128;
+  dv.setUint32(o, 0xdeadbeef, true);
+  const m2 = parseMap(first);
+  m2.markers[0]!.route = m2.markers[0]!.route!.slice(0, 3);
+  const second = writeMapBody(m2, first);
+  assert.equal(new DataView(second.buffer).getUint32(o, true), 0xdeadbeef);
+  assert.equal(parseMap(second).markers[0]!.route!.length, 3);
+  void dv0; void ZONE_SIZE;
+});

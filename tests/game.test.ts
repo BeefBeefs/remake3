@@ -642,7 +642,7 @@ test('a staff does extra damage to the families it is made for and little to the
     g.refreshHeroStats();
     facing(g, 1, 0);
     let total = 0;
-    for (let i = 0; i < 300; i++) { const before = m.hp; (g as unknown as { heroHitMonster(m: unknown, sneak: boolean): void }).heroHitMonster(m, false); total += before - m.hp; }
+    for (let i = 0; i < 300; i++) { const before = m.hp; g.inventory.repairAll(); (g as unknown as { heroHitMonster(m: unknown, sneak: boolean): void }).heroHitMonster(m, false); total += before - m.hp; }
     return total / 300;
   };
   const a = dmgOn(1, 55), b = dmgOn(0, 55), c = dmgOn(32, 58), d = dmgOn(1, 58);
@@ -1132,4 +1132,58 @@ test('every campaign map: its scripts run without errors and the start cell does
   }
   assert.equal(maps, 35);
   assert.ok(scripts > 300, `${scripts} scripts`);
+});
+
+test('durability: a weapon wears one point per blow that lands and breaks at zero; items marked 999 never wear', () => {
+  const g = makeGame({ spawns: [{ id: '1', cx: 300, cy: 300 }] });
+  const m = g.monsters[0]!; m.hp = 1e6; m.stats.hp = 1e6;
+  const hit = (g as unknown as { heroHitMonster(m: unknown, s: boolean): void });
+  assert.equal(g.inventory.leftOf('weapon'), 56, 'the scimitar has 56');
+  for (let i = 0; i < 10; i++) hit.heroHitMonster(m, false);
+  assert.equal(g.inventory.leftOf('weapon'), 46);
+  for (let i = 0; i < 45; i++) hit.heroHitMonster(m, false);
+  assert.equal(g.inventory.equipped.weapon, 1);
+  hit.heroHitMonster(m, false);
+  assert.equal(g.inventory.equipped.weapon, undefined, 'broken');
+  assert.match(g.log.at(-1)!, /broke/);
+  assert.deepEqual(g.hero.stats.damage, [1, 2], 'bare hands again');
+  g.inventory.add(23); g.inventory.equipped.weapon = 23; // the mystic axe: 999
+  for (let i = 0; i < 50; i++) hit.heroHitMonster(m, false);
+  assert.equal(g.inventory.equipped.weapon, 23);
+  assert.equal(g.inventory.leftOf('weapon'), 999);
+});
+
+test('durability: armour and shield wear when the hero is hit, wear travels with the item, the restoration parchment repairs, saves keep it', () => {
+  const g = makeGame();
+  const inv = g.inventory;
+  inv.add(28); inv.add(28);
+  inv.slotLeft[inv.slots.indexOf(28)] = 10; // one worn shield has 10 left
+  inv.equip(inv.slots.indexOf(28));
+  assert.equal(inv.leftOf('shield'), 10);
+  inv.wear('shield', 3);
+  assert.equal(inv.leftOf('shield'), 7);
+  inv.equip(inv.slots.indexOf(28)); // swap with the new one in the pack
+  assert.equal(inv.leftOf('shield'), 60, 'the fresh shield is as new');
+  assert.equal(inv.slotLeft[inv.slots.indexOf(28)], 7, 'the old one kept its wear in the pack');
+  const saved = g.carry();
+  assert.deepEqual(saved.inv!.left![inv.slots.indexOf(28)], 7);
+  const g2 = makeGame({ save: saved });
+  assert.equal(g2.inventory.slotLeft[g2.inventory.slots.indexOf(28)], 7);
+  inv.repairAll();
+  assert.equal(inv.slotLeft[inv.slots.indexOf(28)], 0);
+  inv.wear('armor'); // nothing worn: no effect
+  assert.equal(inv.leftOf('armor'), null);
+});
+
+test('blood mode puts a red puff on a creature that is hit; off, nothing', () => {
+  const g = makeGame({ spawns: [{ id: '1', cx: 300, cy: 300 }] });
+  const m = g.monsters[0]!; m.hp = 1e6; m.stats.hp = 1e6;
+  const hit = (g as unknown as { heroHitMonster(m: unknown, s: boolean): void });
+  const before = g.fx.length;
+  hit.heroHitMonster(m, false);
+  assert.equal(g.fx.length, before + 1);
+  assert.equal(g.fx.at(-1)!.tex, 75);
+  g.blood = false;
+  hit.heroHitMonster(m, false);
+  assert.equal(g.fx.length, before + 1);
 });

@@ -1,9 +1,9 @@
 import { MAPS, applyCampaignNames, findMap } from './game/maplist.ts';
-import { gunzip, parseMap, MAP_DIM, WATER_TILE, type GameMap, type Marker, START_IDS } from './formats/map.ts';
+import { gunzip, parseMap, MAP_DIM, MAX_ROUTE, WATER_TILE, type GameMap, type Marker, START_IDS } from './formats/map.ts';
 import { blankMapBody, gzip, writeMapBody } from './formats/mapwriter.ts';
 import { isSlabFrame, HOTSPOT_X, HOTSPOT_Y } from './game/world.ts';
 import type { AtlasJson } from './assets/atlas.ts';
-import { applyBrush, blankCommand, COMMANDS, deleteScript, newScript, type Brush, type Tool } from './editorlogic.ts';
+import { applyBrush, blankCommand, clearRoute, COMMANDS, deleteScript, newScript, type Brush, type Tool } from './editorlogic.ts';
 
 const BASE = `${import.meta.env.BASE_URL}assets/`;
 const side = document.getElementById('side') as HTMLDivElement;
@@ -40,7 +40,7 @@ let dirty = false;
 const names: Record<string, string> = {};
 let actors: { id: number; name: string; npc: boolean }[] = [];
 
-const snapshot = () => ({ terrain: map.terrain.slice(), objects: map.objects.slice(), markers: map.markers.map((m) => ({ ...m })), scripts: structuredClone(map.scripts), scriptAt: map.scriptAt.slice() });
+const snapshot = () => ({ terrain: map.terrain.slice(), objects: map.objects.slice(), markers: map.markers.map((m) => ({ ...m, route: m.route && m.route.map((c) => ({ ...c })) })), scripts: structuredClone(map.scripts), scriptAt: map.scriptAt.slice() });
 function pushUndo(): void { undo.push(snapshot()); if (undo.length > 40) undo.shift(); }
 function doUndo(): void {
   const s = undo.pop();
@@ -148,7 +148,12 @@ function draw(): void {
     ctx.strokeStyle = '#000'; ctx.stroke();
     ctx.fillStyle = '#fff';
     ctx.fillText(start ? (START_IDS as Record<number, string>)[m.id]?.[0] ?? String(m.id) : String(m.id), x, y + 3);
-    if (m.route) { ctx.strokeStyle = '#ffffff66'; ctx.beginPath(); ctx.moveTo(x, y); for (const p of m.route) ctx.lineTo(sx(p.cx, p.cy), sy(p.cx, p.cy)); ctx.stroke(); }
+    if (m.route) {
+      const sel = tool === 'route' && brush.routeOf?.cx === m.cx && brush.routeOf?.cy === m.cy;
+      ctx.strokeStyle = sel ? '#ffd24a' : '#ffffff66'; ctx.lineWidth = sel ? 2 : 1;
+      ctx.beginPath(); ctx.moveTo(x, y); for (const p of m.route) ctx.lineTo(sx(p.cx, p.cy), sy(p.cx, p.cy)); ctx.stroke(); ctx.lineWidth = 1;
+      if (sel) { ctx.fillStyle = '#ffd24a'; m.route.forEach((p, i) => ctx.fillText(String(i + 1), sx(p.cx, p.cy), sy(p.cx, p.cy) + 3)); }
+    }
   }
   for (let cy = cyMin; cy <= cyMax; cy++) {
     for (let cx = cxMin; cx <= cxMax; cx++) {
@@ -238,7 +243,7 @@ window.addEventListener('resize', resize);
 window.addEventListener('beforeunload', (e) => { if (dirty) e.preventDefault(); });
 
 // --- side panel ---------------------------------------------------------------------------------------------------
-const TOOLS: [Tool, string][] = [['ground', 'Ground'], ['scenery', 'Scenery'], ['actor', 'Monster / NPC'], ['start', 'Hero start'], ['script', 'Script'], ['erase', 'Erase'], ['pick', 'Pick']];
+const TOOLS: [Tool, string][] = [['ground', 'Ground'], ['scenery', 'Scenery'], ['actor', 'Monster / NPC'], ['start', 'Hero start'], ['script', 'Script'], ['route', 'Patrol route'], ['erase', 'Erase'], ['pick', 'Pick']];
 function setTool(t: Tool): void { tool = t; buildPanel(); draw(); }
 
 const mk = <K extends keyof HTMLElementTagNameMap>(tag: K, text = '', on?: () => void): HTMLElementTagNameMap[K] => {
@@ -351,9 +356,15 @@ function buildPanel(): void {
     r = row();
     for (const [id, n] of Object.entries(START_IDS)) { const b = mk('button', n, () => { brush.start = Number(id); buildPanel(); }); if (Number(id) === brush.start) b.className = 'on'; r.append(b); }
   }
+  if (tool === 'route') {
+    h('Patrol route');
+    const m = brush.routeOf && map.markers.find((k) => k.cx === brush.routeOf!.cx && k.cy === brush.routeOf!.cy);
+    side.appendChild(mk('small', m ? `Monster ${m.id} ${names[m.id] ?? ''} at ${m.cx},${m.cy}: ${m.route?.length ?? 0} of ${MAX_ROUTE} cells. Click cells to add them in order.` : 'Click a monster to pick it, then click the cells it should walk through, in order.'));
+    if (m) row().append(mk('button', 'Clear route', () => { pushUndo(); clearRoute(map, m.cx, m.cy); dirty = true; buildPanel(); draw(); }));
+  }
   if (tool === 'script') scriptPanel(h, row);
   h('About');
-  side.appendChild(mk('small', 'Scripts are the yellow numbers (the selected one orange); patrol routes are shown but not editable. Save downloads a .map the game reads (Select map on the title menu plays the shipped ones; Play here tries yours).'));
+  side.appendChild(mk('small', 'Scripts are the yellow numbers (the selected one orange); patrol routes are the white lines (Patrol route tool: pick a monster, click cells). Save downloads a .map the game reads (Select map on the title menu plays the shipped ones; Play here tries yours).'));
   side.appendChild(document.createElement('br'));
   const back = mk('a', '← game'); back.href = './index.html';
   side.appendChild(back);

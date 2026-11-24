@@ -1,8 +1,14 @@
-import { MAP_DIM, type GameMap, type MapScript, type ScriptCmd } from './formats/map.ts';
+import { MAP_DIM, MAX_ROUTE, type GameMap, type MapScript, type ScriptCmd } from './formats/map.ts';
+
+/** Empties the patrol route of the marker at a cell. */
+export function clearRoute(map: GameMap, cx: number, cy: number): void {
+  const m = map.markers.find((k) => k.cx === cx && k.cy === cy);
+  if (m) delete m.route;
+}
 
 /** What a click does in the map editor (the pure part of src/editor.ts, so it can be tested). */
-export type Tool = 'ground' | 'scenery' | 'actor' | 'start' | 'script' | 'erase' | 'pick';
-export interface Brush { size: number; tile: number; pack: number; frame: number; actor: number; start: number; script?: number }
+export type Tool = 'ground' | 'scenery' | 'actor' | 'start' | 'script' | 'route' | 'erase' | 'pick';
+export interface Brush { size: number; tile: number; pack: number; frame: number; actor: number; start: number; script?: number; /** the marker whose patrol route the route tool is drawing */ routeOf?: { cx: number; cy: number } }
 
 /** Applies the brush at a cell: ground paints a size×size square, scenery sets one object, actors and starts are markers (one per cell; one start per hero), erase clears scenery and markers. */
 export function applyBrush(map: GameMap, tool: Tool, b: Brush, cx: number, cy: number): void {
@@ -22,6 +28,17 @@ export function applyBrush(map: GameMap, tool: Tool, b: Brush, cx: number, cy: n
     return;
   }
   if (!inside(cx, cy)) return;
+  if (tool === 'route') {
+    const hit = map.markers.find((m) => m.cx === cx && m.cy === cy);
+    if (hit) { b.routeOf = { cx, cy }; return; } // click a monster to pick it
+    const m = b.routeOf && map.markers.find((k) => k.cx === b.routeOf!.cx && k.cy === b.routeOf!.cy);
+    if (!m) { b.routeOf = undefined; return; }
+    const r = m.route ?? (m.route = []);
+    const lastCell = r[r.length - 1];
+    if (r.length >= MAX_ROUTE || (cx | cy) === 0 || (lastCell && lastCell.cx === cx && lastCell.cy === cy)) return;
+    r.push({ cx, cy });
+    return;
+  }
   if (tool === 'script') { if (b.script !== undefined && map.scripts.some((sc) => sc.index === b.script)) map.scriptAt[at(cx, cy)] = b.script; return; }
   if (tool === 'scenery') { dropMarker(cx, cy); map.objects[at(cx, cy)] = (b.pack << 10) | b.frame; }
   else if (tool === 'actor' || tool === 'start') {

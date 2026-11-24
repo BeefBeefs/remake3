@@ -8,6 +8,7 @@ import type { Prefs } from './prefs.ts';
 import type { Career, SaveStore } from '../game/career.ts';
 import { pickSlot } from './saveslots.ts';
 import { pickMap } from './mappicker.ts';
+import { ControlsPanel } from './controls.ts';
 import type { MapEntry } from '../game/maplist.ts';
 
 export type Difficulty = 0 | 1 | 2;
@@ -126,47 +127,10 @@ export class TitleMenu {
     this.button('menu', 61, x0 + 120, y0 + 172, () => this.selectHero());
   }
 
-  /** The Controls window (Overlay 50 at the place Menu.ini's [Preferences] coordinates imply). */
+  /** The Controls window: see controls.ts. */
   private controls(): void {
     this.clear();
-    const x0 = 166, y0 = 5;
-    this.stage.appendChild(this.skin.sprite('overlay', 50, x0, y0));
-    const slider = (x: number, y: number, value: number, set: (v: number) => void, width = 120) => {
-      const track = document.createElement('div');
-      track.style.cssText = `position:absolute;left:${x}px;top:${y}px;width:${width}px;height:12px;cursor:pointer`;
-      const knob = document.createElement('div');
-      knob.style.cssText = 'position:absolute;top:-1px;width:6px;height:14px;background:#6b5426;border:1px solid #e8c85a;box-sizing:border-box';
-      const paint = (v: number) => { knob.style.left = `${v * (width - 6)}px`; };
-      paint(value);
-      const move = (e: PointerEvent) => {
-        const r = track.getBoundingClientRect();
-        const v = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
-        paint(v); set(v);
-      };
-      track.addEventListener('pointerdown', (e) => { track.setPointerCapture(e.pointerId); move(e); track.onpointermove = move; });
-      track.addEventListener('pointerup', () => { track.onpointermove = null; });
-      track.appendChild(knob);
-      this.stage.appendChild(track);
-    };
-    // sound sliders (Menu.ini PMusic {191,184}, PFX {191,204}); the baked troughs are 125 px wide
-    slider(191, 184, this.prefs.music / 0.7, (v) => { this.prefs.music = v * 0.7; this.onPrefs(this.prefs); }, 125);
-    slider(191, 204, this.prefs.fx / 1, (v) => { this.prefs.fx = v; this.onPrefs(this.prefs); }, 125);
-    // gamma (PGamma {302,94}): 0.7 .. 1.5
-    slider(302, 94, (this.prefs.gamma - 0.7) / 0.8, (v) => { this.prefs.gamma = 0.7 + v * 0.8; this.onPrefs(this.prefs); }, 120);
-    // background sound check box (PAmbient {303,222})
-    const box = document.createElement('div');
-    box.style.cssText = 'position:absolute;left:303px;top:222px;width:12px;height:12px;cursor:pointer;color:#e8c85a;font:bold 13px/12px sans-serif;text-align:center';
-    const paint = () => { box.textContent = this.prefs.ambient ? '✓' : ''; };
-    paint();
-    box.addEventListener('click', () => { this.prefs.ambient = !this.prefs.ambient; paint(); this.onPrefs(this.prefs); });
-    this.stage.appendChild(box);
-    // the key assignments (the manual says they can be changed; ours are fixed for now)
-    [['Left button', 292], ['Ctrl + click', 328], ['Shift + click', 364], ['Right button', 400]].forEach(([label, y]) => {
-      const t = this.skin.text(String(label), { color: '#d8caa0' });
-      t.style.cssText += `;position:absolute;left:${257 + 60 - this.skin.textWidth(String(label)) / 2}px;top:${Number(y) - 4}px`;
-      this.stage.appendChild(t);
-    });
-    this.button('overlay', 51, 261, 431, () => this.main());
+    this.stage.appendChild(new ControlsPanel(this.skin, this.prefs, this.onPrefs, () => this.main()).element);
   }
 
   private credits(): void {

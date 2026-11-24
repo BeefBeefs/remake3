@@ -48,7 +48,7 @@ export function sell(inv: Inventory, slotIndexes: number[]): Result {
     total += sellValue(d);
   }
   if (!uniq.length) return { ok: false, reason: 'Nothing selected' };
-  for (const i of uniq) inv.slots[i] = 0;
+  for (const i of uniq) inv.remove(i);
   inv.gold += total;
   return { ok: true, total };
 }

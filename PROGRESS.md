@@ -375,3 +375,20 @@ map exercises them, so none is implemented; nothing has been seen in a browser.
 - **Editor scripts.** The editor's Script tool lists a map's scripts, creates / deletes them, edits the name and each command (with
   labelled arguments) and puts them on cells; `mapwriter.ts` writes the script table and the cell references back (unchanged scripts
   keep their bytes). Patrol routes are still read-only. 131 tests.
+
+## Turn 17 — durability, controls, patrol routes
+
+- **Durability.** Items now wear out (`Durabilidad` from the item data, 999 = unbreakable): weapon per hit, armour and shield per
+  blow taken, shield per block; at 0 they break ("Your X broke"). Restoration repairs everything; dying does too. Saved with the
+  hero; the tooltip shows `duration x/y`.
+- **Controls window works.** Detail (render sharpness), Screen size (canvas fraction), Blood mode (red puff on hits, GDI/3D 75) and
+  the four key boxes (click one, press a key or mouse button; a used input swaps with the box that had it). Saved in
+  `localStorage`, same window in the title menu and in game (Esc → Controls). Checked in a browser: with attack on the right button
+  and block on the left, right-click walks and left-hold blocks.
+- **Editor patrol routes.** Patrol route tool: pick a monster, click cells in order (max 32), Clear route; selected route is drawn in
+  yellow with numbers. `mapwriter.ts` writes zone records (unchanged routes stay byte-identical; all 35 maps still round-trip).
+  142 tests.
+- **Not done, and why:** multiplayer rules (needs networking), ally spells (no allies in single player), special-item effects and
+  the `S` damage term (items with `Especial: 1` — 6, 13, 28, 30, 81–83, 111, 112 — have no readable effect), monster
+  damage-received formula, state → stamina mapping, where the mission clock starts.
+

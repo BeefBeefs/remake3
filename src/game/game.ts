@@ -62,7 +62,7 @@ export interface HeroSave {
   attrs: { strength: number; skill: number; resistance: number; magic: number };
   level: number; xp: number; points: number; gold: number;
   /** backpack and worn gear: present when the hero moves on to another mission or is saved (not after dying) */
-  inv?: { slots: number[]; equipped: Partial<Record<'weapon' | 'shield' | 'armor' | 'ring' | 'amulet', number>> };
+  inv?: { slots: number[]; equipped: Partial<Record<'weapon' | 'shield' | 'armor' | 'ring' | 'amulet', number>>; /** durability left per slot and per worn item (0 / missing = as new) */ left?: number[]; equippedLeft?: Partial<Record<'weapon' | 'shield' | 'armor' | 'ring' | 'amulet', number>> };
 }
 
 /** A non-hostile character (innkeeper, villagers…): single-view sprite strip, talks when clicked. */
@@ -201,6 +201,8 @@ export class Game {
   private readonly finalText: string;
   /** true once the hero has reached the goal object of the map (script "Tumba de Domnir" in Lost Forrest) */
   goalReached = false;
+  /** Blood mode of the Controls window: a red puff where a blow lands */
+  blood = true;
   private readonly surfaceAt: (cx: number, cy: number) => Surface;
   private stepClock = 0;
   private moving = false;
@@ -235,9 +237,9 @@ export class Game {
       // a hero who moves on keeps his things: replace the starting kit with what he carried (unknown ids are dropped)
       const known = (id: number) => id > 0 && data.items.has(id);
       this.inventory.slots.fill(0);
-      opts.save.inv.slots.forEach((id, i) => { if (known(id) && i < this.inventory.slots.length) this.inventory.slots[i] = id; });
+      opts.save.inv.slots.forEach((id, i) => { if (known(id) && i < this.inventory.slots.length) { this.inventory.slots[i] = id; this.inventory.slotLeft[i] = opts.save!.inv!.left?.[i] ?? 0; } });
       for (const k of Object.keys(this.inventory.equipped) as (keyof typeof this.inventory.equipped)[]) delete this.inventory.equipped[k];
-      for (const [k, id] of Object.entries(opts.save.inv.equipped)) if (id && known(id)) this.inventory.equipped[k as 'weapon'] = id;
+      for (const [k, id] of Object.entries(opts.save.inv.equipped)) if (id && known(id)) { this.inventory.equipped[k as 'weapon'] = id; this.inventory.equippedLeft[k as 'weapon'] = opts.save.inv.equippedLeft?.[k as 'weapon'] ?? 0; }
     }
     this.hero = this.make(String(this.classId), start.cx, start.cy, { hp: maxLife(this.classId, this.level, this.attrs.resistance), damage: [2, 4], speed: HERO_SPEED, name: data.names[String(this.classId)] ?? cls.name });
     this.stamina = this.maxStamina;
@@ -609,7 +611,8 @@ export class Game {
         this.say(`${def.name}: there is no hero beside you to share it with`);
         return false;
       case 'repair':
-        this.say(`${def.name}: your weapons are as good as new (durability is not modelled yet)`);
+        this.inventory.repairAll();
+        this.say(`${def.name}: everything you carry is as good as new`);
         this.snd(23);
         break;
     }
@@ -729,11 +732,18 @@ export class Game {
     }
   }
 
+  /** Blood mode: a quick red puff on the creature that was hit (the original's red puff texture, GDI/3D 75). */
+  private bleed(c: Creature): void {
+    if (!this.blood) return;
+    this.fx.push(makeFx(75, c.cx, c.cy, { follow: c, lift: 26, size0: 24, size1: 70, life: 0.35, alpha0: 0.9, alpha1: 0 }));
+  }
+
   /** Applies hero damage to a monster: hurt/die sounds, loot, kill count and experience. */
   private damageMonster(m: Creature, dmg: number): void {
     if (dmg < 0) { m.hp = Math.min(m.stats.hp, m.hp - dmg); return; } // a family bonus below -1 heals (fire on demons)
     if (dmg === 0) return;
     const killed = m.hurt(dmg);
+    this.bleed(m);
     this.msnd(m, killed ? 2 : 3);
     if (killed) {
       this.dropLoot(m, this.idOf.get(m) ?? '');
@@ -744,8 +754,18 @@ export class Game {
   }
 
   /** Rolls and applies the hero's weapon damage against one monster (melee swing or arrow arrival). */
+  /** Wear of one blow on a worn item; a broken item is gone and the hero's numbers follow. */
+  private wearItem(slot: 'weapon' | 'shield' | 'armor'): void {
+    const broke = this.inventory.wear(slot);
+    if (!broke) return;
+    this.say(`Your ${broke.name.includes(':') ? broke.name.slice(broke.name.indexOf(':') + 1).trim() : broke.name} broke`);
+    this.snd(13);
+    this.refreshHeroStats();
+  }
+
   private heroHitMonster(m: Creature, sneak: boolean): void {
     if (!m.alive) return;
+    this.wearItem('weapon');
     // the executable's sum: class term B (own strength) + weapon W (Potencia roll plus its family bonus), then the
     // 0..2 -> 1..3 rule; a family bonus below zero replaces everything (it heals the monster, fire on demons)
     const [lo, hi] = this.hero.stats.damage;
@@ -823,10 +843,14 @@ export class Game {
       if ((fromx * this.facing.x + fromy * this.facing.y) / ed > 0) {
         this.stamina -= BLOCK_COST;
         this.snd(this.pick(53, 4)); // c_cubrir
+        this.wearItem('shield');
         return;
       }
     }
+    this.bleed(h);
     const died = h.hurt(hitReceived(lo + Math.floor(this.rnd() * (hi - lo + 1)), h.stats.armor));
+    this.wearItem('armor');
+    this.wearItem('shield');
     const sb = CLASSES[this.classId].sound;
     this.snd(died ? sb : this.pick(sb + 1, 2)); // <class>_morir / _recibir
     if (died) this.die();
@@ -879,6 +903,7 @@ export class Game {
     const lost = this.inventory.slots.filter(Boolean).length + Object.keys(this.inventory.equipped).length;
     this.inventory.slots.fill(0);
     for (const k of Object.keys(this.inventory.equipped) as (keyof typeof this.inventory.equipped)[]) delete this.inventory.equipped[k];
+    this.inventory.repairAll();
     for (const k of ['strength', 'skill', 'resistance', 'magic'] as const) this.attrs[k] = Math.max(1, this.attrs[k] - 1);
     this.dead = true;
     this.version++;
@@ -895,7 +920,7 @@ export class Game {
 
   /** The hero as he walks out of a mission: everything he has, at full strength (saving happens between missions only). */
   carry(): HeroSave {
-    return { ...this.save(), inv: { slots: [...this.inventory.slots], equipped: { ...this.inventory.equipped } } };
+    return { ...this.save(), inv: { slots: [...this.inventory.slots], equipped: { ...this.inventory.equipped }, left: [...this.inventory.slotLeft], equippedLeft: { ...this.inventory.equippedLeft } } };
   }
 
   /** @param move cell-space unit vector from the keyboard, or null */

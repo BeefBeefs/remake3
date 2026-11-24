@@ -34,6 +34,8 @@ export interface ItemDef {
   data: number;
   /** INI `CofreLv`: the chest level an item can come out of (0 = never from chests) */
   chestLevel: number;
+  /** INI `Durabilidad`: blows (or shots) an item survives; 0 = does not wear, 999 = never breaks */
+  durability: number;
   /** attribute and level requirements (INI R_Fuerza, R_Destreza = skill, R_Resistencia, R_Magia = power, R_Nivel) */
   req: Requirements;
   bonus: Bonus;
@@ -50,7 +52,7 @@ export interface Requirements { strength: number; skill: number; resistance: num
 
 interface RawItem {
   title?: string;
-  General?: { Tipo?: number; Potencia?: [number, number]; Nivel?: number; Precio?: number; Data?: number; CofreLv?: number };
+  General?: { Tipo?: number; Potencia?: [number, number]; Nivel?: number; Precio?: number; Data?: number; CofreLv?: number; Durabilidad?: number };
   Bonificadores?: Record<string, number>;
   Bonificacion?: Record<string, number>;
   Requerimientos?: { Character?: number; R_Fuerza?: number; R_Destreza?: number; R_Resistencia?: number; R_Magia?: number; R_Nivel?: number };
@@ -85,6 +87,7 @@ export function buildItems(raw: Record<string, RawItem>, names: Record<string, s
       character: v.Requerimientos?.Character ?? 0,
       data: g.Data ?? 0,
       chestLevel: g.CofreLv ?? 0,
+      durability: g.Durabilidad ?? 0,
       bonus: parseBonus(v),
       req: { strength: v.Requerimientos?.R_Fuerza ?? 0, skill: v.Requerimientos?.R_Destreza ?? 0, resistance: v.Requerimientos?.R_Resistencia ?? 0, magic: v.Requerimientos?.R_Magia ?? 0, level: v.Requerimientos?.R_Nivel ?? 0 },
     });
@@ -130,10 +133,16 @@ export function rollDrop(table: { IDItem?: number[]; PItem?: number[] } | undefi
 
 export const INVENTORY_SIZE = 20;
 
+/** Items with this durability never wear out (the "mystic" and light items). */
+export const UNBREAKABLE = 999;
+
 export class Inventory {
   /** item id per slot, 0 = empty */
   readonly slots: number[] = Array<number>(INVENTORY_SIZE).fill(0);
   readonly equipped: Partial<Record<Slot, number>> = {};
+  /** durability left of the item in each slot / worn; 0 or missing = as new */
+  readonly slotLeft: number[] = Array<number>(INVENTORY_SIZE).fill(0);
+  readonly equippedLeft: Partial<Record<Slot, number>> = {};
   gold = 0;
 
   constructor(private readonly defs: Map<number, ItemDef>, private readonly character: number) {}
@@ -143,11 +152,38 @@ export class Inventory {
 
   def(id: number): ItemDef | undefined { return this.defs.get(id); }
 
-  add(id: number): boolean {
+  add(id: number, left = 0): boolean {
     const i = this.slots.indexOf(0);
     if (i < 0) return false;
     this.slots[i] = id;
+    this.slotLeft[i] = left;
     return true;
+  }
+
+  /** Empties a slot (sold, dropped), forgetting its wear. */
+  remove(index: number): void { this.slots[index] = 0; this.slotLeft[index] = 0; }
+
+  /** Durability left of a worn item (the full value when it was never used); null for items that do not wear. */
+  leftOf(slot: Slot): number | null {
+    const id = this.equipped[slot], d = id ? this.defs.get(id) : undefined;
+    if (!d || !d.durability) return null;
+    return this.equippedLeft[slot] || d.durability;
+  }
+
+  /** One blow's wear on a worn item. Returns the item when it broke (it is gone from the slot). */
+  wear(slot: Slot, amount = 1): ItemDef | null {
+    const d = this.equipped[slot] ? this.defs.get(this.equipped[slot]!) : undefined;
+    if (!d || !d.durability || d.durability >= UNBREAKABLE) return null;
+    const left = (this.equippedLeft[slot] || d.durability) - amount;
+    if (left <= 0) { delete this.equipped[slot]; delete this.equippedLeft[slot]; return d; }
+    this.equippedLeft[slot] = left;
+    return null;
+  }
+
+  /** Restoration: every worn and carried item is as good as new. */
+  repairAll(): void {
+    this.slotLeft.fill(0);
+    for (const k of Object.keys(this.equippedLeft) as Slot[]) delete this.equippedLeft[k];
   }
 
   canUse(def: ItemDef): boolean { return def.character === 0 || def.character === this.character; }
@@ -171,16 +207,19 @@ export class Inventory {
     const def = id ? this.defs.get(id) : undefined;
     const slot = def ? slotOf(def) : null;
     if (!def || !slot || !this.canUse(def)) return false;
-    const old = this.equipped[slot] ?? 0;
+    const old = this.equipped[slot] ?? 0, oldLeft = this.equippedLeft[slot] ?? 0, left = this.slotLeft[index] ?? 0;
     this.equipped[slot] = def.id;
+    this.equippedLeft[slot] = left;
     this.slots[index] = old;
+    this.slotLeft[index] = oldLeft;
     return true;
   }
 
   unequip(slot: Slot): boolean {
     const id = this.equipped[slot];
-    if (!id || !this.add(id)) return false;
+    if (!id || !this.add(id, this.equippedLeft[slot] ?? 0)) return false;
     delete this.equipped[slot];
+    delete this.equippedLeft[slot];
     return true;
   }
 
@@ -188,7 +227,7 @@ export class Inventory {
   take(index: number): ItemDef | undefined {
     const id = this.slots[index];
     if (!id) return undefined;
-    this.slots[index] = 0;
+    this.remove(index);
     return this.defs.get(id);
   }
 

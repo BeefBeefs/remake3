@@ -47,7 +47,11 @@ export function parseCareer(raw: unknown): Career | null {
     const eq: HeroSave['inv'] extends infer T ? (T extends { equipped: infer E } ? E : never) : never = {};
     for (const s of SLOT_NAMES) { const v = (h.inv.equipped as Record<string, unknown> | undefined)?.[s]; if (isNum(v) && v > 0) eq[s] = v; }
     if (!slots) return null;
-    inv = { slots, equipped: eq };
+    const num = (v: unknown) => (isNum(v) && v >= 0 ? v : 0);
+    const left = Array.isArray(h.inv.left) ? h.inv.left.slice(0, 20).map(num) : undefined;
+    const eqLeft: NonNullable<HeroSave['inv']>['equippedLeft'] = {};
+    for (const s of SLOT_NAMES) { const v = (h.inv.equippedLeft as Record<string, unknown> | undefined)?.[s]; if (isNum(v) && v > 0) eqLeft[s] = v; }
+    inv = { slots, equipped: eq, ...(left ? { left } : {}), ...(Object.keys(eqLeft).length ? { equippedLeft: eqLeft } : {}) };
   }
   return {
     v: 1, classId: c.classId, difficulty: c.difficulty as 0 | 1 | 2,

@@ -42,3 +42,10 @@ test('corrupt, foreign or hostile save data is ignored, not trusted', () => {
 test('the Lost Forest is the one mission of this install', () => {
   assert.deepEqual(MISSIONS.map((m) => m.id), ['lost_forrest']);
 });
+
+test('wear of carried and worn items survives a save', () => {
+  const st = new SaveStore(mem());
+  const withInv = { ...hero, inv: { slots: [28, 0, 1], equipped: { shield: 28 }, left: [7, 0, 30], equippedLeft: { shield: 12 } } };
+  assert.ok(st.write(0, newCareer(100, 1, withInv)));
+  assert.deepEqual(st.read(0)!.hero.inv, withInv.inv);
+});

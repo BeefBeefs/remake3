@@ -9,7 +9,7 @@ export type Spell =
   | { kind: 'restore'; scale: number }          // life: all mana becomes life and stamina
   | { kind: 'attr'; strength?: number; skill?: number; resistance?: number; magic?: number; fillLife?: boolean; fillMana?: boolean }
   | { kind: 'allies' }                          // vampire: needs other heroes (none in single player)
-  | { kind: 'repair' };                         // restoration: weapon durability is not modelled yet
+  | { kind: 'repair' };                         // restoration: repairs everything worn and carried
 
 export const SPELLS: Record<number, Spell> = {
   86: { kind: 'blast', base: 8, perPower: 0.5, sound: 22, stun: true },   // light: radial beam, damages and disorients
