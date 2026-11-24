@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { DIR_NAMES, screenDir } from '../src/iso.ts';
 
 const data = JSON.parse(readFileSync(new URL('../public/assets/data/anims.json', import.meta.url), 'utf8')) as {
-  actors: Record<string, { pack: string; frames: number; verified: boolean; partial?: boolean; foot: number[]; anims: Record<string, { start: number; frames: number; speed: number }> }>;
+  actors: Record<string, { pack: string; frames: number; verified: boolean; partial?: boolean; foot: number[]; anims: Record<string, { start: number; frames: number; speed: number; dirs?: number }> }>;
 };
 
 test('screenDir maps screen vectors to the P16 direction order', () => {
