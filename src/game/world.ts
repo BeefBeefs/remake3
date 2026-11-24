@@ -68,6 +68,27 @@ export class World {
     return cx >= 0 && cy >= 0 && cx < this.dim && cy < this.dim;
   }
 
+  /** Changes the object at a cell (0 removes it) and rebuilds the visible chunk and the cell's collision. */
+  setObject(cx: number, cy: number, value: number): void {
+    if (!this.inBounds(cx, cy)) return;
+    const i = cy * this.dim + cx;
+    this.map.objects[i] = value;
+    const t = this.map.terrain[i]!;
+    let b = t === 0 || t === WATER_TILE;
+    if (value) {
+      const atlas = this.packs[value >> 10], id = value & 1023;
+      if (atlas && atlas.has(id) && atlas.rect(id)[3] >= BLOCK_HEIGHT) b = true;
+    }
+    this.blocked[i] = b ? 1 : 0;
+    const key = Math.floor(cy / CHUNK) * this.chunksPerRow + Math.floor(cx / CHUNK);
+    const g = this.chunks.get(key);
+    if (g) {
+      this.group.remove(g);
+      g.traverse((o) => { if (o instanceof THREE.Mesh && o.geometry) o.geometry.dispose(); });
+      this.chunks.delete(key);
+    }
+  }
+
   isWalkable(cx: number, cy: number): boolean {
     const ix = Math.floor(cx + 0.5), iy = Math.floor(cy + 0.5);
     return this.inBounds(ix, iy) && !this.blocked[iy * this.dim + ix];

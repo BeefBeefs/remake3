@@ -55,7 +55,7 @@ async function boot() {
   }
   const items = buildItems((await (await fetch(`${BASE}data/items.json`)).json()) as Parameters<typeof buildItems>[0], itemNames);
   const icons = await Atlas.load(BASE, 'atlas/system/ilistdata.json');
-  const adv = (await (await fetch(`${BASE}data/adventure.json`)).json()) as { mission_text: string; heroes: { strength: number; skill: number; resistance: number; magic: number }[] };
+  const adv = (await (await fetch(`${BASE}data/adventure.json`)).json()) as { mission_text: string; final: string; heroes: { strength: number; skill: number; resistance: number; magic: number }[] };
   // Hero + every monster kind the map places (pack-0 markers).
   const spawns = map.markers.filter((m) => animData.actors[String(m.id)] && m.id < 100).map((m) => ({ id: String(m.id), cx: m.cx, cy: m.cy, route: m.route }));
   const atlases = new Map<string, Atlas>();
@@ -67,7 +67,7 @@ async function boot() {
   // The Barbarian start marker (id 100) of the map; fall back to the old camp guess for maps without one.
   const st = startOf(map, 100);
   const spawn = world.findOpenCell(st?.cx ?? 152, st?.cy ?? 78);
-  const game = new Game(world, { anims: animData, actors: actorsIni, names, atlases, items, icons }, spawn, { spawns, attrs: adv.heroes[0] });
+  const game = new Game(world, { anims: animData, actors: actorsIni, names, atlases, items, icons }, spawn, { spawns, attrs: adv.heroes[0], finalText: adv.final.startsWith('Enter the final text') ? 'You have found the Tomb of Donmir!' : adv.final });
   game.say(adv.mission_text);
   const panel = new InventoryPanel(game, icons, BASE);
   scene.add(game.group);

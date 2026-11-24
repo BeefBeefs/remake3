@@ -55,6 +55,21 @@ zombies sitting in the right places) and whether start (235,121) is the camp the
 dwords mean, what scripts 1–14 do besides loot rolls, markers 112/120), the decor layer (413–424 sprites, flag field),
 hero starting inventories (0x10f3–0x728d of the `.adv`), HP formula (I use 2 × resistance = 60, a guess).
 
+### Turn 6, continued — scripts, chests and the tomb
+- **Scripts decoded** (record layout, 14 commands from the editor's interpreter, how a cell references one: decor layer
+  `2048 + 32·(script+1)`; see FORMATS.md). Lost Forrest has 10 loot-table scripts (type mask + chest level, matching the
+  item INIs' `CofreLv`) and one goal script, "Tumba de Domnir".
+- **Containers in the game:** the 37 script cells are chests, barrels, crates and the tomb gate. Click one (or hit it with
+  Space) and the hero walks over and opens/smashes it; chests swap closed → open sprite (closed = previous frame id, since
+  the map stores the open one), barrels/crates vanish, and loot is rolled from the cell's script (items you can use only;
+  unscripted barrels sometimes give a gold bag). The tomb gate is the **goal**: walking within 3 cells shows its name and the
+  closing message.
+- Tests: 35 pass. `World.setObject` lets scenery change at run time.
+
+**Guesses / not verified:** closed-chest = id−1 and which barrel id makes which smash sound; the goal ends nothing (just a
+message), and I don't know what the original does at the tomb; commands 2–8, 10–13 are read from code but nothing in this
+map exercises them, so none is implemented; nothing has been seen in a browser.
+
 ## Turn 5 — 2026-11-24 · GitHub Pages deploy and a direction fix
 
 - `.github/workflows/pages.yml` builds (install, tests, typecheck, Vite) and deploys to GitHub Pages on every push to

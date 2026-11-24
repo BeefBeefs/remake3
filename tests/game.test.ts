@@ -13,7 +13,7 @@ const fakeAtlas = { mesh: () => Object.assign(new Mesh(), { scale: { set() {} } 
 
 function flatWorld(): World {
   const dim = 256;
-  const map: GameMap = { dim, tileset: 'Outside', terrain: new Uint16Array(dim * dim).fill(340), objects: new Uint32Array(dim * dim), markers: [] };
+  const map: GameMap = { dim, tileset: 'Outside', terrain: new Uint16Array(dim * dim).fill(340), objects: new Uint32Array(dim * dim), markers: [], scripts: [], scriptAt: new Int8Array(dim * dim).fill(-1) };
   return new World(map, fakeAtlas, []);
 }
 
@@ -136,4 +136,24 @@ test('combat emits the original sound ids (goblin SndBase 200: attack/alarm/die/
   run(g, 6);
   assert.ok(played.some((id) => id >= 59 && id <= 64), `flesh/no-flesh hit sound in ${played}`);
   assert.ok(played.some((id) => id >= 200 && id <= 270), `a monster sound in ${played}`);
+});
+
+test('opening a chest rolls its script: a level-3 potion chest drops a life potion and the lid swaps', () => {
+  const dim = 256;
+  const map: GameMap = { dim, tileset: 'Outside', terrain: new Uint16Array(dim * dim).fill(340), objects: new Uint32Array(dim * dim), markers: [],
+    scripts: [{ index: 4, name: '', commands: [{ id: 1, args: [1024, 3, 0, 0] }] }], scriptAt: new Int8Array(dim * dim).fill(-1) };
+  map.objects[128 * dim + 130] = (3 << 10) | 404;
+  map.scriptAt[128 * dim + 130] = 4;
+  const world = new World(map, fakeAtlas, [fakeAtlas, fakeAtlas, fakeAtlas, fakeAtlas]);
+  const anims = json('data/anims.json');
+  const atlases = new Map<string, Atlas>();
+  for (const a of Object.values(anims.actors) as { pack: string }[]) atlases.set(a.pack, fakeAtlas);
+  const data: GameData = { anims, actors: json('data/actors.json'), names: {}, atlases, items: buildItems(json('data/items.json'), {}), icons: fakeAtlas };
+  const g = new Game(world, data, { cx: 128, cy: 128 }, { spawns: [] });
+  assert.equal(map.objects[128 * dim + 130], (3 << 10) | 403); // shown closed
+  g.click(130, 128);
+  run(g, 3);
+  assert.equal(map.objects[128 * dim + 130], (3 << 10) | 404); // open now
+  assert.equal(g.ground.length, 1);
+  assert.equal(data.items.get(g.ground[0]!.id)!.kind, 'potion');
 });

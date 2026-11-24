@@ -65,6 +65,11 @@ export interface Marker {
   route?: { cx: number; cy: number }[];
 }
 
+/** One script command: id (1..14) plus its four u32 arguments. */
+export interface ScriptCmd { id: number; args: [number, number, number, number] }
+/** A record of the map's script table (see docs/FORMATS.md "Scripts"). */
+export interface MapScript { index: number; name: string; commands: ScriptCmd[] }
+
 export interface GameMap {
   dim: number;
   tileset: string;
@@ -74,6 +79,10 @@ export interface GameMap {
   objects: Uint32Array;
   /** pack-0 objects, in row-major order */
   markers: Marker[];
+  /** the non-empty records of the script table */
+  scripts: MapScript[];
+  /** per cell: index into the script table attached to the object there (decor u16[2] = 2048 + 32*(index+1)), -1 = none */
+  scriptAt: Int8Array;
 }
 
 /** Hero start cell for a class id (100 Barbarian, 101 Amazon, 102 Sorceress), if the map defines one. */
@@ -112,5 +121,31 @@ export function parseMap(body: Uint8Array): GameMap {
       if (route.length) m.route = route;
     }
   }
-  return { dim: MAP_DIM, tileset: header.tileset, terrain, objects, markers };
+  const scripts: MapScript[] = [];
+  const scriptAt = new Int8Array(n).fill(-1);
+  if (body.byteLength >= SCRIPTS_OFFSET + 64 * SCRIPT_SIZE) {
+    for (let i = 0; i < n; i++) {
+      const v = dv.getUint16(DECOR_OFFSET + i * 8 + 4, true);
+      const k = (v & 0x7ff) >> 5;
+      if (v & 0x800 && k > 0) scriptAt[i] = k - 1;
+    }
+    for (let si = 0; si < 64; si++) {
+      const o = SCRIPTS_OFFSET + si * SCRIPT_SIZE;
+      const commands: ScriptCmd[] = [];
+      for (let c = 0; c < 8; c++) {
+        const id = dv.getUint32(o + 0x38 + c * 4, true);
+        if (!id) continue;
+        const a = o + 0x78 + c * 16;
+        commands.push({ id, args: [dv.getUint32(a, true), dv.getUint32(a + 4, true), dv.getUint32(a + 8, true), dv.getUint32(a + 12, true)] });
+      }
+      if (!commands.length) continue;
+      // the 52-byte name field may start with padding NULs (Lost Forrest: "\0\0Tumba de Domnir")
+      let st = o + 4;
+      while (st < o + 0x38 && body[st] === 0) st++;
+      let e = st;
+      while (e < o + 0x38 && body[e] !== 0) e++;
+      scripts.push({ index: si, name: new TextDecoder('latin1').decode(body.subarray(st, e)), commands });
+    }
+  }
+  return { dim: MAP_DIM, tileset: header.tileset, terrain, objects, markers, scripts, scriptAt };
 }

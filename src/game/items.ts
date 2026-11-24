@@ -32,11 +32,13 @@ export interface ItemDef {
   character: number;
   /** potion effect: 1 life, 2 stamina, 4 magic */
   data: number;
+  /** INI `CofreLv`: the chest level an item can come out of (0 = never from chests) */
+  chestLevel: number;
 }
 
 interface RawItem {
   title?: string;
-  General?: { Tipo?: number; Potencia?: [number, number]; Nivel?: number; Precio?: number; Data?: number };
+  General?: { Tipo?: number; Potencia?: [number, number]; Nivel?: number; Precio?: number; Data?: number; CofreLv?: number };
   Requerimientos?: { Character?: number };
 }
 
@@ -56,6 +58,7 @@ export function buildItems(raw: Record<string, RawItem>, names: Record<string, s
       price: g.Precio ?? 0,
       character: v.Requerimientos?.Character ?? 0,
       data: g.Data ?? 0,
+      chestLevel: g.CofreLv ?? 0,
     });
   }
   return out;
@@ -140,4 +143,14 @@ export class Inventory {
     const s = this.equipped.shield ? this.defs.get(this.equipped.shield) : undefined;
     return (a?.level ?? 0) + (s?.power[0] ?? 0);
   }
+}
+
+/**
+ * Script command 1: "roll a random item whose type mask matches `mask`, from chest level `level` or lower"
+ * (args like 100,3 / 1024,3 / 57344,2). `usable` filters out other classes' gear.
+ */
+export function rollByMask(defs: Map<number, ItemDef>, mask: number, level: number, rnd: () => number, usable: (d: ItemDef) => boolean = () => true): number | null {
+  const pool = [...defs.values()].filter((d) => d.chestLevel >= 1 && d.chestLevel <= level && (d.tipo & mask) !== 0 && usable(d));
+  if (!pool.length) return null;
+  return pool[Math.floor(rnd() * pool.length)]!.id;
 }

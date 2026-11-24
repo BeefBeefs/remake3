@@ -142,6 +142,28 @@ NightStone, NHS logos, intro). The 76 `Pack/*.g16` files are different/unknown.
 - `System/{Cave,Combat,Dungeon,Map,Menu,OutSide,Psda}.dt`: **RIFF WAVE music** (44.1 kHz stereo 16-bit) despite the
   extension; `TK_EX.dt` is also WAVE. All are converted to Ogg Vorbis (`public/assets/audio/**`).
 
+### Scripts (map table at 0x190384) 🟡
+Record (248 bytes): u32 enabled flag (1) at +0, name at +4 (≤52 bytes, may start with NULs), 8 × u32 **command ids**
+at +0x38, 32 unknown bytes at +0x58 (probably conditions), 8 × 4 × u32 **arguments** at +0x78. A cell runs a script
+through the **decor layer**: u16[2] of the cell's decor record = `2048 + 32·(script+1)` (plain 2048 = none). In Lost Forrest
+37 cells carry one and all of them are containers: pack-3 chests (402/404/527/529/531, closed sprite = id−1), barrels
+(405–407), crates (408), plus the tomb gate (pack 1, 625–640).
+
+Interpreter commands (jump table at 0x436e84; semantics read from the disassembly, only 1 and 9 occur in Lost Forrest):
+| id | meaning |
+|----|---------|
+| 1 | roll a random item with `Tipo & a0` from chest level ≤ a1 (item INI `CofreLv`), drop it at the cell — **verified in data**: scripts 0–9 are loot tables (a0 = 100 melee/bow/staff mix, 1, 32, 64, 1024 potions, 0xE000 armour, 128 rings, 256 amulets; script 8 = one armour per class; script 9 = 8/64/32 weapons) |
+| 2 | move/teleport to cell (a0,a1) |
+| 3 / 4 | activate / remove actor a0 |
+| 5 | spawn actor a0+1 at (a2,a3) (`Spawn:%d (A:%d) at (%d,%d)`) |
+| 6 | change the object at a cell |
+| 7 / 8 | remove the object at cell (a0,a1) / at the trigger cell |
+| 9 | drop fixed item a0 at the cell (script 11 "Tumba de Domnir": a0 = 0, i.e. nothing; it marks the goal) |
+| 10 | quest-manager call with a0 (unclear) |
+| 11 | requires item/key a0 in a player's inventory, else message 5 ("locked") |
+| 12 / 13 | message 1 / actor-manager call with a0 (unclear) |
+| 14 | no-op |
+
 ### Sound ids
 Files `GDI/Audio/NNN_*.wav` → `audio/gdi/audio/NNN_*.ogg`, indexed by `data/sfx.json`. Actor INI `Sonidos.SndBase` = B:
 B+0 attack, B+1 alarm (notices you), B+2 die, B+3 hurt (e.g. 200–203 goblin); `Carne` 1/0 = flesh vs. no-flesh hit sound
@@ -174,9 +196,7 @@ White Goddess), ID-100 Terak, ID-101 Rhelia.
          cells (u32 each, 0-terminated), then 16 u32 of unknown data (values like 140, 175, 350, 875…).
          Read as a **wander route** of the monster at the key cell (points within ~13 cells of it; used by the game).
          32 are used in Lost Forrest; all 32 keys are cells holding a pack-0 object (verified).
-0x190384 scripts: 64 records × 248 bytes: u32 type at +0, 8 command ids (u32) at +0x38, then 8 × 4 u32 args at +0x78.
-         Command 1 = "roll a random item of type mask a, quality b" (args like 100,3 / 32,3 / 1024,3 / 0xE000,2); the
-         interpreter has 14 commands (id 7 spawns an actor "Spawn:%d (A:%d) at (%d,%d)"). Lost Forrest uses 16 records.
+0x190384 scripts: 64 records × 248 bytes (see "Scripts" below). Lost Forrest uses 11 of them.
 ```
 
 **Actor spawns (verified by disassembling the editor's map pass, "Found %d Actors").** The loader walks every cell of

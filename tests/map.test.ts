@@ -76,3 +76,18 @@ test('zone records become wander routes on the markers', () => {
   assert.deepEqual(mage.route![0], { cx: 157, cy: 81 });
   for (const m of withRoute) for (const r of m.route!) assert.ok(Math.hypot(r.cx - m.cx, r.cy - m.cy) < 20, `route far from marker ${m.id}`);
 });
+
+test('script table: ten loot scripts and the tomb goal, attached to chests/barrels via the decor layer', () => {
+  assert.equal(map.scripts.length, 11);
+  const by = new Map(map.scripts.map((sc) => [sc.index, sc]));
+  assert.deepEqual(by.get(4)!.commands, [{ id: 1, args: [1024, 3, 0, 0] }]); // potions
+  assert.equal(by.get(8)!.commands.length, 3);
+  assert.equal(by.get(11)!.name, 'Tumba de Domnir');
+  let withScript = 0;
+  for (const v of map.scriptAt) if (v >= 0) withScript++;
+  assert.equal(withScript, 37);
+  // the tomb gate: objects of pack 1 (625..640) at x 163-164, y 72-75 carry it
+  assert.equal(map.scriptAt[72 * 256 + 164], 11);
+  assert.equal(map.scriptAt[75 * 256 + 164], 11);
+  assert.equal(map.objects[75 * 256 + 164], (1 << 10) | 640);
+});

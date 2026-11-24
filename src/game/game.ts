@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { Atlas } from '../assets/atlas.ts';
 import { type AnimData } from './anims.ts';
 import { Creature, type Stats } from './creature.ts';
-import { Inventory, rollDrop, type ItemDef } from './items.ts';
+import { Inventory, rollByMask, rollDrop, type ItemDef } from './items.ts';
 import { cellToWorld, depthOf } from '../iso.ts';
 import { World } from './world.ts';
 
@@ -32,9 +32,22 @@ export interface GameOptions {
   spawns?: { id: string; cx: number; cy: number; route?: { cx: number; cy: number }[] }[];
   /** hero attributes from the .adv file (strength, skill, resistance, magic) */
   attrs?: { strength: number; skill: number; resistance: number; magic: number };
+  /** text shown when the mission's goal object is reached */
+  finalText?: string;
 }
 
 export interface GroundItem { id: number; cx: number; cy: number; mesh: THREE.Object3D }
+
+/** Pack-3 container objects. The map stores the *open* sprite of a chest; the closed one is the previous frame id (401/402, 403/404, 526/527 ...). */
+const CHESTS = new Set([402, 404, 527, 529, 531]);
+/** breakable containers -> original sound id (013 crate, 015 water barrel, 016 barrel; which is which is a guess) */
+const BREAKABLES: Record<number, number> = { 405: 16, 406: 16, 407: 15, 408: 13 };
+const CHEST_SOUND = 14;
+const CONTAINER_PACK = 3;
+
+const DROP_SPOTS: [number, number][] = [[0, 0.6], [0.7, 0.4], [-0.7, 0.4], [0, 1.1]];
+
+interface Box { cx: number; cy: number; id: number; chest: boolean; done: boolean }
 
 const HERO_ID = '100';
 const HERO_SPEED = 3.2; // cells per second
@@ -77,6 +90,12 @@ export class Game {
   private readonly idOf = new Map<Creature, string>();
   /** monsters that have noticed the hero (they shout once) */
   private readonly alerted = new Set<Creature>();
+  private readonly boxes: Box[] = [];
+  private targetBox: Box | null = null;
+  private goals: { cx: number; cy: number; name: string }[] = [];
+  private readonly finalText: string;
+  /** true once the hero has reached the goal object of the map (script "Tumba de Domnir" in Lost Forrest) */
+  goalReached = false;
   /** Sound hook: numeric id of a GDI/Audio file (see data/sfx.json). Set by the front end. */
   onSound?: (id: number) => void;
   /** wander routes of unaware monsters (the map's zone records) */
@@ -87,6 +106,7 @@ export class Game {
 
   constructor(private readonly world: World, private readonly data: GameData, start: { cx: number; cy: number }, opts: GameOptions = {}) {
     this.attrs = opts.attrs ?? { strength: 30, skill: 24, resistance: 30, magic: 11 };
+    this.finalText = opts.finalText ?? 'Mission complete.';
     this.inventory = new Inventory(data.items, 100);
     // starting kit: the INI lists the Barbarian's items; we start with a scimitar in hand and two life potions
     this.inventory.add(1); this.inventory.equip(0);
@@ -96,6 +116,7 @@ export class Game {
     this.hero.onStrike = () => this.heroStrike();
     this.group.add(this.hero.sprite);
     if (opts.spawns) this.spawnFromMap(opts.spawns); else this.populate(start);
+    this.initContainers();
   }
 
   private make(id: string, cx: number, cy: number, over: Partial<Stats> = {}): Creature {
@@ -132,6 +153,60 @@ export class Game {
     }
   }
 
+  /** Containers (chests, barrels, crates) and goal objects are the map objects that carry scripts or have container sprites. */
+  private initContainers(): void {
+    const map = this.world.map;
+    const scripts = new Map(map.scripts.map((sc) => [sc.index, sc]));
+    for (let i = 0; i < map.objects.length; i++) {
+      const o = map.objects[i]!;
+      const cx = i % map.dim, cy = Math.floor(i / map.dim);
+      const id = o & 1023;
+      if (o >> 10 === CONTAINER_PACK && (CHESTS.has(id) || id in BREAKABLES)) {
+        const chest = CHESTS.has(id);
+        this.boxes.push({ cx, cy, id, chest, done: false });
+        if (chest) this.world.setObject(cx, cy, (CONTAINER_PACK << 10) | (id - 1)); // show it closed
+      }
+      const sc = map.scriptAt[i]! >= 0 ? scripts.get(map.scriptAt[i]!) : undefined;
+      // a script that rolls no loot is a goal marker (Lost Forrest: "Tumba de Domnir" on the tomb gate)
+      if (sc && !sc.commands.some((c) => c.id === 1) && sc.name) this.goals.push({ cx, cy, name: sc.name });
+    }
+  }
+
+  private boxAt(cx: number, cy: number, reach: number): Box | null {
+    let best: Box | null = null, bd = reach;
+    for (const b of this.boxes) {
+      if (b.done) continue;
+      const d = Math.hypot(b.cx - cx, b.cy - cy);
+      if (d < bd) { bd = d; best = b; }
+    }
+    return best;
+  }
+
+  /** Runs a map script at a cell. Implemented: 1 (roll item by type mask and chest level) and 9 (fixed item). */
+  private runScript(index: number, cx: number, cy: number): void {
+    const sc = this.world.map.scripts.find((x) => x.index === index);
+    if (!sc) return;
+    let n = 0;
+    for (const c of sc.commands) {
+      let item: number | null = null;
+      if (c.id === 1) item = rollByMask(this.data.items, c.args[0], c.args[1], this.rnd, (d) => this.inventory.canUse(d));
+      else if (c.id === 9 && c.args[0] > 0) item = c.args[0];
+      if (item) { const o = DROP_SPOTS[n % DROP_SPOTS.length]!; this.spawnGround(item, cx + o[0], cy + o[1]); n++; }
+    }
+  }
+
+  private openBox(b: Box): void {
+    b.done = true;
+    this.snd(b.chest ? CHEST_SOUND : BREAKABLES[b.id] ?? 13);
+    const script = this.world.map.scriptAt[b.cy * this.world.map.dim + b.cx]!;
+    if (b.chest) this.world.setObject(b.cx, b.cy, (CONTAINER_PACK << 10) | b.id);
+    else this.world.setObject(b.cx, b.cy, 0);
+    if (script >= 0) this.runScript(script, b.cx, b.cy);
+    else if (!b.chest && this.rnd() < 0.2) this.spawnGround(GOLD_BAG, b.cx, b.cy + 0.5);
+    this.say(b.chest ? 'You open the chest' : 'You smash it open');
+    if (this.targetBox === b) this.targetBox = null;
+  }
+
   /** Fallback: scatters a few monsters around the start. */
   private populate(start: { cx: number; cy: number }): void {
     const kinds = ['1', '1', '1', '2', '2', '3', '5', '1', '2', '3'];
@@ -153,14 +228,16 @@ export class Game {
   /** Called with a cell-space click position. */
   click(cx: number, cy: number): void {
     if (!this.hero.alive) return;
+    const box = this.boxAt(cx, cy, 0.8);
     let best: Creature | null = null, bd = 1.3;
     for (const m of this.monsters) {
       if (!m.alive) continue;
       const d = Math.hypot(m.cx - cx, m.cy - cy);
       if (d < bd) { bd = d; best = m; }
     }
+    this.targetBox = best ? null : box;
     this.target = best;
-    this.walkTarget = best ? null : { cx, cy };
+    this.walkTarget = best || box ? null : { cx, cy };
   }
 
   /** Space bar: swing in the current facing direction. */
@@ -282,6 +359,14 @@ export class Game {
         this.xp += m.stats.xp[0] + Math.floor(this.rnd() * (m.stats.xp[1] - m.stats.xp[0] + 1));
       }
     }
+    for (const b of [...this.boxes]) {
+      if (b.done) continue;
+      const dx = b.cx - h.cx, dy = b.cy - h.cy, d = Math.hypot(dx, dy);
+      if (d > HIT_RANGE) continue;
+      if (d > 0.6 && (dx * this.facing.x + dy * this.facing.y) / d < 0.2) continue;
+      hit = true;
+      this.openBox(b);
+    }
     if (!hit) this.snd(this.pick(65, 6)); // c_sesgo: a swing that hits nothing (guess: whoosh)
   }
 
@@ -299,9 +384,20 @@ export class Game {
     const h = this.hero;
     this.updateHero(dt, move);
     this.pickups();
+    this.checkGoal();
     for (const m of this.monsters) this.updateMonster(m, dt);
     h.update(dt);
     for (const m of this.monsters) m.update(dt);
+  }
+
+  private checkGoal(): void {
+    if (this.goalReached || !this.hero.alive) return;
+    const h = this.hero;
+    const g = this.goals.find((q) => Math.hypot(q.cx - h.cx, q.cy - h.cy) < 3);
+    if (!g) return;
+    this.goalReached = true;
+    this.say(`${g.name}`);
+    this.say(this.finalText);
   }
 
   private step(c: Creature, vx: number, vy: number, speed: number, dt: number): void {
@@ -317,12 +413,17 @@ export class Game {
     if (h.state === 'attack' || h.state === 'hit') return;
     let vx = 0, vy = 0;
     if (move) {
-      this.target = null; this.walkTarget = null;
+      this.target = null; this.walkTarget = null; this.targetBox = null;
       vx = move.x; vy = move.y;
     } else if (this.target && this.target.alive) {
       const ex = this.target.cx - h.cx, ey = this.target.cy - h.cy, d = Math.hypot(ex, ey);
       this.facing = { x: ex / (d || 1), y: ey / (d || 1) };
       if (d <= MELEE) { this.tryAttack(); }
+      else { vx = ex / d; vy = ey / d; }
+    } else if (this.targetBox && !this.targetBox.done) {
+      const b = this.targetBox, ex = b.cx - h.cx, ey = b.cy - h.cy, d = Math.hypot(ex, ey);
+      this.facing = { x: ex / (d || 1), y: ey / (d || 1) };
+      if (d <= MELEE + 0.2) this.tryAttack();
       else { vx = ex / d; vy = ey / d; }
     } else if (this.walkTarget) {
       const ex = this.walkTarget.cx - h.cx, ey = this.walkTarget.cy - h.cy, d = Math.hypot(ex, ey);
@@ -335,7 +436,8 @@ export class Game {
       h.setState('walk');
       const before = { x: h.cx, y: h.cy };
       this.step(h, vx, vy, h.stats.speed, dt);
-      if (!this.target && Math.hypot(h.cx - before.x, h.cy - before.y) < 1e-4) this.walkTarget = null; // blocked
+      if (!this.target && !this.targetBox && Math.hypot(h.cx - before.x, h.cy - before.y) < 1e-4) this.walkTarget = null; // blocked
+      else if (this.targetBox && Math.hypot(h.cx - before.x, h.cy - before.y) < 1e-4) this.targetBox = null;
     } else if (h.state === 'walk') h.setState('idle');
   }
 
