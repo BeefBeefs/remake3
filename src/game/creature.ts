@@ -27,6 +27,8 @@ export interface Stats {
   stun?: number;
 }
 
+/** Packs whose death strip never ends lying down (Naya's is a slow sway on her feet): the body vanishes shortly after the strip ends. */
+const NO_CORPSE = new Set(['63E']);
 const ONE_SHOT = new Set<State>(['attack', 'hit', 'dead', 'appear', 'taunt', 'bored']);
 /** Plays once, then holds its last frame until the state changes. */
 const HOLD = new Set<State>(['block']);
@@ -134,7 +136,8 @@ export class Creature {
     const w = cellToWorld(this.cx, this.cy);
     this.sprite.position.set(w.x, w.y, depthOf(this.cx, this.cy) + (this.alive ? 0.3 : 0.1));
     // actors without a death animation just vanish after a moment
-    this.sprite.visible = this.alive || this.has('dead') || this.deadFor < 0.35;
+    const death = this.anim('dead');
+    this.sprite.visible = this.alive || (death ? (!NO_CORPSE.has(this.def.pack) || this.deadFor < this.duration(death) + 0.8) : this.deadFor < 0.35);
   }
 
   /** Applies damage; returns true if this killed the creature. */

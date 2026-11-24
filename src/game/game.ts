@@ -336,6 +336,8 @@ export class Game {
     const killed = m.hurt(stoneDamage(blow, this.mapNumber), false);
     this.snd(this.pick(62, 3));
     const final = this.mapNumber === 35, cauldron = m.actorId === 80;
+    // stone 70 answers a blow with effect slot type 6 (0x4247a0), whose sound is 77 `trueno`; the picture of that effect was not decoded
+    if (m.actorId === 70 && this.rnd() * 100 < (final ? 80 : 50)) this.snd(77);
     if (this.monsters.length < 200 && this.rnd() * 100 < (final ? 60 : cauldron ? 34 : 27)) {
       for (let i = 0; i < (cauldron ? 2 : 1); i++) {
         let kind = final ? 10 : 9;

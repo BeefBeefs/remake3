@@ -1410,3 +1410,15 @@ test('the Barbarian alternates his two swings, the other heroes have one', () =>
   assert.equal(new Set(seen).size, has2 ? 2 : 1);
   if (has2) assert.notEqual(seen[0], seen[1]);
 });
+
+test("Naya's body vanishes after her death strip (her pack has no lying frame), a goblin's corpse stays", () => {
+  const g = makeGame({ spawns: [{ id: '63', cx: 130, cy: 128 }, { id: '1', cx: 126, cy: 128 }] });
+  const [naya, goblin] = [g.monsters.find((m) => m.def.pack === '63E')!, g.monsters.find((m) => m.def.pack === '1E')!];
+  assert.ok(naya && goblin);
+  naya.hurt(99999); goblin.hurt(99999);
+  naya.update(0.1); goblin.update(0.1);
+  assert.ok(naya.sprite.visible && goblin.sprite.visible, 'both bodies show while the strip plays');
+  naya.update(30); goblin.update(30);
+  assert.ok(!naya.sprite.visible, 'Naya vanishes');
+  assert.ok(goblin.sprite.visible, 'the goblin stays');
+});

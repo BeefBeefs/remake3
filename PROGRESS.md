@@ -530,3 +530,6 @@ Read the use-item routine for type-512 items in `Nightstone.exe` (all 18 cases).
   verified: every INI animation present, every frame accounted for, deaths end lying down. Player-table NPCs 35 / 36 gained their Cubrir strip
   (30+30+30+50 = 140). Still open: NPC 29 holds 40 frames beyond its two INI strips (a third, unnamed pose), 33 two spare frames, 42 holds
   3 x 10 frames for one INI strip. Naya (63): no frame of her 504 is wider than tall, so her pack has no lying death at all; Morir is a slow sway.
+- **Naya's body, stone 70.** Naya's death strip ends on her feet, so her body now vanishes 0.8 s after the strip (`NO_CORPSE` in creature.ts); every other
+  corpse stays. Stone 70's reaction (`0x4247a0(2, 6, 0x69)`: a per-actor effect slot, types 5-8 play sound 24 / 77) is modelled as the thunder
+  sound at 50 % (80 % in mission 35); the effect's picture is not decoded.
