@@ -45,7 +45,7 @@ export class InventoryPanel {
   }
 
   private tip(def: ItemDef): string {
-    const parts = [def.name];
+    const parts = [def.name.includes(':') ? def.name.slice(def.name.indexOf(':') + 1).trim() : def.name];
     if (def.kind === 'weapon') parts.push(`damage ${def.power[0]}-${def.power[1]}`);
     if (def.kind === 'shield') parts.push(`protection ${def.power[0]}`);
     if (def.kind === 'armor') parts.push(`armour level ${def.level}`);

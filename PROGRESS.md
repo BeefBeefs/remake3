@@ -283,3 +283,18 @@ map exercises them, so none is implemented; nothing has been seen in a browser.
 **Open questions for you**
 - Hosting: want a GitHub Pages deploy action (included, disabled until Pages is enabled) or deploy to elderwild.net?
 - Scope target: single-player Lost Forrest first (my plan), multiplayer/editor later?
+
+
+## Turn 12 — inventory, character and shop windows on the original art
+
+- **Inventory (I)**: Inventory.b16 frame 0/1 — equipment slots with the empty-slot silhouettes, five paged "heavy
+  object" slots (weapons, shields, body armour), the 2×10 light-object grid, gold, Close. Red backing for gear the
+  hero cannot use; left-click wears, right-click uses (as in Turn 10). Tooltips list damage/protection, bonuses, price.
+- **Character (C)**: HDP.b16 — name, the four abilities with "+" buttons while points remain, (+/−) equipment
+  bonuses beside them, level/life/experience/mana/next level/stamina fields.
+- **Quick keys 1–4** now use the first four *light* objects (potions, scrolls…) so a sword in the pack cannot steal a
+  key; the HUD quick bar shows the same four.
+- **Shop**: no dedicated art found, so it is assembled from the stone panel (Overlay 66), Heavy/Light buttons
+  (Inventory 10–13), Accept/Cancel (Overlay 57/58) and the bitmap font.
+- Preview pages: `gui.html?screen=inventory|character|shop`. 86 tests green, CI green.
+- Still guesses: all numbers noted earlier. Next up: spell visual effects, stance icons, remaining monsters.

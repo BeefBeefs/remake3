@@ -97,26 +97,26 @@ export class ShopWindow {
     this.text(String(inv.gold), 60, 48, '#f1d98a', 'r', W - 60 - 22);
 
     // mode and category buttons
-    this.plate('Buy', 14, 72, 70, () => { this.mode = 'buy'; this.scroll = 0; this.render(); }, this.mode === 'buy');
-    this.plate('Sell', 90, 72, 70, () => { this.mode = 'sell'; this.scroll = 0; this.render(); }, this.mode === 'sell');
+    this.plate('Buy', 14, 72, 56, () => { this.mode = 'buy'; this.scroll = 0; this.render(); }, this.mode === 'buy');
+    this.plate('Sell', 74, 72, 56, () => { this.mode = 'sell'; this.scroll = 0; this.render(); }, this.mode === 'sell');
     if (this.mode === 'buy') {
-      this.sprite('inventory', this.tab === 'heavy' ? 11 : 10, 172, 72, () => { this.tab = 'heavy'; this.scroll = 0; this.render(); });
-      this.sprite('inventory', this.tab === 'light' ? 13 : 12, 252, 72, () => { this.tab = 'light'; this.scroll = 0; this.render(); });
+      this.sprite('inventory', this.tab === 'heavy' ? 11 : 10, 150, 72, () => { this.tab = 'heavy'; this.scroll = 0; this.render(); });
+      this.sprite('inventory', this.tab === 'light' ? 13 : 12, 238, 72, () => { this.tab = 'light'; this.scroll = 0; this.render(); });
     }
 
     // the list
     const list = document.createElement('div');
-    list.style.cssText = `position:absolute;left:14px;top:100px;width:${W - 28}px;height:204px;overflow-y:auto;background:#0009;border:1px solid ${BRONZE};box-sizing:border-box;scrollbar-width:thin;scrollbar-color:${BRONZE} #000`;
+    list.style.cssText = `position:absolute;left:14px;top:100px;width:${W - 28}px;height:204px;overflow-y:auto;overflow-x:hidden;background:#0009;border:1px solid ${BRONZE};box-sizing:border-box;scrollbar-width:thin;scrollbar-color:${BRONZE} #000`;
     this.root.appendChild(list);
     const row = (def: ItemDef, price: number, picked: boolean, on: () => void, count = 0) => {
       const r = document.createElement('div');
       r.style.cssText = `position:relative;height:40px;cursor:pointer;background:${picked ? '#5a431a99' : 'transparent'};border-bottom:1px solid #3a2d14`;
       r.appendChild(this.icon(def));
-      this.text(def.name.toLowerCase().replace(/(^|\s)\S/g, (m) => m.toUpperCase()) + (count > 1 ? ` x${count}` : ''), 44, 4, g.blocked(def) ? '#d27a7a' : '#e9dfb8', 'l', 0, r);
+      this.text(this.label(def) + (count > 1 ? ` x${count}` : ''), 44, 4, g.blocked(def) ? '#d27a7a' : '#e9dfb8', 'l', 0, r);
       const stat = def.kind === 'weapon' ? `damage ${def.power[0]}-${def.power[1]}` : def.kind === 'shield' ? `protection ${def.power[0]}` : def.kind === 'armor' ? `armour ${def.level}` : '';
       if (stat) this.text(stat, 44, 21, '#a99b72', 'l', 0, r);
       this.text(String(price), 0, 12, '#f1d98a', 'r', W - 28 - 22, r);
-      r.title = def.name;
+      r.title = this.label(def);
       r.addEventListener('click', on);
       r.addEventListener('pointerenter', () => { if (!picked) r.style.background = '#ffffff14'; });
       r.addEventListener('pointerleave', () => { if (!picked) r.style.background = 'transparent'; });
@@ -149,6 +149,14 @@ export class ShopWindow {
     this.sprite('overlay', 58, W - 14 - 67, 312, () => this.close());
     const lines = sk.wrap(this.message, W - 44);
     lines.slice(0, 2).forEach((l, i) => this.text(l, 22, 340 + i * 18, '#d8caa0'));
+  }
+
+  /** "ESPADA #3: ESPADA BASTARDA" -> "Espada Bastarda", cut to fit the list. */
+  private label(def: ItemDef): string {
+    let n = def.name.includes(':') ? def.name.slice(def.name.indexOf(':') + 1).trim() : def.name;
+    n = n.toLowerCase().replace(/(^|\s)\S/g, (m) => m.toUpperCase());
+    while (n.length > 3 && this.skin.textWidth(n) > 180) n = n.slice(0, -2);
+    return n;
   }
 
   /** Re-render but keep the list scroll position. */
