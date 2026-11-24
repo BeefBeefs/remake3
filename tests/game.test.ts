@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { frameId } from '../src/game/anims.ts';
 import { Game, type GameData, type GameOptions } from '../src/game/game.ts';
 import { World } from '../src/game/world.ts';
 import type { Atlas } from '../src/assets/atlas.ts';
@@ -188,4 +189,44 @@ test('all three heroes have animations and the class sprite packs exist', () => 
     assert.ok(a.anims.Andar && a.anims.Respirar && a.anims.Atacar, id);
     json(`p16/actors/${a.pack}.json`);
   }
+});
+
+test('hero hit and death animations are laid out inside every pack, death with 4 directions', () => {
+  const anims = json('data/anims.json');
+  for (const id of ['100', '101', '102']) {
+    const a = anims.actors[id];
+    const atlas = json(`p16/actors/${a.pack}.json`);
+    assert.ok(a.verified && a.anims.Recibir && a.anims.Morir, id);
+    assert.equal(a.anims.Morir.dirs, 4);
+    // every frame of every animation exists in the converted atlas
+    for (const [name, an] of Object.entries<any>(a.anims)) {
+      for (let dir = 0; dir < 8; dir++) for (let step = 0; step < an.frames; step++) {
+        const f = frameId(an, dir, step);
+        assert.ok(atlas.frames[String(f)], `${id} ${name} dir ${dir} step ${step} -> frame ${f}`);
+      }
+    }
+    // the last death frame is the pack's last frame
+    assert.equal(frameId(a.anims.Morir, 7, a.anims.Morir.frames - 1), a.frames);
+  }
+});
+
+test('death uses the pair-of-directions block: dirs 2k and 2k+1 share a sequence', () => {
+  const an = { start: 521, frames: 11, speed: 6, dirs: 4 };
+  assert.equal(frameId(an, 0, 0), 521);
+  assert.equal(frameId(an, 1, 0), 521);
+  assert.equal(frameId(an, 2, 3), 521 + 11 + 3);
+  assert.equal(frameId(an, 7, 10), 564);
+});
+
+test('a hero hit by a monster plays Recibir and a killed hero stays dead', () => {
+  const g = makeGame({ classId: 100, spawns: [{ id: '1', cx: 129, cy: 128 }] });
+  g.hero.hurt(1);
+  assert.equal(g.hero.state, 'hit');
+  run(g, 1);
+  assert.notEqual(g.hero.state, 'hit');
+  g.hero.hurt(10_000);
+  assert.equal(g.hero.state, 'dead');
+  run(g, 3);
+  assert.equal(g.hero.state, 'dead');
+  assert.ok(!g.hero.alive);
 });

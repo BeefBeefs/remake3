@@ -1236,8 +1236,7 @@
    "title": "BARBARO - B\u00c1SICO",
    "pack": "barbarian2",
    "frames": 564,
-   "verified": false,
-   "partial": true,
+   "verified": true,
    "anims": {
     "Andar": {
      "start": 1,
@@ -1253,6 +1252,42 @@
      "start": 145,
      "frames": 9,
      "speed": 4
+    },
+    "Cubrir": {
+     "start": 217,
+     "frames": 2,
+     "speed": 1
+    },
+    "Recibir": {
+     "start": 233,
+     "frames": 3,
+     "speed": 7
+    },
+    "Recibir2": {
+     "start": 257,
+     "frames": 3,
+     "speed": 8
+    },
+    "Extra": {
+     "start": 281,
+     "frames": 11,
+     "speed": 5
+    },
+    "Atacar2": {
+     "start": 369,
+     "frames": 9,
+     "speed": 4
+    },
+    "Vigilar": {
+     "start": 441,
+     "frames": 10,
+     "speed": 7
+    },
+    "Morir": {
+     "start": 521,
+     "frames": 11,
+     "speed": 6,
+     "dirs": 4
     }
    },
    "foot": [
@@ -1264,8 +1299,7 @@
    "title": "ARQUERA- B\u00c1SICA",
    "pack": "amazon1",
    "frames": 516,
-   "verified": false,
-   "partial": true,
+   "verified": true,
    "anims": {
     "Andar": {
      "start": 1,
@@ -1281,6 +1315,32 @@
      "start": 145,
      "frames": 14,
      "speed": 2
+    },
+    "Recibir": {
+     "start": 257,
+     "frames": 3,
+     "speed": 7
+    },
+    "Recibir2": {
+     "start": 281,
+     "frames": 3,
+     "speed": 8
+    },
+    "Extra": {
+     "start": 305,
+     "frames": 11,
+     "speed": 5
+    },
+    "Vigilar": {
+     "start": 393,
+     "frames": 10,
+     "speed": 7
+    },
+    "Morir": {
+     "start": 473,
+     "frames": 11,
+     "speed": 6,
+     "dirs": 4
     }
    },
    "foot": [
@@ -1292,8 +1352,7 @@
    "title": "HECHICERA- B\u00c1SICA",
    "pack": "sorceress1",
    "frames": 536,
-   "verified": false,
-   "partial": true,
+   "verified": true,
    "anims": {
     "Andar": {
      "start": 1,
@@ -1309,6 +1368,37 @@
      "start": 145,
      "frames": 14,
      "speed": 2
+    },
+    "Cubrir": {
+     "start": 257,
+     "frames": 2,
+     "speed": 2
+    },
+    "Recibir": {
+     "start": 273,
+     "frames": 3,
+     "speed": 7
+    },
+    "Recibir2": {
+     "start": 297,
+     "frames": 3,
+     "speed": 8
+    },
+    "Extra": {
+     "start": 321,
+     "frames": 11,
+     "speed": 5
+    },
+    "Vigilar": {
+     "start": 409,
+     "frames": 11,
+     "speed": 7
+    },
+    "Morir": {
+     "start": 497,
+     "frames": 10,
+     "speed": 4,
+     "dirs": 4
     }
    },
    "foot": [

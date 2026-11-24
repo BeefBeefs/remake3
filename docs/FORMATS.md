@@ -114,9 +114,16 @@ Frame time is `speed × tick`; the tick length is a guess (1/60 s looks right).
 
 **Player characters are layered pre-rendered sets.** `Actors/<a><b><c>-<Class>.P16` are complete figures with identical
 frame numbering (564 frames; plate armour 548): `000` bare hands, `001` dagger, `002` sword, `005` two-handed sword,
-`010` shield, `020` heavier shield, `100`/`101` leather armour, `200`/`201` plate… The remake draws one pack (002).
-Only the first three blocks of the Barbarian's table (Andar 10, Respirar 8, Atacar 9) are mapped; the 564 frames do
-not divide into 8 directions (70.5 per direction), so some later animation uses fewer directions.
+`010` shield, `020` heavier shield, `100`/`101` leather armour, `200`/`201` plate… The remake draws one pack per class
+(Barbarian 002, Amazon 001, Sorceress 001). **Layout (verified by eye for all three classes):** the usual 8-direction
+blocks in INI order for the animations the class has — Barbarian Andar, Respirar, Atacar, Cubrir, Recibir, Recibir2,
+Extra, Atacar2, Vigilar; Amazon Andar, Respirar, Atacar, Recibir, Recibir2, Extra, Vigilar; Sorceress adds Cubrir —
+and then **Morir stored for only 4 directions, at the very end** (11/11/10 frames each; every sequence ends with the
+hero lying down). That is why the pack sizes (564, 516, 536) are not multiples of 8:
+`8·Σ(blocks) + 4·Morir = pack size` has exactly one solution per class. Death direction `d` (0..7) uses block `d >> 1`
+(which pair of screen directions each block really serves is not checked). Monsters whose size also fits this rule
+did *not* show death poses, so the rule is applied to the heroes only; 20 monsters remain unmapped beyond
+Andar/Respirar/Atacar.
 
 **Feet anchor.** Hotspot origins differ per pack (hero bottoms ≈ −12, goblins ≈ −52, troll ≈ +24), so each actor's
 `foot` point = median bottom-centre of its idle frames (`anims.json`). Scenery uses the fixed (128, 16) rule above.

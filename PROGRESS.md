@@ -12,7 +12,7 @@ Each working session appends an entry below (newest first). Format knowledge liv
 | Asset conversion (`tools/convert_assets.py`) | ✅ B16 banks → PNG atlases, BMP → PNG, WAV/`.dt` → Ogg, strings → JSON, maps copied |
 | Tile / item / UI images (B16) | ✅ decoded |
 | Audio, text (`Idioma.bdt`) | ✅ decoded |
-| Character / enemy / scenery sprites (`.P16`) | ✅ decoded (51,448 frames); animation blocks beyond the walk cycle not mapped |
+| Character / enemy / scenery sprites (`.P16`) | ✅ decoded (51,448 frames); hero layouts fully mapped (hit, block, death, extras); 20 monsters only walk/idle/attack |
 | Map layout (`.map`) | ✅ terrain, objects, **actor/hero-start markers**, zones & script tables located; decor layer + script commands only partly understood |
 | Adventure container (`.adv`) | ✅ texts, hero attributes, embedded map; hero inventories not decoded |
 | Renderer + game loop (three.js) | 🟡 real Lost Forrest, all three heroes (Barbarian, Amazon, Sorceress), monsters, melee combat (milestone 2) — **never run in a browser** |
@@ -20,6 +20,17 @@ Each working session appends an entry below (newest first). Format knowledge liv
 | Items, inventory, equipment | 🟡 working in code (drops, pickup, equip, potions); UI never browser-tested |
 | Skills/magic, dialogue, quests (`.adv`), sound effects, shops, multiplayer, editor | ⬜ not started |
 | Combat + monster AI | 🟡 first pass (placeholder numbers) |
+
+### Turn 7 — hero hit and death animations
+
+- **Layout solved for all three heroes.** The 564/516/536-frame packs are not multiples of 8 because Morir is stored for only
+  **4 directions, last in the pack**; the remaining blocks fit exactly (see `docs/FORMATS.md`). Contact sheets confirm: the four
+  tail sequences collapse and end lying down; Recibir/Recibir2 are crouch-flinches, Cubrir is a guard pose.
+- `tools/build_anims.py` now emits the full hero tables (`verified: true`, `dirs: 4` on Morir); `frameId` maps death direction `d` to block `d >> 1`.
+- In game: heroes flinch when hit (Recibir), collapse on death and stay down; the banner offers R to restart (reloads the page).
+- Tried the same rule on the 20 unmapped monsters: 14 sizes fit, but their "death" frames came out as standing poses, so it is **not** applied to them.
+- Tests: 41 passing (all frames of every hero animation exist in the atlases; death frame indexing; flinch/death state).
+- Unverified: nothing run in a browser; which pair of directions each death block serves; Extra/Atacar2/Vigilar are mapped but unused.
 
 ### Turn 6, continued — the other playable classes
 

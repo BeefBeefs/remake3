@@ -31,6 +31,29 @@ def layouts(an, total):
     return found
 
 
+def layouts4(an, total):
+    """Player packs: Morir is stored for 4 directions only, placed last (checked by eye: every sequence ends lying down).
+    Not applied to monsters: some of their sizes also fit this rule, but the "death" frames come out as standing poses.
+    8 * sum(others) + 4 * Morir == total."""
+    if an.get('Morir', [0, 0])[1] <= 0:
+        return []
+    opt = [k for k in ORDER if k not in REQUIRED and k != 'Morir' and an.get(k, [0, 0])[1] > 0]
+    req = [k for k in REQUIRED if an.get(k, [0, 0])[1] > 0]
+    found = []
+    for r in range(len(opt) + 1):
+        for sub in itertools.combinations(opt, r):
+            names = [k for k in ORDER if k in req or k in sub]
+            if 8 * sum(an[k][1] for k in names) + 4 * an['Morir'][1] == total:
+                found.append(names)
+    return found
+
+
+def with_morir4(an, names):
+    out = build(an, names)
+    out['Morir'] = {'start': 1 + 8 * sum(an[k][1] for k in names), 'frames': an['Morir'][1], 'speed': an['Morir'][0], 'dirs': 4}
+    return out
+
+
 def foot(p, anims):
     """Hotspot-space point of an actor's feet: median bottom-centre of the idle (Respirar) frames, all directions.
     Hotspot origins differ between packs (hero bottoms sit near -12, goblins near -52), so each actor gets its own."""
@@ -85,13 +108,19 @@ if __name__ == '__main__':
         res[aid] = {'title': a.get('title'), 'pack': pack[:-4], 'frames': total, 'verified': len(c) == 1,
                     'anims': build(an, c[0])}
         res[aid]['foot'] = foot(p16, res[aid]['anims'])
-    # The player characters are layered packs (see docs/FORMATS.md): same layout in every Barbarian pack.
-    # (the packs are full-body sprites: first digit = armour tier, last two = weapon; the 001 packs hold the first weapon)
+    # The player characters are layered packs (see docs/FORMATS.md). Blocks: Andar, Respirar, Atacar, then whichever of
+    # Cubrir / Recibir / Recibir2 / Extra / Atacar2 / Vigilar the class has (8 directions each), and finally Morir, which is
+    # stored for only 4 directions (one lying-down sequence per pair of directions). The subset is the unique one whose
+    # size matches the pack:  8 * sum(frames) + 4 * Morir == pack size.
     for aid, pack, bare in (('100', 'barbarian2', '000-Barbarian'), ('101', 'amazon1', '000-Amazon'), ('102', 'sorceress1', '000-Sorceress')):
         an = actors[aid]['Animaciones']
-        res[aid] = {'title': actors[aid]['title'], 'pack': pack, 'frames': len(P16(os.path.join(game, 'Actors', bare + '.P16')).ids()),
-                    'verified': False, 'partial': True, 'anims': build(an, REQUIRED)}
+        bp = P16(os.path.join(game, 'Actors', bare + '.P16'))
+        total = len(bp.ids())
+        cands = layouts4(an, total)
+        assert len(cands) == 1, (aid, cands)
+        anims = with_morir4(an, cands[0])
+        res[aid] = {'title': actors[aid]['title'], 'pack': pack, 'frames': total, 'verified': True, 'anims': anims}
         # feet from the bare body pack: weapons skew the bbox centre
-        res[aid]['foot'] = foot(P16(os.path.join(game, 'Actors', bare + '.P16')), res[aid]['anims'])
+        res[aid]['foot'] = foot(bp, res[aid]['anims'])
     json.dump({'dirs': DIRS, 'actors': res}, open(os.path.join(out, 'data', 'anims.json'), 'w'), indent=1)
     print(stats, len(res), 'actors')

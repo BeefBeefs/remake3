@@ -412,6 +412,7 @@ export class Game {
     const died = h.hurt(Math.max(1, lo + Math.floor(this.rnd() * (hi - lo + 1)) - h.stats.armor));
     const sb = CLASSES[this.classId].sound;
     this.snd(died ? sb : this.pick(sb + 1, 2)); // <class>_morir / _recibir
+    if (died) this.say('You have died');
   }
 
   /** @param move cell-space unit vector from the keyboard, or null */

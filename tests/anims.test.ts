@@ -28,9 +28,9 @@ test('animation blocks are contiguous, in range, and 8 directions each', () => {
     let next = 1;
     for (const anim of Object.values(a.anims)) {
       assert.equal(anim.start, next, `actor ${id}`);
-      next += 8 * anim.frames;
+      next += (anim.dirs ?? 8) * anim.frames;
     }
-    assert.ok(next - 1 <= a.frames || a.pack === 'barbarian2', `actor ${id} overruns its pack (${next - 1} > ${a.frames})`);
+    assert.ok(next - 1 <= a.frames , `actor ${id} overruns its pack (${next - 1} > ${a.frames})`);
     if (a.verified) assert.equal(next - 1, a.frames, `verified actor ${id} must account for every frame`);
   }
 });
