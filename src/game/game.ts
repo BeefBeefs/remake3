@@ -25,6 +25,14 @@ export interface GameData {
   icons: Atlas;
 }
 
+/** Per-adventure parameters (see adventure.json / the map's markers). */
+export interface GameOptions {
+  /** actor spawns from the map's pack-0 markers; omitted = scatter a few monsters around the start */
+  spawns?: { id: string; cx: number; cy: number }[];
+  /** hero attributes from the .adv file (strength, skill, resistance, magic) */
+  attrs?: { strength: number; skill: number; resistance: number; magic: number };
+}
+
 export interface GroundItem { id: number; cx: number; cy: number; mesh: THREE.Object3D }
 
 const HERO_ID = '100';
@@ -66,16 +74,20 @@ export class Game {
   private readonly rnd = mulberry32(0x4e53);
   private readonly idOf = new Map<Creature, string>();
 
-  constructor(private readonly world: World, private readonly data: GameData, start: { cx: number; cy: number }) {
+  /** hero attributes of the adventure (shown in the inventory panel; only resistance feeds back into HP, see below) */
+  readonly attrs: NonNullable<GameOptions['attrs']>;
+
+  constructor(private readonly world: World, private readonly data: GameData, start: { cx: number; cy: number }, opts: GameOptions = {}) {
+    this.attrs = opts.attrs ?? { strength: 30, skill: 24, resistance: 30, magic: 11 };
     this.inventory = new Inventory(data.items, 100);
     // starting kit: the INI lists the Barbarian's items; we start with a scimitar in hand and two life potions
     this.inventory.add(1); this.inventory.equip(0);
     this.inventory.add(104); this.inventory.add(104);
-    this.hero = this.make(HERO_ID, start.cx, start.cy, { hp: 60, damage: [2, 4], speed: HERO_SPEED, name: data.names[HERO_ID] ?? 'Hero' });
+    this.hero = this.make(HERO_ID, start.cx, start.cy, { hp: this.attrs.resistance * 2 /* guess: 60 hp for the Barbarian's 30 resistance */, damage: [2, 4], speed: HERO_SPEED, name: data.names[HERO_ID] ?? 'Hero' });
     this.refreshHeroStats();
     this.hero.onStrike = () => this.heroStrike();
     this.group.add(this.hero.sprite);
-    this.populate(start);
+    if (opts.spawns) this.spawnFromMap(opts.spawns); else this.populate(start);
   }
 
   private make(id: string, cx: number, cy: number, over: Partial<Stats> = {}): Creature {
@@ -98,7 +110,20 @@ export class Game {
     return new Creature(def, atlas, stats, cx, cy);
   }
 
-  /** Scatters a few monsters around the start; the real placement lives in the (undecoded) adventure file. */
+  /** Real placement: one monster per pack-0 marker whose actor we have art and animations for. */
+  private spawnFromMap(spawns: { id: string; cx: number; cy: number }[]): void {
+    for (const sp of spawns) {
+      const def = this.data.anims.actors[sp.id];
+      if (!def || !this.data.atlases.has(def.pack)) continue;
+      const m = this.make(sp.id, sp.cx, sp.cy);
+      this.idOf.set(m, sp.id);
+      m.dir = Math.floor(this.rnd() * 8);
+      this.monsters.push(m);
+      this.group.add(m.sprite);
+    }
+  }
+
+  /** Fallback: scatters a few monsters around the start. */
   private populate(start: { cx: number; cy: number }): void {
     const kinds = ['1', '1', '1', '2', '2', '3', '5', '1', '2', '3'];
     for (const id of kinds) {
@@ -143,7 +168,7 @@ export class Game {
     return true;
   }
 
-  private say(msg: string): void {
+  say(msg: string): void {
     this.log.push(msg);
     if (this.log.length > 6) this.log.shift();
   }

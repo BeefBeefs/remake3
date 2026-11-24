@@ -13,12 +13,36 @@ Each working session appends an entry below (newest first). Format knowledge liv
 | Tile / item / UI images (B16) | ✅ decoded |
 | Audio, text (`Idioma.bdt`) | ✅ decoded |
 | Character / enemy / scenery sprites (`.P16`) | ✅ decoded (51,448 frames); animation blocks beyond the walk cycle not mapped |
-| Map layout (`.map`) | 🟡 terrain grid + object layer decoded; other layers, spawn/triggers (`.adv`) open |
+| Map layout (`.map`) | ✅ terrain, objects, **actor/hero-start markers**, zones & script tables located; decor layer + script commands only partly understood |
+| Adventure container (`.adv`) | ✅ texts, hero attributes, embedded map; hero inventories not decoded |
 | Renderer + game loop (three.js) | 🟡 real Lost Forrest, Barbarian, monsters, melee combat (milestone 2) — **never run in a browser** |
 | NHS data / animation layouts | ✅ 72 actors, 141 items; 17 monsters fully or ambiguously mapped, 20 partial |
 | Items, inventory, equipment | 🟡 working in code (drops, pickup, equip, potions); UI never browser-tested |
 | Skills/magic, dialogue, quests (`.adv`), sound effects, shops, multiplayer, editor | ⬜ not started |
 | Combat + monster AI | 🟡 first pass (placeholder numbers) |
+
+## Turn 6 — 2026-11-24 · the `.adv` format and real monster placement
+
+- **`.adv` decoded** (`tools/adv.py`, `src/formats/adv.ts`, `tests/adv.test.ts`): a gzip *container* with the intro and
+  final text, the three heroes' default attributes (Barbarian STR 32 / SKL 24 / RES 30 / MAG 11 …), background images and
+  the mission `.map` embedded verbatim (checked byte-identical to `Maps/Lost Forrest.map`). `adventure.json` is written
+  to `public/assets/data` for the game. It holds **no** monster placement.
+- **Monster placement found by disassembling the editor** (objdump on `NightStone Editor.exe`): the loader's read order
+  confirms the whole map layout (header, terrain, 72 B, objects, 8-byte decor layer, 255 × 196 B zones, 64 × 248 B
+  scripts) and its actor pass shows that **pack-0 objects are spawn markers**: id N = actor IA-N, ids 100/101/102 = the
+  three heroes' start points. Lost Forrest has 43 markers (9 zombies, 5 orc captains, 5 amazons, mages, knights, …).
+- Game now uses it: monsters appear where the map puts them (the old scatter around a guessed camp is gone, kept only as a
+  fallback), the Barbarian starts at the map's own start marker (235,121) instead of my (152,78) guess, the mission text is
+  shown on start, and the adventure's hero attributes are shown in the inventory panel. The markers are no longer drawn as
+  scenery or treated as obstacles (before, their editor icons were rendered as diamond sprites).
+- Tests: 28 pass with the game dir (25 + 3 skipped without). Typecheck: only the stub-three noise locally; CI is the check.
+
+**Not verified:** nothing here was looked at in a browser. In particular, whether the 40 monsters spawn sensibly (e.g.
+zombies sitting in the right places) and whether start (235,121) is the camp the original opens in.
+
+**Still open:** the zone/script records are located but their semantics are not (what the cell lists and the 16 trailing
+dwords mean, what scripts 1–14 do besides loot rolls, markers 112/120), the decor layer (413–424 sprites, flag field),
+hero starting inventories (0x10f3–0x728d of the `.adv`), HP formula (I use 2 × resistance = 60, a guess).
 
 ## Turn 5 — 2026-11-24 · GitHub Pages deploy and a direction fix
 

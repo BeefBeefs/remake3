@@ -13,7 +13,7 @@ const fakeAtlas = { mesh: () => Object.assign(new Mesh(), { scale: { set() {} } 
 
 function flatWorld(): World {
   const dim = 256;
-  const map: GameMap = { dim, tileset: 'Outside', terrain: new Uint16Array(dim * dim).fill(340), objects: new Uint32Array(dim * dim) };
+  const map: GameMap = { dim, tileset: 'Outside', terrain: new Uint16Array(dim * dim).fill(340), objects: new Uint32Array(dim * dim), markers: [] };
   return new World(map, fakeAtlas, []);
 }
 

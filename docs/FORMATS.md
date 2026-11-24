@@ -161,15 +161,54 @@ White Goddess), ID-100 Terak, ID-101 Rhelia.
          549/550/606–611 misc.
 0xC4000  72 bytes (6 more 12-byte records, ids like 402/365…; meaning unknown)
 0xC4048  objects: 256×256 u32, row-major. value = (pack << 10) | frameId, pack 0..3 = PackCell, Pack1, Pack2, Pack3
-         .P16 of the tileset (95 % of ids resolve; the rest are probably markers: 0, 99, 999…).  2,280 objects.
-...      further sparse u32 layers (e.g. flags with value 2048 in alternating columns) – not decoded.
+         .P16 of the tileset.  Pack 0 is special: its ids are **spawn markers**, not scenery (see below).
+0x104048 decor: 256×256 records of 8 bytes (4 × u16, row-major). u16[0]/u16[1] hold extra sprite ids (413–424, 500,
+         3072 …) and u16[2] is 2048 (+32·k) on ~3,400 cells – flag/height-like; none of it rendered or understood yet.
+0x184048 zones: 255 records × 196 bytes. u32 key = packed cell (y<<8 | x) of a PackCell object, then up to 32 packed
+         cells (u32 each, 0-terminated), then 16 u32 of unknown data (values like 140, 175, 350, 875…).
+         32 are used in Lost Forrest; all 32 keys are cells holding a pack-0 object (verified).
+0x190384 scripts: 64 records × 248 bytes: u32 type at +0, 8 command ids (u32) at +0x38, then 8 × 4 u32 args at +0x78.
+         Command 1 = "roll a random item of type mask a, quality b" (args like 100,3 / 32,3 / 1024,3 / 0xE000,2); the
+         interpreter has 14 commands (id 7 spawns an actor "Spawn:%d (A:%d) at (%d,%d)"). Lost Forrest uses 16 records.
 ```
+
+**Actor spawns (verified by disassembling the editor's map pass, "Found %d Actors").** The loader walks every cell of
+the object layer; a cell with pack 0 and id N spawns actor **IA-N** (`AData.Nhs`; kind 3 monster, or 7 if its INI says
+NPC). Ids **100 / 101 / 102** are the **Barbarian / Amazon / Sorceress start points** (Lost Forrest: (235,121),
+(235,123), (234,118), as (cx,cy)). The PackCell frames that exist for these ids are the editor's marker icons
+(64×31 diamonds with the actor's picture), not game graphics. Lost Forrest has 43 markers: 9 zombies (16), 5 orc
+captains (8), 5 amazons (21), 4 infernal goblins (3), 4 skeleton guardians (12), 3 mages (25), 2 common skeletons (9),
+2 knights (24), 1 each of goblin (1), opahc (15), troll warrior (18), diabolic amazon (22), plus three start points and two
+markers with no actor (112, 120 – possibly exit/goal). The loader's other layer reads are 8-byte decor (value 500 =
+delete) and the pass at 0x4022bb that returns `(pack, id)` per cell.
 Reading the objects shows the playable area is a rectangle (≈ rows 60–140, cols 81–242) ringed by cliff/forest wall
 slices; a 3-wide river runs east–west along rows 165–167 with plank bridges (141–146). Terrain checked visually
 (grass/dirt transitions are seamless); the stray 6 records and the layers after the objects are open.
 The campaign map is `Lost Forrest.map` (+ `.dsc`: "Find the tomb of Donmir the great that is guarded by Erramus the high
 mage…"); five multiplayer maps (`{4P-D1}`, `{8P-C2}` …) are in `Maps/Multiplayer`. `Adv/Test.adv` begins with the
 plain-text intro, so adventures embed mission text.
+
+Order of the reads in the editor's loader (checked in the disassembly): 0x4000 header, 0xC0000 terrain, 0x48 bytes,
+0x40000 objects, 0x80000 decor, 0xC33C (= 255 × 196) zones, 0x3E00 (= 64 × 248) scripts – exactly the file size.
+
+## 5c. Adventures (`.adv`) ✅ — `tools/adv.py`, `src/formats/adv.ts`
+A gzip stream (`Adv/Test.adv`: 106,086 → 132,799 bytes) written by the Adventure Creator. It is a **container**, not a
+script – monsters, triggers and loot are inside the embedded `.map`.
+
+```
+0x00000  intro text (NUL padded, up to 0x5dc)
+0x005dc  mission name, 255-byte field ("Lost Forest")
+0x006e7  hero 1 name  | 0x007e6 hero 2 name | 0x008e5 hero 3 name   (Barbarian, Amazon, Sorceress; 255-byte fields)
+0x009e4  3 × 4 u32: strength, skill, resistance, magic  – Barbarian 32 24 30 11, Amazon 22 28 22 14, Sorceress 19 23 21 30
+0x00a14  final text (NUL padded)
+0x00ff0  background image names ("25.BMP") followed by raw 24-bit images; also repeating small per-hero records
+         (0x10f3–0x728d) that look like inventory / portrait data – not decoded
+0x0727e  mission file name "Lost Forrest.map" (255-byte field), 
+0x07385  the mission .map as its own gzip member (1,655,172 bytes decompressed; byte-identical to Maps/Lost Forrest.map)
+0x200e3  mission description (.dsc text, NUL-terminated)
+```
+Only the one sample exists, so a multi-mission adventure (repeated mission records?) is unverified. Hero starting
+inventories are probably in the undecoded 0x10f3–0x728d region.
 
 ## 5b. `.Nhs` archives 🟡
 `AData.Nhs`, `WData.Nhs`, `NightStone.NHS`: a name directory (64-byte stride, INI-like file names) followed by

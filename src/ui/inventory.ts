@@ -66,8 +66,8 @@ export class InventoryPanel {
     const inv = this.game.inventory;
     this.body.replaceChildren();
     const head = document.createElement('div');
-    head.textContent = `${this.game.hero.stats.name} · gold ${inv.gold} · damage ${inv.damage().join('-')} · armour ${inv.armor()}`;
-    head.style.marginBottom = '6px';
+    head.textContent = `${this.game.hero.stats.name} · gold ${inv.gold} · damage ${inv.damage().join('-')} · armour ${inv.armor()}\nSTR ${this.game.attrs.strength} · SKL ${this.game.attrs.skill} · RES ${this.game.attrs.resistance} · MAG ${this.game.attrs.magic}`;
+    head.style.cssText = 'margin-bottom:6px;white-space:pre';
     this.body.appendChild(head);
     const eq = document.createElement('div');
     eq.style.cssText = 'display:flex;gap:4px;margin-bottom:8px';

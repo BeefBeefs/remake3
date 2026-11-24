@@ -5,7 +5,7 @@ import { Game, type GameData } from './game/game.ts';
 import type { AnimData } from './game/anims.ts';
 import { buildItems } from './game/items.ts';
 import { InventoryPanel } from './ui/inventory.ts';
-import { gunzip, parseMap } from './formats/map.ts';
+import { gunzip, parseMap, startOf } from './formats/map.ts';
 import { cellToWorld, worldToCell } from './iso.ts';
 
 const BASE = `${import.meta.env.BASE_URL}assets/`;
@@ -54,16 +54,20 @@ async function boot() {
   }
   const items = buildItems((await (await fetch(`${BASE}data/items.json`)).json()) as Parameters<typeof buildItems>[0], itemNames);
   const icons = await Atlas.load(BASE, 'atlas/system/ilistdata.json');
-  // Hero + the monster kinds that Game.populate() spawns.
+  const adv = (await (await fetch(`${BASE}data/adventure.json`)).json()) as { mission_text: string; heroes: { strength: number; skill: number; resistance: number; magic: number }[] };
+  // Hero + every monster kind the map places (pack-0 markers).
+  const spawns = map.markers.filter((m) => animData.actors[String(m.id)] && m.id < 100).map((m) => ({ id: String(m.id), cx: m.cx, cy: m.cy }));
   const atlases = new Map<string, Atlas>();
-  await Promise.all(['100', '1', '2', '3', '5'].map(async (id) => {
+  await Promise.all(['100', ...new Set(spawns.map((s) => s.id))].map(async (id) => {
     const pack = animData.actors[id]!.pack;
     if (!atlases.has(pack)) atlases.set(pack, await Atlas.load(BASE, `p16/actors/${pack.toLowerCase()}.json`));
   }));
 
-  // Start in the camp area of the map (the real spawn point lives in the adventure file, not decoded yet).
-  const spawn = world.findOpenCell(152, 78);
-  const game = new Game(world, { anims: animData, actors: actorsIni, names, atlases, items, icons }, spawn);
+  // The Barbarian start marker (id 100) of the map; fall back to the old camp guess for maps without one.
+  const st = startOf(map, 100);
+  const spawn = world.findOpenCell(st?.cx ?? 152, st?.cy ?? 78);
+  const game = new Game(world, { anims: animData, actors: actorsIni, names, atlases, items, icons }, spawn, { spawns, attrs: adv.heroes[0] });
+  game.say(adv.mission_text);
   const panel = new InventoryPanel(game, icons, BASE);
   scene.add(game.group);
   const hero = game.hero;
