@@ -1271,7 +1271,7 @@ test('monsters without a patrol route roam within their search radius of home an
   const g = makeGame({ spawns: [{ id: '1', cx: 150, cy: 150 }] }); // goblin: Radio_Busqueda 5
   const m = g.monsters[0]!;
   let far = 0, moved = false;
-  for (let i = 0; i < 60 * 40; i++) { g.update(1 / 60); if (m.state === 'walk') moved = true; far = Math.max(far, Math.hypot(m.cx - 150, m.cy - 150)); }
+  for (let i = 0; i < 60 * 40; i++) { g.update(1 / 60, null); if (m.state === 'walk') moved = true; far = Math.max(far, Math.hypot(m.cx - 150, m.cy - 150)); }
   assert.ok(moved, 'it walks now and then');
   assert.ok(far > 0.5 && far < 9, `strays ${far.toFixed(1)} cells but stays near home`);
 });
