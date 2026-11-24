@@ -742,3 +742,12 @@ test('keys 1-4 use the first four backpack slots', () => {
   g.useQuick(0); g.useQuick(5);
   assert.deepEqual(g.inventory.slots, before, 'only 1-4 are quick keys');
 });
+
+test('difficulty scales monster life and damage: Apprentice softer, Hero tougher, Expert unchanged', () => {
+  const stats = (d: 0 | 1 | 2) => { const g = makeGame({ difficulty: d, spawns: [{ id: '1', cx: 140, cy: 128 }] }); const m = g.monsters[0]!; return { hp: m.stats.hp, hit: m.hp, dmg: m.stats.damage }; };
+  const easy = stats(0), normal = stats(1), hard = stats(2);
+  assert.ok(easy.hp < normal.hp && normal.hp < hard.hp);
+  assert.ok(easy.dmg[1] < normal.dmg[1] && normal.dmg[1] < hard.dmg[1]);
+  assert.equal(easy.hit, easy.hp, 'monsters start at full life');
+  assert.equal(normal.hp, 12, 'goblin life in the data');
+});

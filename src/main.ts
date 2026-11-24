@@ -9,6 +9,11 @@ import { buildItems } from './game/items.ts';
 import { InventoryPanel } from './ui/inventory.ts';
 import { ShopWindow } from './ui/shop.ts';
 import { CharacterPanel } from './ui/character.ts';
+import { Skin } from './ui/skin.ts';
+import { Hud } from './ui/hud.ts';
+import { GameMenu } from './ui/gamemenu.ts';
+import { TitleMenu, type Difficulty } from './ui/titlemenu.ts';
+import { loadPrefs, savePrefs, type Prefs } from './ui/prefs.ts';
 import { gunzip, parseMap, startOf } from './formats/map.ts';
 import { cellToWorld, worldToCell } from './iso.ts';
 
@@ -35,6 +40,36 @@ window.addEventListener('resize', resize);
 resize();
 
 async function boot() {
+  const prefs = loadPrefs();
+  const applyGamma = (p: Prefs) => { canvas.style.filter = p.gamma === 1 ? '' : `brightness(${p.gamma})`; };
+  applyGamma(prefs);
+  // Who plays? After dying, R comes back with the hero's growth in sessionStorage; ?class=amazon skips the menu; otherwise the title menu asks.
+  const byName: Record<string, ClassId> = { barbarian: 100, amazon: 101, sorceress: 102 };
+  let carried: { classId: ClassId; save: HeroSave; difficulty?: Difficulty } | null = null;
+  try {
+    const raw = sessionStorage.getItem('nst-save');
+    sessionStorage.removeItem('nst-save');
+    if (raw) carried = JSON.parse(raw) as { classId: ClassId; save: HeroSave; difficulty?: Difficulty };
+  } catch { /* storage unavailable: start fresh */ }
+  hud.textContent = 'Loading…';
+  const skin = await Skin.load(BASE);
+  let classId: ClassId | undefined = carried?.classId ?? byName[new URLSearchParams(location.search).get('class')?.toLowerCase() ?? ''];
+  let difficulty: Difficulty = carried?.difficulty ?? 1;
+  let menuMusic: HTMLAudioElement | null = null;
+  if (classId === undefined) {
+    menuMusic = new Audio(`${BASE}audio/system/menu.ogg`);
+    menuMusic.loop = true;
+    menuMusic.volume = prefs.music;
+    const startMenuMusic = () => { void menuMusic?.play().catch(() => undefined); };
+    window.addEventListener('pointerdown', startMenuMusic, { once: true });
+    const names = Object.values(CLASSES).map((c) => c.name);
+    const menu = new TitleMenu(skin, prefs, (p) => { savePrefs(p); if (menuMusic) menuMusic.volume = p.music; applyGamma(p); }, names);
+    const r = await menu.run();
+    classId = (100 + r.hero) as ClassId;
+    difficulty = r.difficulty;
+    menuMusic.pause();
+    window.removeEventListener('pointerdown', startMenuMusic);
+  }
   hud.textContent = 'Loading original map and sprite data…';
   const [tiles, packCell, pack1, pack2, pack3, mapBytes] = await Promise.all([
     Atlas.load(BASE, 'atlas/scenary/outside/vtiles.json'),
@@ -59,16 +94,6 @@ async function boot() {
   const items = buildItems((await (await fetch(`${BASE}data/items.json`)).json()) as Parameters<typeof buildItems>[0], itemNames);
   const icons = await Atlas.load(BASE, 'atlas/system/ilistdata.json');
   const adv = (await (await fetch(`${BASE}data/adventure.json`)).json()) as { mission_text: string; final: string; heroes: { strength: number; skill: number; resistance: number; magic: number }[] };
-  // Which hero? ?class=amazon skips the menu.
-  const byName: Record<string, ClassId> = { barbarian: 100, amazon: 101, sorceress: 102 };
-  // After dying, R comes back here with the hero's growth (items and ability points already paid for) in sessionStorage.
-  let carried: { classId: ClassId; save: HeroSave } | null = null;
-  try {
-    const raw = sessionStorage.getItem('nst-save');
-    sessionStorage.removeItem('nst-save');
-    if (raw) carried = JSON.parse(raw) as { classId: ClassId; save: HeroSave };
-  } catch { /* storage unavailable: start fresh */ }
-  const classId: ClassId = carried?.classId ?? byName[new URLSearchParams(location.search).get('class')?.toLowerCase() ?? ''] ?? (await chooseClass(adv.heroes));
   // Hero + every monster kind the map places (pack-0 markers).
   const spawns = map.markers.filter((m) => animData.actors[String(m.id)] && m.id < 100).map((m) => ({ id: String(m.id), cx: m.cx, cy: m.cy, route: m.route }));
   // ?npc=27,28 puts those NPCs next to the start (the Lost Forrest has none; the Inn map is not in this install).
@@ -85,7 +110,7 @@ async function boot() {
   const tileSurface = surfaceLookup((await (await fetch(`${BASE}data/tiles.json`)).json()) as TileTable, map.tileset);
   const surface = (cx: number, cy: number) => (map.terrain[Math.floor(cy) * map.dim + Math.floor(cx)] !== undefined ? tileSurface(map.terrain[Math.floor(cy) * map.dim + Math.floor(cx)]!) : 'grass');
   const npcSpawns = extraNpcs.map((id, k) => { const c = world.findOpenCell(spawn.cx + 3 + 2 * k, spawn.cy + 2); return { id, cx: c.cx, cy: c.cy }; });
-  const game = new Game(world, { anims: animData, actors: actorsIni, names, atlases, items, icons }, spawn, { spawns: [...spawns, ...npcSpawns], surface, attrs: adv.heroes[classId - 100], classId, save: carried?.save, finalText: adv.final.startsWith('Enter the final text') ? 'You have found the Tomb of Donmir!' : adv.final });
+  const game = new Game(world, { anims: animData, actors: actorsIni, names, atlases, items, icons }, spawn, { spawns: [...spawns, ...npcSpawns], surface, attrs: adv.heroes[classId - 100], classId, save: carried?.save, difficulty, finalText: adv.final.startsWith('Enter the final text') ? 'You have found the Tomb of Donmir!' : adv.final });
   game.say(adv.mission_text);
   const panel = new InventoryPanel(game, icons, BASE);
   const shop = new ShopWindow(game, icons, BASE);
@@ -113,6 +138,7 @@ async function boot() {
   canvas.addEventListener('pointerdown', (e) => {
     readMods(e);
     startAudio();
+    if (menu.isOpen) return;
     if (e.button === 2) { game.setGuard(true); return; } // right button: Barbarian blocks, others hold position
     held = true; last = pointerToCell(e); game.click(last.cx, last.cy);
   });
@@ -124,13 +150,13 @@ async function boot() {
   window.addEventListener('keydown', (e) => {
     readMods(e);
     keys.add(e.key.toLowerCase());
-    if (e.key === 'Escape') shop.close();
-    if (e.key === ' ') { if (!shop.isOpen) game.swing(); e.preventDefault(); }
+    if (e.key === 'Escape') { if (shop.isOpen) shop.close(); else menu.toggle(); }
+    if (e.key === ' ') { if (!shop.isOpen && !menu.isOpen) game.swing(); e.preventDefault(); }
     if (e.key >= '1' && e.key <= '4' && !shop.isOpen) game.useQuick(Number(e.key));
     if (e.key.toLowerCase() === 'i') panel.toggle();
     if (e.key.toLowerCase() === 'c') charPanel.toggle();
     if (e.key.toLowerCase() === 'r' && !game.hero.alive) {
-      try { sessionStorage.setItem('nst-save', JSON.stringify({ classId: game.classId, save: game.save() })); } catch { /* start fresh */ }
+      try { sessionStorage.setItem('nst-save', JSON.stringify({ classId: game.classId, save: game.save(), difficulty })); } catch { /* start fresh */ }
       location.reload();
     }
     startAudio();
@@ -139,24 +165,35 @@ async function boot() {
 
   const sfx = new Sfx(BASE, (await (await fetch(`${BASE}data/sfx.json`)).json()) as Record<string, string>);
   game.onSound = (id) => sfx.play(id);
+  const music = new Audio(`${BASE}audio/system/outside.ogg`);
+  music.loop = true;
+  const wind = new Audio(`${BASE}audio/gdi/audio/ambsounds/05_viento2.ogg`);
+  wind.loop = true;
+  const applyPrefs = (p: Prefs) => {
+    music.volume = p.music;
+    wind.volume = p.ambient ? 0.4 : 0;
+    sfx.volume = p.fx;
+    applyGamma(p);
+  };
+  applyPrefs(prefs);
   let audioOn = false;
   function startAudio() {
     if (audioOn) return;
     audioOn = true;
     sfx.enabled = true;
-    const music = new Audio(`${BASE}audio/system/outside.ogg`); music.loop = true; music.volume = 0.35;
-    const wind = new Audio(`${BASE}audio/gdi/audio/ambsounds/05_viento2.ogg`); wind.loop = true; wind.volume = 0.4;
     void music.play().catch(() => undefined);
     void wind.play().catch(() => undefined);
   }
 
-  // HUD: hero health bar + kill counter (plain DOM over the canvas)
-  const bar = document.createElement('div');
-  bar.style.cssText = 'position:fixed;left:8px;top:8px;font:12px ui-monospace,Menlo,monospace;color:#e9dfb8;text-shadow:0 1px 2px #000;pointer-events:none';
-  bar.innerHTML = '<div id="hpname"></div><div style="width:180px;height:10px;background:#2a0d0d;border:1px solid #000"><div id="hpfill" style="height:100%;background:#b32020"></div></div><div style="width:180px;height:6px;margin-top:2px;background:#1d2a0d;border:1px solid #000"><div id="stfill" style="height:100%;background:#9ab32a"></div></div><div style="width:180px;height:6px;margin-top:2px;background:#0d1a2a;border:1px solid #000"><div id="mpfill" style="height:100%;background:#2a5cb3"></div></div><div id="hpinfo"></div>';
-  document.body.appendChild(bar);
-  const hpname = bar.querySelector('#hpname') as HTMLDivElement, hpfill = bar.querySelector('#hpfill') as HTMLDivElement, hpinfo = bar.querySelector('#hpinfo') as HTMLDivElement;
-  const stfill = bar.querySelector('#stfill') as HTMLDivElement, mpfill = bar.querySelector('#mpfill') as HTMLDivElement;
+  // The original HUD (minimap ring, portrait with bars, quick bar and messages) replaces the old text readout.
+  panel.hideLog();
+  const gui = new Hud(skin, game, icons, BASE, {
+    quest: () => game.say(adv.mission_text),
+    inventory: () => panel.toggle(),
+    options: () => menu.toggle(),
+    character: () => charPanel.toggle(),
+  });
+  const menu = new GameMenu(skin, () => location.reload());
   const banner = document.createElement('div');
   banner.style.cssText = 'position:fixed;left:0;right:0;top:40%;text-align:center;font:24px ui-monospace,Menlo,monospace;color:#e9c27a;text-shadow:0 2px 4px #000;pointer-events:none;display:none';
   document.body.appendChild(banner);
@@ -177,18 +214,14 @@ async function boot() {
       move = { x: c.cx / l, y: c.cy / l };
     }
     game.setStance(mods.ctrl, mods.shift);
-    game.update(dt, move);
+    if (!menu.isOpen) game.update(dt, move);
     panel.update();
     charPanel.update();
     world.update(hero.cx, hero.cy);
     const w = cellToWorld(hero.cx, hero.cy);
     camera.position.x += (w.x - camera.position.x) * Math.min(1, dt * 6);
     camera.position.y += (w.y - camera.position.y) * Math.min(1, dt * 6);
-    hpname.textContent = hero.stats.name;
-    hpfill.style.width = `${(100 * hero.hp) / hero.stats.hp}%`;
-    stfill.style.width = `${(100 * game.stamina) / game.maxStamina}%`;
-    mpfill.style.width = `${(100 * game.mana) / game.maxMana}%`;
-    hpinfo.textContent = `HP ${hero.hp}/${hero.stats.hp}  gold ${game.inventory.gold}  kills ${game.kills}  xp ${game.xp}  L${game.level}${game.points ? `  +${game.points} points (C)` : ''}`;
+    gui.update();
     const left = game.monsters.filter((m) => m.alive).length;
     banner.style.display = !hero.alive || left === 0 ? 'block' : 'none';
     banner.textContent = !hero.alive ? 'You have fallen — press R to try again (items and one point of each ability are lost)' : 'The camp is clear!';
@@ -196,32 +229,13 @@ async function boot() {
     renderer.render(scene, camera);
     requestAnimationFrame(frame);
   }
-  hud.textContent = 'NightStone remake · milestone 2 · click ground to walk, click a monster (or Space) to fight · WASD moves · Ctrl run · Shift stealth · right button block / hold · I inventory · C character';
+  hud.textContent = 'click to walk or fight · WASD · Space swing · Ctrl run · Shift stealth · right button block / hold · I inventory · C character · Esc menu';
+  hud.style.cssText += ';bottom:auto;top:6px;transition:opacity 2s;opacity:.8';
+  setTimeout(() => { hud.style.opacity = '0'; }, 14000);
   frame();
 }
 
 boot().catch((err) => { hud.textContent = `Failed to start: ${String(err)}`; console.error(err); });
-
-/** Plain-DOM hero selection shown before the game starts. */
-function chooseClass(heroes: { strength: number; skill: number; resistance: number; magic: number }[]): Promise<ClassId> {
-  return new Promise((resolve) => {
-    const root = document.createElement('div');
-    root.style.cssText = 'position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(10,7,4,.94);color:#e9dfb8;font:14px ui-monospace,Menlo,monospace;z-index:10';
-    root.innerHTML = '<div style="font-size:22px;letter-spacing:2px">NIGHTSTONE</div><div>Choose your hero</div>';
-    const row = document.createElement('div');
-    row.style.cssText = 'display:flex;gap:12px;flex-wrap:wrap;justify-content:center';
-    for (const id of [100, 101, 102] as const) {
-      const h = heroes[id - 100]!;
-      const b = document.createElement('button');
-      b.style.cssText = 'width:170px;padding:12px;background:#241a0e;color:#e9dfb8;border:2px solid #6b5426;font:inherit;cursor:pointer;line-height:1.6';
-      b.innerHTML = `<b>${CLASSES[id].name}</b><br>STR ${h.strength} · SKL ${h.skill}<br>RES ${h.resistance} · MAG ${h.magic}`;
-      b.onclick = () => { root.remove(); resolve(id); };
-      row.appendChild(b);
-    }
-    root.appendChild(row);
-    document.body.appendChild(root);
-  });
-}
 
 /** End-of-quest card shown when the hero reaches the tomb. */
 function showVictory(game: Game, name: string): void {

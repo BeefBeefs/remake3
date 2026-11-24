@@ -22,6 +22,9 @@ export class InventoryPanel {
     document.body.appendChild(this.logEl);
   }
 
+  /** The HUD's message box shows the log instead. */
+  hideLog(): void { this.logEl.remove(); }
+
   toggle(): void {
     this.open = !this.open;
     this.root.style.display = this.open ? 'block' : 'none';

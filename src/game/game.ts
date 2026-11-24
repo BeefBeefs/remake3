@@ -40,9 +40,14 @@ export interface GameOptions {
   classId?: ClassId;
   /** text shown when the mission's goal object is reached */
   finalText?: string;
+  /** 0 Apprentice (easy), 1 Expert (normal, default), 2 Hero (hard): scales monster life and damage */
+  difficulty?: 0 | 1 | 2;
   /** continue with a hero from an earlier attempt (see `Game.save`); its attributes replace `attrs` */
   save?: HeroSave;
 }
+
+/** Monster life and damage multipliers per difficulty level (the manual only names the levels; the numbers are guesses). */
+export const DIFFICULTY = [{ hp: 0.7, damage: 0.7 }, { hp: 1, damage: 1 }, { hp: 1.4, damage: 1.3 }] as const;
 
 /** What survives from one attempt to the next: the hero's growth (manual: dying costs the items and one point of each ability). */
 export interface HeroSave { attrs: { strength: number; skill: number; resistance: number; magic: number }; level: number; xp: number; points: number; gold: number }
@@ -157,6 +162,8 @@ export class Game {
   private readonly boxes: Box[] = [];
   private targetBox: Box | null = null;
   private goals: { cx: number; cy: number; name: string }[] = [];
+  /** where the mission's goal objects are (for the minimap) */
+  get goalSpots(): readonly { cx: number; cy: number }[] { return this.goals; }
   private readonly finalText: string;
   /** true once the hero has reached the goal object of the map (script "Tumba de Domnir" in Lost Forrest) */
   goalReached = false;
@@ -183,6 +190,7 @@ export class Game {
     this.attrs = { ...(opts.save?.attrs ?? opts.attrs ?? { strength: 30, skill: 24, resistance: 30, magic: 11 }) };
     if (opts.save) { this.level = opts.save.level; this.xp = opts.save.xp; this.points = opts.save.points; }
     this.finalText = opts.finalText ?? 'Mission complete.';
+    this.difficulty = opts.difficulty ?? 1;
     this.surfaceAt = opts.surface ?? (() => 'grass');
     this.classId = opts.classId ?? 100;
     const cls = CLASSES[this.classId];
@@ -199,6 +207,15 @@ export class Game {
     this.group.add(this.hero.sprite);
     if (opts.spawns) this.spawnFromMap(opts.spawns); else this.populate(start);
     this.initContainers();
+  }
+
+  private difficulty: 0 | 1 | 2 = 1;
+
+  private applyDifficulty(m: Creature): void {
+    const k = DIFFICULTY[this.difficulty];
+    m.stats.hp = Math.max(1, Math.round(m.stats.hp * k.hp));
+    m.hp = m.stats.hp;
+    m.stats.damage = [Math.max(1, Math.round(m.stats.damage[0] * k.damage)), Math.max(1, Math.round(m.stats.damage[1] * k.damage))];
   }
 
   private make(id: string, cx: number, cy: number, over: Partial<Stats> = {}): Creature {
@@ -228,6 +245,7 @@ export class Game {
       const def = this.data.anims.actors[sp.id];
       if (!def || !this.data.atlases.has(def.pack)) continue;
       const m = this.make(sp.id, sp.cx, sp.cy);
+      if (!def.npc) this.applyDifficulty(m);
       if (def.npc) {
         this.npcs.push({ id: sp.id, name: m.stats.name.trim(), creature: m });
         this.group.add(m.sprite);
@@ -304,6 +322,7 @@ export class Game {
         const cx = Math.round(start.cx + Math.cos(a) * r), cy = Math.round(start.cy + Math.sin(a) * r);
         if (!this.world.isWalkable(cx, cy)) continue;
         const m = this.make(id, cx, cy);
+        this.applyDifficulty(m);
         this.idOf.set(m, id);
         m.dir = Math.floor(this.rnd() * 8);
         this.monsters.push(m);
