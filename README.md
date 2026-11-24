@@ -30,7 +30,7 @@ NST_GAME_DIR=game npm test
 
 ## Deployment (GitHub Pages)
 
-`.github/workflows/pages.yml` runs on every push to `main`: install, unit tests, typecheck (warning only for now), Vite
+`.github/workflows/pages.yml` runs on every push to `main`: install, unit tests, typecheck, Vite
 build, deploy `dist/` with the official Pages actions. In the repo settings set **Pages → Source: GitHub Actions**. The
 build uses relative paths (`base: './'`), so it works at `https://<user>.github.io/remake3/`. Note that a Pages site is
 public even if the repository is private on some plans, and the converted game art is copyrighted — keep that in mind.

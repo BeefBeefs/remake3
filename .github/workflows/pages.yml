@@ -33,11 +33,8 @@ jobs:
       - name: Unit tests (format, map, animation, game logic)
         run: npm test
 
-      # The three.js layer has never been compiled against the real three typings, so type errors are reported
-      # as a warning for now instead of blocking the deploy. Remove `continue-on-error` once it is clean.
       - name: Typecheck
         run: npm run typecheck
-        continue-on-error: true
 
       - name: Build
         run: npm run build
