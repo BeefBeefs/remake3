@@ -164,7 +164,7 @@ test('the Amazon starts with a short bow and shoots from a distance', () => {
   assert.equal(g.classId, 101);
   assert.equal(g.inventory.equipped.weapon, 40);
   assert.ok(g.ranged);
-  assert.equal(g.hero.stats.hp, 44); // 2 x resistance
+  assert.equal(g.hero.stats.hp, 79); // Amazon: 35 + level/5 + 2 x Resistance
   const m = g.monsters[0]!;
   const hp0 = m.hp;
   g.click(m.cx, m.cy);
@@ -176,8 +176,8 @@ test('the Amazon starts with a short bow and shoots from a distance', () => {
 test('the Sorceress starts with a staff and cannot wear the Barbarian scimitar', () => {
   const g = makeGame({ classId: 102, attrs: { strength: 19, skill: 23, resistance: 21, magic: 30 } });
   assert.equal(g.inventory.equipped.weapon, 56);
-  assert.ok(!g.ranged);
-  assert.equal(g.hero.stats.hp, 42);
+  assert.ok(g.ranged, 'a staff shoots');
+  assert.equal(g.hero.stats.hp, 67); // Sorceress: 25 + level/4 + 2 x Resistance
   g.inventory.add(1);
   assert.equal(g.inventory.equip(g.inventory.slots.indexOf(1)), false);
 });
@@ -357,7 +357,7 @@ test('running is twice as fast, drains stamina, uses the running footsteps and s
   run(walk, 1); run(runner, 1);
   const dw = walk.hero.cx - 128, dr = runner.hero.cx - 128;
   assert.ok(Math.abs(dr / dw - 2) < 0.1, `ratio ${dr / dw}`);
-  assert.ok(runner.stamina < s0 - 4, 'running tires the hero');
+  assert.ok(runner.stamina < s0 - 0.5, 'running tires the hero');
   assert.ok(heard.some((id) => id === 162 || id === 163), 'j_correr_hierba');
   assert.ok(!heard.some((id) => id === 160 || id === 161));
   runner.stamina = 0;
@@ -370,7 +370,7 @@ test('standing still recovers stamina; stealth is slow and silent', () => {
   const g = makeGame();
   g.stamina = 10;
   run(g, 2);
-  assert.ok(g.stamina > 14);
+  assert.ok(g.stamina > 10.5, 'three points per frame of 1/200');
   const heard: number[] = [];
   g.onSound = (id) => heard.push(id);
   g.setStance(false, true);
@@ -567,11 +567,11 @@ test('ice slows monsters: they cover half the distance', () => {
 
 test('the life parchment turns all mana into life and stamina; attribute parchments are permanent and use no mana', () => {
   const g = withScroll(92, { classId: 102, attrs: { strength: 19, skill: 23, resistance: 21, magic: 30 } });
-  g.hero.hp = 10; g.stamina = 0; g.mana = 40;
+  g.hero.hp = 10; g.stamina = 0; g.mana = 100;
   read(g, 92);
   assert.equal(g.mana, 0);
-  assert.equal(g.hero.hp, 42, 'capped at maximum life (2 x Resistance 21)');
-  assert.equal(g.stamina, 40);
+  assert.equal(g.hero.hp, 67, 'capped at maximum life');
+  assert.equal(g.stamina, g.maxStamina, 'capped at maximum stamina');
   const h = withScroll(97, { classId: 102, attrs: { strength: 19, skill: 23, resistance: 21, magic: 30 } });
   const hp = h.hero.stats.hp;
   read(h, 97);
@@ -605,8 +605,8 @@ test('worn items add their attribute bonuses to life, stamina and mana, and take
   assert.equal(g.inventory.equipped.amulet, 80);
   assert.equal(g.eff.strength, 40);
   assert.equal(g.eff.resistance, 26);
-  assert.equal(g.hero.stats.hp, hp0 - 8, 'two life per Resistance point');
-  assert.equal(g.maxStamina, st0 - 8);
+  assert.equal(g.hero.stats.hp, hp0 - 10, 'Barbarian: 2.3 life per Resistance point, truncated');
+  assert.equal(g.maxStamina, st0 - 4, 'one stamina per Resistance point');
   assert.equal(g.maxMana, mp0 - 12, 'Poder counts as Power');
   assert.equal(g.attrs.resistance, 30, 'the invested points are untouched');
   g.unequip('amulet');
@@ -637,16 +637,17 @@ test('a staff does extra damage to the families it is made for and little to the
   const dmgOn = (race: number, staff: number) => {
     const g = makeGame({ classId: 102, attrs: SORC, spawns: [{ id: '1', cx: 129, cy: 128 }] });
     const m = g.monsters[0]!;
-    m.hp = m.stats.hp = 500; m.stats.armor = 0; m.stats.race = race;
+    m.hp = m.stats.hp = 100000; m.stats.armor = 0; m.stats.race = race;
     g.inventory.equipped.weapon = staff;
     g.refreshHeroStats();
     facing(g, 1, 0);
     let total = 0;
-    for (let i = 0; i < 40; i++) { const before = m.hp; (g as unknown as { heroStrike(): void }).heroStrike(); total += before - m.hp; }
-    return total / 40;
+    for (let i = 0; i < 300; i++) { const before = m.hp; (g as unknown as { heroHitMonster(m: unknown, sneak: boolean): void }).heroHitMonster(m, false); total += before - m.hp; }
+    return total / 300;
   };
-  assert.ok(dmgOn(1, 55) > dmgOn(0, 55) * 1.4, 'staff 55: +64% against goblins');
-  assert.ok(dmgOn(32, 58) > dmgOn(1, 58) * 1.4, 'staff 58: +70% against demons');
+  const a = dmgOn(1, 55), b = dmgOn(0, 55), c = dmgOn(32, 58), d = dmgOn(1, 58);
+  assert.ok(a > b * 1.3, `staff 55: +64% against goblins (${a} vs ${b})`);
+  assert.ok(c > d * 1.3, `staff 58: +70% against demons (${c} vs ${d})`);
 });
 
 test('a spell uses the scroll\'s own family bonus: storm hits humans 40% harder, incineration cannot hurt demons', () => {
@@ -700,7 +701,7 @@ test('a new attempt continues with the saved hero: attributes, level, experience
   assert.equal(second.points, 8);
   assert.equal(second.inventory.gold, 77);
   assert.equal(second.hero.alive, true);
-  assert.equal(second.hero.stats.hp, second.attrs.resistance * 2);
+  assert.equal(second.hero.stats.hp, 25 + 1 + 2 * second.attrs.resistance, 'Sorceress level 4: 25 + level/4 + 2 x Resistance');
   assert.ok(second.inventory.equipped.weapon, 'back with the class weapon in hand');
 });
 
@@ -958,4 +959,177 @@ test('the map list resolves ids, files exist and start cells fall back for multi
   assert.equal(mapStart({ markers: [mk(5), mk(112), mk(110)] }, 100)?.id, 110); // arena: lowest start marker
   assert.equal(mapStart({ markers: [mk(5)] }, 100), undefined);
   assert.equal(tilesetDir({ tileset: 'Dungeon' }), 'dungeon');
+});
+
+// ---- numbers read out of Nightstone.exe (src/game/rules.ts) ----
+
+test('experience curve: 195 n^2 + 200, level 50 at most, and the class tables of the executable', async () => {
+  const r = await import('../src/game/rules.ts');
+  assert.equal(r.xpForLevel(1), 0);
+  assert.equal(r.xpForLevel(2), 980);
+  assert.equal(r.xpForLevel(10), 19700);
+  assert.equal(r.xpForLevel(50), 487700);
+  assert.equal(r.MAX_LEVEL, 50);
+  assert.deepEqual(r.START_ATTRS[100], { strength: 32, skill: 24, resistance: 30, magic: 11 });
+  assert.deepEqual(r.START_ATTRS[102], { strength: 19, skill: 23, resistance: 21, magic: 30 });
+  assert.equal(r.ATTR_CAPS[102].magic, 90);
+  assert.equal(r.ATTR_CAPS[100].magic, 45);
+  // derived pools at level 1 with the starting attributes
+  assert.equal(r.maxLife(100, 1, 30), 112);
+  assert.equal(r.maxLife(101, 1, 22), 79);
+  assert.equal(r.maxLife(102, 1, 21), 67);
+  assert.equal(r.maxStamina(100, 1, 30), 45);
+  assert.equal(r.maxStamina(101, 1, 22), 35);
+  assert.equal(r.maxStamina(102, 1, 21), 35);
+  assert.equal(r.maxMana(1, 30), 61);
+  assert.equal(r.maxMana(1, 11), 23);
+  // damage: integer division truncates, so weak heroes add nothing; a 0..2 sum is re-rolled to 1..3
+  assert.equal(r.classDamage(100, r.START_ATTRS[100], 1), 1);
+  assert.equal(r.classDamage(100, { strength: 90, skill: 85, resistance: 1, magic: 1 }, 34), 7 + 3 + 2);
+  assert.equal(r.classDamage(102, { strength: 1, skill: 23, resistance: 1, magic: 25 }, 1), 0, 'both terms truncate to zero');
+  assert.equal(r.classDamage(102, { strength: 1, skill: 1, resistance: 1, magic: 1 }, 1), -3, 'a feeble sorceress subtracts');
+  assert.equal(r.minDamage(0, 0.99), 3);
+  assert.equal(r.minDamage(2, 0), 1);
+  assert.equal(r.minDamage(3, 0.5), 3);
+  assert.equal(r.minDamage(-4, 0.5), -4);
+  assert.equal(r.hitReceived(10, 3), 6);
+  assert.equal(r.hitReceived(2, 5), 1);
+  assert.equal(r.STAFF_MANA[55], 11.25);
+});
+
+test('level-ups use the real curve, refill every pool and stop at level 50', () => {
+  const g = makeGame({ classId: 100 });
+  g.hero.hp = 3; g.stamina = 1; g.mana = 0;
+  g.xp = xpForLevel(2);
+  (g as unknown as { checkLevel(): void }).checkLevel();
+  assert.equal(g.level, 2);
+  assert.equal(g.points, 4);
+  assert.equal(g.hero.hp, g.hero.stats.hp);
+  assert.equal(g.stamina, g.maxStamina);
+  assert.equal(g.mana, g.maxMana);
+  g.level = 49; g.xp = xpForLevel(60);
+  (g as unknown as { checkLevel(): void }).checkLevel();
+  assert.equal(g.level, 50, 'capped');
+});
+
+test('a class cannot train an attribute past its cap', () => {
+  const g = makeGame({ classId: 102, attrs: { strength: 60, skill: 23, resistance: 21, magic: 30 } });
+  g.points = 3;
+  assert.equal(g.spend('strength'), false, 'Sorceress strength tops out at 60');
+  assert.equal(g.points, 3);
+  assert.equal(g.spend('magic'), true);
+});
+
+test('the Sorceress shoots her staff for mana; with none left it stays silent', () => {
+  const g = makeGame({ classId: 102, attrs: SORC, spawns: [{ id: '1', cx: 132, cy: 128 }] });
+  g.inventory.equipped.weapon = 57;
+  g.refreshHeroStats();
+  facing(g, 1, 0);
+  g.mana = 20;
+  (g as unknown as { heroStrike(): void }).heroStrike();
+  assert.ok(Math.abs(g.mana - (20 - 5.45)) < 1e-9, 'staff 57 costs 1090/200 points');
+  assert.equal(g.projectiles.length, 1);
+  assert.equal(g.projectiles[0]!.kind, 'bolt');
+  g.projectiles.length = 0;
+  g.mana = 1;
+  (g as unknown as { heroStrike(): void }).heroStrike();
+  assert.equal(g.projectiles.length, 0);
+  assert.equal(g.mana, 1);
+});
+
+/** A game on a flat map whose cells carry the given scripts ({cell: script index}). */
+function scriptGame(scripts: GameMap['scripts'], cells: Record<string, number>, opts: GameOptions = {}): Game {
+  const dim = 256;
+  const map: GameMap = { dim, tileset: 'Outside', terrain: new Uint16Array(dim * dim).fill(340), objects: new Uint32Array(dim * dim), markers: [], scripts, scriptAt: new Int8Array(dim * dim).fill(-1) };
+  for (const [k, v] of Object.entries(cells)) { const [x, y] = k.split(',').map(Number); map.scriptAt[y! * dim + x!] = v; }
+  const data = (makeGame() as unknown as { data: GameData }).data;
+  return new Game(new World(map, fakeAtlas, []), data, { cx: 128, cy: 128 }, { spawns: [], ...opts });
+}
+
+test('script command 2 (Bdt Entrar / Salir) teleports the hero and works again after leaving the cell', () => {
+  const g = scriptGame([{ index: 0, name: 'Bdt Entrar', commands: [{ id: 2, args: [200, 60, 0, 0] }] }], { '131,128': 0 });
+  g.click(133, 128);
+  run(g, 3);
+  assert.ok(Math.abs(g.hero.cx - 200) < 4 && Math.abs(g.hero.cy - 60) < 4, `hero at ${g.hero.cx},${g.hero.cy}`);
+  assert.equal(g.goalReached, false);
+});
+
+test('script commands 5, 7 and 8 raise a monster, remove a gate and clear the trigger cell object', () => {
+  const g = scriptGame([{ index: 0, name: '', commands: [{ id: 5, args: [8, 2, 140, 128] }, { id: 7, args: [150, 150, 0, 0] }, { id: 8, args: [0, 0, 0, 0] }] }], { '131,128': 0 });
+  const w = (g as unknown as { world: World }).world;
+  w.setObject(150, 150, (2 << 10) | 7);
+  w.setObject(131, 128, (2 << 10) | 7);
+  g.runScript(0, 131, 128);
+  const m = g.monsters.at(-1)!;
+  assert.ok(m.stats.hp > 0 && m.stats.name.startsWith('ESQUELETO'));
+  assert.equal(m.state, 'appear');
+  assert.equal(m.dir, 2);
+  assert.equal(w.map.objects[150 * 256 + 150], 0);
+  assert.equal(w.map.objects[128 * 256 + 131], 0);
+});
+
+test('Exit level with command 3 needs every enemy of the race mask dead', () => {
+  const g = scriptGame([{ index: 0, name: 'Bdt Salirnivel', commands: [{ id: 3, args: [1, 0, 0, 0] }] }], { '131,128': 0 });
+  g.runScript(0, 131, 128); // no monsters at all: completes
+  assert.equal(g.status, 'complete');
+  assert.equal(g.goalReached, true);
+  const h = scriptGame([{ index: 0, name: 'Bdt Salirnivel', commands: [{ id: 3, args: [1, 0, 0, 0] }] }], { '131,128': 0 }, { spawns: [{ id: '1', cx: 140, cy: 140 }] });
+  h.runScript(0, 131, 128);
+  assert.equal(h.status, 'playing');
+  assert.equal(h.log.at(-1), 'You must meet the objective before exiting');
+  h.monsters[0]!.hurt(10000);
+  h.runScript(0, 131, 128);
+  assert.equal(h.status, 'complete');
+  assert.equal(h.log.at(-2), 'You have completed this level');
+});
+
+test('Exit level with command 11 needs the item in the pack; command 12 always ends the level; 4 starts nothing by itself', () => {
+  const sc: GameMap['scripts'] = [{ index: 0, name: 'Bdt Salirnivel', commands: [{ id: 11, args: [130, 0, 0, 0] }] }, { index: 1, name: 'Bdt Salirnivel', commands: [{ id: 12, args: [0, 0, 0, 0] }] }, { index: 2, name: '', commands: [{ id: 4, args: [60, 0, 0, 0] }] }];
+  const g = scriptGame(sc, {});
+  g.runScript(0, 0, 0);
+  assert.equal(g.status, 'playing');
+  g.runScript(2, 0, 0);
+  assert.equal(g.clock, null);
+  g.inventory.add(130);
+  g.runScript(0, 0, 0);
+  assert.equal(g.status, 'complete');
+  const h = scriptGame(sc, { '131,128': 1 });
+  h.click(133, 128);
+  run(h, 3);
+  assert.equal(h.goalReached, true, 'walking over the exit cell ends the level');
+});
+
+test('the mission clock only runs once started and fails the mission at zero', () => {
+  const g = scriptGame([{ index: 0, name: '', commands: [{ id: 4, args: [2, 0, 0, 0] }] }], {});
+  g.clock = 1;
+  g.runScript(0, 0, 0);
+  assert.equal(g.clock, 3);
+  run(g, 3.5);
+  assert.equal(g.status, 'failed');
+  assert.equal(g.log.at(-1), 'You have failed the mission');
+});
+
+test('every campaign map: its scripts run without errors and the start cell does not end the level', async () => {
+  const { readdirSync } = await import('node:fs');
+  const { gunzipSync } = await import('node:zlib');
+  const { parseMap } = await import('../src/formats/map.ts');
+  const dir = new URL('../public/assets/maps/nhs/', import.meta.url);
+  const data = (makeGame() as unknown as { data: GameData }).data;
+  let maps = 0, scripts = 0;
+  for (const f of readdirSync(dir)) {
+    const map = parseMap(new Uint8Array(gunzipSync(readFileSync(new URL(f, dir)))));
+    const st = map.markers.find((m) => m.id === 100) ?? map.markers.find((m) => m.id >= 100) ?? { cx: 128, cy: 128 };
+    const g = new Game(new World(map, fakeAtlas, []), data, st, { spawns: [] });
+    run(g, 1);
+    assert.equal(g.status, 'playing', `${f}: level ends at the start`);
+    for (const sc of map.scripts) {
+      const i = map.scriptAt.indexOf(sc.index);
+      g.runScript(sc.index, i >= 0 ? i % map.dim : 0, i >= 0 ? Math.floor(i / map.dim) : 0);
+      scripts++;
+      if (g.status !== 'playing') break;
+    }
+    maps++;
+  }
+  assert.equal(maps, 35);
+  assert.ok(scripts > 300, `${scripts} scripts`);
 });

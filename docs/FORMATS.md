@@ -191,20 +191,29 @@ through the **decor layer**: u16[2] of the cell's decor record = `2048 + 32·(sc
 37 cells carry one and all of them are containers: pack-3 chests (402/404/527/529/531, closed sprite = id−1), barrels
 (405–407), crates (408), plus the tomb gate (pack 1, 625–640).
 
-Interpreter commands (jump table at 0x436e84; semantics read from the disassembly, only 1 and 9 occur in Lost Forrest):
+Interpreter commands (jump table at 0x422bf4; semantics read from the disassembly; the editor labels in the language file
+`SCRIPTS\*` match):
 | id | meaning |
 |----|---------|
 | 1 | roll a random item with `Tipo & a0` from chest level ≤ a1 (item INI `CofreLv`), drop it at the cell — **verified in data**: scripts 0–9 are loot tables (a0 = 100 melee/bow/staff mix, 1, 32, 64, 1024 potions, 0xE000 armour, 128 rings, 256 amulets; script 8 = one armour per class; script 9 = 8/64/32 weapons) |
-| 2 | move/teleport to cell (a0,a1) |
-| 3 / 4 | activate / remove actor a0 |
-| 5 | spawn actor a0+1 at (a2,a3) (`Spawn:%d (A:%d) at (%d,%d)`) |
-| 6 | change the object at a cell |
-| 7 / 8 | remove the object at cell (a0,a1) / at the trigger cell |
-| 9 | drop fixed item a0 at the cell (script 11 "Tumba de Domnir": a0 = 0, i.e. nothing; it marks the goal) |
-| 10 | quest-manager call with a0 (unclear) |
-| 11 | requires item/key a0 in a player's inventory, else message 5 ("locked") |
-| 12 / 13 | message 1 / actor-manager call with a0 (unclear) |
+| 2 | move the hero to cell (a0,a1) — names `Bdt Entrar` / `Bdt Salir` come in pairs on the dungeon maps ("Move to") |
+| 3 | "End if does not have": the level ends if no live actor whose `Raza` bit mask matches a0 remains (mask 31 = goblins…trolls); otherwise the objective message |
+| 4 | "Add time": adds a0 seconds to the mission clock (timer globals 0x570628 / 0x57062c) |
+| 5 | "Create enemy": spawns actor a0+1 facing direction a1 (0–7) at cell (a2,a3) with the `Aparecer` animation (`Spawn:%d (A:%d) at (%d,%d)`) |
+| 6 | put a script on a cell ("Put Script") |
+| 7 / 8 | remove the object at cell (a0,a1) ("Delete Tile") / delete the script's own cell object |
+| 9 | drop fixed item a0 at the cell (script "Tumba de Domnir": a0 = 0, i.e. nothing; it marks the goal) |
+| 10 | effect with id a0 (59, 64 occur; not decoded) |
+| 11 | exit level only if item a0 is in a hero's inventory, else message "You must meet the objective before exiting" (MSGBOX\Completar) |
+| 12 | "Complete level": game state 1, MSGBOX\Completado |
+| 13 | "Play Sound" a0 |
 | 14 | no-op |
+
+Census over all 36 maps: 676 scripts — 588 have flag 1, 25 flag 2, 8 flag 0; the flag is **not** an activation type (the editor's
+"When walking" / "When activating" labels exist, but the 32 bytes at +0x58 that would hold them are all zero in every map).
+Names are mostly empty or a control byte; the meaningful ones are `Bdt Entrar`, `Bdt Salir`, `Bdt Salirnivel`, `Bdt Subir`,
+`Bdt Bajar`, `Bdt Cofre` and `Tumba de Domnir`. Game-state setter 0x41da70: 10 = playing, 1 = level complete, 5 = objective unmet
+message, 3 / 8 / 9 other end states.
 
 ### Sound ids
 Files `GDI/Audio/NNN_*.wav` → `audio/gdi/audio/NNN_*.ogg`, indexed by `data/sfx.json`. Actor INI `Sonidos.SndBase` = B:
@@ -316,3 +325,14 @@ order (code `c` at column `c & 15`, row `c >> 4`, white on black); `System/Fnt.d
 buttons carry a black backdrop and look right when added to the picture (`mix-blend-mode: screen`).
 
 Spell effect textures live in `GDI/3D/*.bmp` and are drawn additively (`src/game/effects.ts`, `effectsview.ts`): 64-72 flame frames, 75/76 red / green puffs, 77 orange glow, 100 orange ring, 101 blue-white ring, 102 white ring, 103 green glow, 104 small ring, 118/119 blue / warm flares, 120-133 an ice spirit that forms and fades (not smoke, as first guessed). Which texture belongs to which spell is a guess from how they look.
+
+### Nightstone.exe notes (PE i386, `objdump -d`)
+- Hero data record (actor + 4): +0x20 life, +0x24 max life, +0x28 stamina, +0x2c max stamina, +0x30 mana, +0x34 max mana
+  (stamina and mana ×200); trained attributes +0x3c Strength, +0x48 Resistance, +0x54 Skill, +0x60 Magic (item bonuses in
+  +0x38 / +0x44 / +0x50 / +0x5c, caps at +0x40 / +0x4c / +0x58 / +0x64); +0x6c level, +0x70 points, +0x74 experience; class at
+  +0x1c (0x64 Barbarian, 0x65 Amazon, 0x66 Sorceress).
+- 0x42b5e0 sets a stat by id, 0x42b700 adds to it (1 life, 2 mana, 3 stamina, 10–13 attributes, 20 experience); 0x42b950 is the
+  derived-stat / level-up / clamp routine; the experience table is filled by the loop at 0x46f782.
+- Engine speed: 35 frames per second (`SETFPS`, default 0x23). The cheat console words (VIDA, MAGIA, RESISTENCIA, DESTREZA,
+  FUERZA, MRFURIOSO…) are plain strings in the data section.
+- The numbers are in `src/game/rules.ts`; `docs/RULES.md` ("From the executable") lists them.

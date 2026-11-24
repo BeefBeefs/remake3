@@ -9,6 +9,12 @@ import { lineClear, makeProjectile, type Projectile, type ProjKind } from './pro
 import { Inventory, familyBonus, missingReqs, rollByMask, rollDrop, slotOf, type ItemDef } from './items.ts';
 import { cellToWorld, depthOf } from '../iso.ts';
 import { World } from './world.ts';
+import {
+  ATTR_CAPS, MAX_LEVEL, POINTS_PER_LEVEL, START_ATTRS, STAFF_MANA, STAMINA_TICK, TICK, classDamage, hitReceived,
+  manaRegenTick, maxLife, maxMana, maxStamina, minDamage, perSecond, xpForLevel, type ClassKey,
+} from './rules.ts';
+
+export { xpForLevel, POINTS_PER_LEVEL };
 
 type Range = [number, number];
 interface ActorIni {
@@ -77,6 +83,13 @@ const CONTAINER_PACK = 3;
 const DROP_SPOTS: [number, number][] = [[0, 0.6], [0.7, 0.4], [-0.7, 0.4], [0, 1.1]];
 
 interface Box { cx: number; cy: number; id: number; chest: boolean; done: boolean }
+interface Trigger { cx: number; cy: number; script: number; fired: boolean; repeat: boolean }
+/** Level messages (MSGBOX\\* of the language file). */
+export const LEVEL_MSG = {
+  completed: 'You have completed this level',
+  failed: 'You have failed the mission',
+  objective: 'You must meet the objective before exiting',
+} as const;
 
 /** Playable classes: INI actor id, first weapon, and the base of the class's sound ids (die; +1,+2 hurt). */
 export const CLASSES = {
@@ -85,32 +98,20 @@ export const CLASSES = {
   102: { name: 'Sorceress', weapon: 56, sound: 140 },
 } as const;
 export type ClassId = keyof typeof CLASSES;
-/** Total XP needed to reach `level` (placeholder curve). */
-export const xpForLevel = (level: number): number => 25 * (level - 1) * level;
 /** Seconds of walking between footsteps (the walk cycle is ~1.2 s with two steps). */
 const STEP_EVERY = 0.58;
-export const POINTS_PER_LEVEL = 4;
 export type Attr = 'strength' | 'skill' | 'resistance' | 'magic';
 /** Potions of Fortuity (azar) and Knowledge (conocimiento): effects are guesses. */
 const POTION_FORTUITY = 111, POTION_KNOWLEDGE = 112;
 
-/** Hit points per point of Resistance (the manual only says life is tied to Resistance; 2 is a guess). */
-export const HP_PER_RESISTANCE = 2;
-/** Stamina follows Resistance and mana follows Power (manual); the per-point ratios and all rates below are guesses. */
-export const STAMINA_PER_RESISTANCE = 2;
-export const MANA_PER_POWER = 2;
 export type Stance = 'walk' | 'run' | 'stealth';
 /** Speed multipliers: run = twice as fast, stealth = half (manual). */
 export const STANCE_SPEED: Record<Stance, number> = { walk: 1, run: 2, stealth: 0.5 };
-/** Stamina drained per second while moving in each stance ("running tires you out", stealth "consumes less"). */
-const STAMINA_DRAIN: Record<Stance, number> = { walk: 0.5, run: 6, stealth: 0.2 };
-const STAMINA_REGEN = 3; // per second when standing still
-const MANA_REGEN = 0.25; // per second
 /** Stealth: unaware monsters notice you from half as far, and the first blow on one of them does double damage. */
 const STEALTH_HEARING = 0.5;
 const SNEAK_MULT = 2;
-/** Barbarian block: stamina spent per blocked blow (a guess). Blows from the front arc are stopped completely while it lasts. */
-const BLOCK_COST = 4;
+/** Barbarian block: stamina spent per blocked blow (a guess; the executable only charges for holding the shield up). */
+const BLOCK_COST = 2;
 /** Bows shoot an arrow that flies this many cells; it is aimed at the nearest monster within ~25 degrees of the aim. */
 const BOW_RANGE = 7;
 /** Monsters that shoot from a distance (INI Tipo_IA 3): what they fire, how far, and the closest they like to stand. */
@@ -119,6 +120,11 @@ const RANGED: Record<string, { kind: ProjKind; range: number; keep: number; colo
   '25': { kind: 'bolt', range: 8, keep: 3.5, color: 0x7fb0ff }, // Mago
   '55': { kind: 'bolt', range: 9, keep: 3, color: 0xff8040 }, // Zelos
 };
+/** Sorceress staffs by element (items 53-55 electricity, 56-58 ice, 59-61 the dead, 132-134 fire): bolt colour and sound. */
+type Element = 'electric' | 'ice' | 'dead' | 'fire';
+const staffElement = (id: number): Element => (id >= 132 ? 'fire' : id >= 59 ? 'dead' : id >= 56 ? 'ice' : 'electric');
+const STAFF_COLOR: Record<Element, number> = { electric: 0xaad4ff, ice: 0x9fe8ff, dead: 0xb070ff, fire: 0xff8040 };
+const STAFF_SOUND: Record<Element, number> = { electric: 24, ice: 74, dead: 23, fire: 72 };
 const HERO_SPEED = 3.2; // cells per second
 const MONSTER_SPEED = 1.7;
 const PATROL_SPEED = 0.45; // fraction of chase speed
@@ -127,8 +133,8 @@ const HIT_RANGE = 1.9; // hero swing reach, cells
 const PICKUP = 0.9; // cells
 const DROP_CHANCE = 0.45;
 const GOLD_BAG = 124; // 'small bag of gold'
-/** Engine ticks of the INI cooldown (Vel_Ataque) in seconds; 1/30 is a guess. */
-const AI_TICK = 1 / 30;
+/** Engine ticks of the INI cooldown (Vel_Ataque) in seconds: the engine runs at 35 frames per second. */
+const AI_TICK = TICK;
 
 function mulberry32(seed: number) {
   return () => {
@@ -184,6 +190,12 @@ export class Game {
   private readonly boxes: Box[] = [];
   private targetBox: Box | null = null;
   private goals: { cx: number; cy: number; name: string }[] = [];
+  /** Tile scripts: the hero sets one off by walking on it (or, for scripts on solid objects, by standing next to it). */
+  private triggers: Trigger[] = [];
+  /** 'complete' when a level-end script ran (Complete level, Exit level), 'failed' when the mission clock ran out. */
+  status: 'playing' | 'complete' | 'failed' = 'playing';
+  /** Seconds left on the mission clock set by the "Add time" script command, or null when no clock runs. */
+  clock: number | null = null;
   /** where the mission's goal objects are (for the minimap) */
   get goalSpots(): readonly { cx: number; cy: number }[] { return this.goals; }
   private readonly finalText: string;
@@ -203,13 +215,11 @@ export class Game {
   private readonly patrols = new Map<Creature, { pts: { cx: number; cy: number }[]; i: number; wait: number }>();
 
   /** hero attributes of the adventure (shown in the inventory panel; only resistance feeds back into HP, see below) */
-  /** life points currently granted by worn Resistance bonuses (already inside hero.stats.hp) */
-  private appliedBonusHp = 0;
   readonly attrs: NonNullable<GameOptions['attrs']>;
   readonly classId: ClassId;
 
   constructor(private readonly world: World, private readonly data: GameData, start: { cx: number; cy: number }, opts: GameOptions = {}) {
-    this.attrs = { ...(opts.save?.attrs ?? opts.attrs ?? { strength: 30, skill: 24, resistance: 30, magic: 11 }) };
+    this.attrs = { ...(opts.save?.attrs ?? opts.attrs ?? START_ATTRS[(opts.classId ?? 100) as ClassKey]) };
     if (opts.save) { this.level = opts.save.level; this.xp = opts.save.xp; this.points = opts.save.points; }
     this.finalText = opts.finalText ?? 'Mission complete.';
     this.difficulty = opts.difficulty ?? 1;
@@ -229,7 +239,7 @@ export class Game {
       for (const k of Object.keys(this.inventory.equipped) as (keyof typeof this.inventory.equipped)[]) delete this.inventory.equipped[k];
       for (const [k, id] of Object.entries(opts.save.inv.equipped)) if (id && known(id)) this.inventory.equipped[k as 'weapon'] = id;
     }
-    this.hero = this.make(String(this.classId), start.cx, start.cy, { hp: this.attrs.resistance * HP_PER_RESISTANCE, damage: [2, 4], speed: HERO_SPEED, name: data.names[String(this.classId)] ?? cls.name });
+    this.hero = this.make(String(this.classId), start.cx, start.cy, { hp: maxLife(this.classId, this.level, this.attrs.resistance), damage: [2, 4], speed: HERO_SPEED, name: data.names[String(this.classId)] ?? cls.name });
     this.stamina = this.maxStamina;
     this.mana = this.maxMana;
     this.refreshHeroStats();
@@ -290,7 +300,7 @@ export class Game {
     }
   }
 
-  /** Containers (chests, barrels, crates) and goal objects are the map objects that carry scripts or have container sprites. */
+  /** Containers (chests, barrels, crates), goal objects and tile triggers are the map cells that carry scripts or have container sprites. */
   private initContainers(): void {
     const map = this.world.map;
     const scripts = new Map(map.scripts.map((sc) => [sc.index, sc]));
@@ -299,14 +309,22 @@ export class Game {
       const o = map.objects[i]!;
       const cx = i % map.dim, cy = Math.floor(i / map.dim);
       const id = o & 1023;
+      const sc = map.scriptAt[i]! >= 0 ? scripts.get(map.scriptAt[i]!) : undefined;
+      let owned = false;
       if (outside && o >> 10 === CONTAINER_PACK && (CHESTS.has(id) || id in BREAKABLES)) { // (the chest ids are the Outside pack's; Cave and Dungeon packs are not mapped yet)
         const chest = CHESTS.has(id);
         this.boxes.push({ cx, cy, id, chest, done: false });
         if (chest) this.world.setObject(cx, cy, (CONTAINER_PACK << 10) | (id - 1)); // show it closed
+        owned = true;
+      } else if (sc && o >> 10 === CONTAINER_PACK && sc.commands.some((c) => c.id === 1 || (c.id === 9 && c.args[0] > 0))) {
+        this.boxes.push({ cx, cy, id, chest: true, done: false }); // a loot script on a pack-3 object: a chest of the Cave / Dungeon packs (no closed sprite known)
+        owned = true;
       }
-      const sc = map.scriptAt[i]! >= 0 ? scripts.get(map.scriptAt[i]!) : undefined;
-      // a script that rolls no loot is a goal marker (Lost Forrest: "Tumba de Domnir" on the tomb gate)
-      if (sc && !sc.commands.some((c) => c.id === 1) && sc.name) this.goals.push({ cx, cy, name: sc.name });
+      if (!sc || owned) continue;
+      // a named script that does nothing but mark a place is a goal marker (Lost Forrest: "Tumba de Domnir" on the tomb gate)
+      if (/[a-z]/i.test(sc.name) && !/^bdt/i.test(sc.name) && !sc.commands.some((c) => c.id === 1)) { this.goals.push({ cx, cy, name: sc.name }); continue; }
+      const repeat = sc.commands.every((c) => c.id === 2 || c.id === 3 || c.id === 11 || c.id === 12); // teleports and exits can be used again
+      this.triggers.push({ cx, cy, script: sc.index, fired: false, repeat });
     }
   }
 
@@ -320,17 +338,99 @@ export class Game {
     return best;
   }
 
-  /** Runs a map script at a cell. Implemented: 1 (roll item by type mask and chest level) and 9 (fixed item). */
-  private runScript(index: number, cx: number, cy: number): void {
+  /** True when the hero carries or wears the item. */
+  private holds(id: number): boolean {
+    return this.inventory.slots.includes(id) || Object.values(this.inventory.equipped).includes(id);
+  }
+
+  /** Ends the level successfully (script commands 3, 11 and 12). */
+  private completeLevel(): void {
+    if (this.status !== 'playing' || !this.hero.alive) return;
+    this.status = 'complete';
+    this.goalReached = true;
+    this.say(LEVEL_MSG.completed);
+    this.say(this.finalText);
+  }
+
+  /**
+   * Runs a map script at a cell. Commands (decoded from the executable's interpreter):
+   * 1 roll an item by type mask and chest level, 2 move the hero to a cell, 3 end the level when no live enemy of the race mask is left,
+   * 4 add seconds to the mission clock, 5 raise actor a0+1 facing a1 at (a2,a3), 7 remove the object at (a0,a1), 8 remove the object here,
+   * 9 drop a fixed item, 10 effect (not played), 11 end the level when the hero holds item a0, 12 end the level, 13 play sound a0.
+   * A failed condition (3, 11) shows "You must meet the objective before exiting" and stops the script.
+   */
+  runScript(index: number, cx: number, cy: number): void {
     const sc = this.world.map.scripts.find((x) => x.index === index);
     if (!sc) return;
     let n = 0;
     for (const c of sc.commands) {
       let item: number | null = null;
-      if (c.id === 1) item = rollByMask(this.data.items, c.args[0], c.args[1], this.rnd, (d) => this.inventory.canUse(d));
-      else if (c.id === 9 && c.args[0] > 0) item = c.args[0];
+      switch (c.id) {
+        case 1: item = rollByMask(this.data.items, c.args[0], c.args[1], this.rnd, (d) => this.inventory.canUse(d)); break;
+        case 9: if (c.args[0] > 0) item = c.args[0]; break;
+        case 2: this.teleport(c.args[0], c.args[1]); break;
+        case 3:
+          if (this.monsters.some((m) => m.alive && ((m.stats.race ?? 0) & c.args[0]) !== 0)) { this.say(LEVEL_MSG.objective); return; }
+          this.completeLevel();
+          break;
+        case 4: if (this.clock !== null) this.clock += c.args[0]; break;
+        case 5: this.spawnScripted(c.args[0] + 1, c.args[1], c.args[2], c.args[3]); break;
+        case 7: this.world.setObject(c.args[0], c.args[1], 0); break;
+        case 8: this.world.setObject(cx, cy, 0); break;
+        case 11:
+          if (!this.holds(c.args[0])) { this.say(LEVEL_MSG.objective); return; }
+          this.completeLevel();
+          break;
+        case 12: this.completeLevel(); break;
+        case 13: this.snd(c.args[0]); break;
+        default: break; // 6, 10, 14: no visible effect here
+      }
       if (item) { const o = DROP_SPOTS[n % DROP_SPOTS.length]!; this.spawnGround(item, cx + o[0], cy + o[1]); n++; }
     }
+  }
+
+  /** Moves the hero to the nearest open cell of (cx,cy) and drops every order it had. */
+  private teleport(cx: number, cy: number): void {
+    const c = this.world.findOpenCell(cx, cy);
+    this.hero.cx = c.cx; this.hero.cy = c.cy;
+    this.target = null; this.targetBox = null; this.walkTarget = null; this.talkTarget = null;
+    this.version++;
+  }
+
+  /** Script command 5: a monster rises from the ground at a cell, already awake. */
+  private spawnScripted(actor: number, dir: number, cx: number, cy: number): void {
+    const id = String(actor), def = this.data.anims.actors[id];
+    if (!def || def.npc || !this.data.atlases.has(def.pack)) return;
+    const m = this.make(id, cx, cy);
+    this.applyDifficulty(m);
+    this.idOf.set(m, id);
+    m.dir = ((dir % 8) + 8) % 8;
+    this.alerted.add(m);
+    m.setState('appear');
+    this.monsters.push(m);
+    this.group.add(m.sprite);
+  }
+
+  /** Walking onto a script cell (or next to one that sits under a solid object) sets it off. */
+  private checkTriggers(): void {
+    const h = this.hero;
+    if (!h.alive || this.status !== 'playing') return;
+    for (const t of this.triggers) {
+      const on = Math.round(h.cx) === t.cx && Math.round(h.cy) === t.cy
+        || (!this.world.isWalkable(t.cx, t.cy) && Math.hypot(h.cx - t.cx, h.cy - t.cy) < 1.6);
+      if (!on) { if (t.repeat) t.fired = false; continue; }
+      if (t.fired) continue;
+      t.fired = true;
+      this.runScript(t.script, t.cx, t.cy);
+      if (this.status !== 'playing') return;
+    }
+  }
+
+  /** Counts the mission clock down; it only runs after an "Add time" command and ends the mission at zero. */
+  private tickClock(dt: number): void {
+    if (this.clock === null || this.status !== 'playing') return;
+    this.clock -= dt;
+    if (this.clock <= 0) { this.clock = 0; this.status = 'failed'; this.say(LEVEL_MSG.failed); }
   }
 
   private openBox(b: Box): void {
@@ -422,21 +522,32 @@ export class Game {
     if (this.log.length > 6) this.log.shift();
   }
 
-  /** True while a bow is wielded (Amazon). */
+  /** True while a bow (Amazon) or a staff (Sorceress) is wielded: the blow becomes a shot. */
   get ranged(): boolean {
     const id = this.inventory.equipped.weapon;
     const def = id ? this.inventory.def(id) : undefined;
-    return !!def && (def.tipo & 32) !== 0;
+    return !!def && (def.tipo & (32 | 64)) !== 0;
+  }
+
+  /** Mana one shot of the wielded staff costs (0 for a bow). */
+  private get shotMana(): number {
+    const id = this.inventory.equipped.weapon;
+    return id && this.classId === 102 ? STAFF_MANA[id] ?? 0 : 0;
+  }
+
+  /** Maximum life follows class, level and Resistance (worn bonuses included); a gain also heals by that much. */
+  private syncLife(): void {
+    const h = this.hero, max = maxLife(this.classId as ClassKey, this.level, this.eff.resistance);
+    const gain = max - h.stats.hp;
+    h.stats.hp = max;
+    if (h.alive) h.hp = Math.max(1, Math.min(max, h.hp + Math.max(0, gain)));
   }
 
   /** Damage and armour follow the equipment. */
   refreshHeroStats(): void {
     this.hero.stats.damage = this.inventory.damage();
     this.hero.stats.armor = this.inventory.armor();
-    const bonusHp = HP_PER_RESISTANCE * this.inventory.worn().resistance;
-    this.hero.stats.hp += bonusHp - this.appliedBonusHp;
-    this.appliedBonusHp = bonusHp;
-    if (this.hero.alive) this.hero.hp = Math.max(1, Math.min(this.hero.hp, this.hero.stats.hp));
+    this.syncLife();
     this.stamina = Math.min(this.stamina, this.maxStamina);
     this.mana = Math.min(this.mana, this.maxMana);
     this.version++;
@@ -485,9 +596,9 @@ export class Game {
         for (const k of ['strength', 'skill', 'resistance', 'magic'] as const) {
           const v = spell[k];
           if (!v) continue;
-          this.attrs[k] += v;
-          if (k === 'resistance') { h.stats.hp += HP_PER_RESISTANCE * v; h.hp += HP_PER_RESISTANCE * v; }
+          this.attrs[k] = Math.min(ATTR_CAPS[this.classId as ClassKey][k], this.attrs[k] + v);
         }
+        this.syncLife();
         if (spell.fillLife) h.hp = h.stats.hp;
         if (spell.fillMana) this.mana = this.maxMana + cost; // the cost is deducted below, leaving a full pool
         this.snd(23);
@@ -635,10 +746,15 @@ export class Game {
   /** Rolls and applies the hero's weapon damage against one monster (melee swing or arrow arrival). */
   private heroHitMonster(m: Creature, sneak: boolean): void {
     if (!m.alive) return;
+    // the executable's sum: class term B (own strength) + weapon W (Potencia roll plus its family bonus), then the
+    // 0..2 -> 1..3 rule; a family bonus below zero replaces everything (it heals the monster, fire on demons)
     const [lo, hi] = this.hero.stats.damage;
-    const mult = this.inventory.weaponVs(m.stats.race ?? 0);
-    const roll = (lo + Math.floor(this.rnd() * (hi - lo + 1))) * (sneak ? SNEAK_MULT : 1);
-    const dmg = mult <= 0 ? Math.round(roll * mult) : Math.max(1, Math.round(roll * mult) - m.stats.armor);
+    const potency = Math.max(1, lo + Math.floor(this.rnd() * (hi - lo + 1)));
+    const part = potency * (this.inventory.weaponVs(m.stats.race ?? 0) - 1);
+    let total = part < 0 ? Math.trunc(part) : classDamage(this.classId as ClassKey, this.eff, this.level) + potency + Math.trunc(part);
+    total = minDamage(total, this.rnd());
+    if (sneak && total > 0) total *= SNEAK_MULT;
+    const dmg = total <= 0 ? total : Math.max(1, total - m.stats.armor);
     if (sneak) this.say('Sneak attack!');
     const flesh = this.data.actors[this.idOf.get(m) ?? '']?.Sonidos?.Carne !== 0;
     this.snd(this.pick(flesh ? 59 : 62, 3)); // c_carne / c_nocarne
@@ -649,8 +765,15 @@ export class Game {
     const h = this.hero;
     let hit = false;
     const bow = this.ranged;
-    if (bow) this.snd(this.pick(50, 3)); // c_arco
-    if (bow) {
+    const staff = bow && this.classId === 102;
+    let shoot = bow;
+    if (staff) {
+      // a staff shot costs mana (per-staff table of the executable); with too little the staff stays silent
+      const cost = this.shotMana;
+      if (this.mana < cost) { this.say(`Not enough mana (${cost} needed)`); shoot = false; }
+      else { this.mana -= cost; this.snd(STAFF_SOUND[staffElement(this.inventory.equipped.weapon ?? 0)]); }
+    } else if (bow) this.snd(this.pick(50, 3)); // c_arco
+    if (shoot) {
       let nearest: Creature | null = null, nd = Infinity;
       for (const m of this.monsters) {
         if (!m.alive || m.dormant) continue;
@@ -661,7 +784,9 @@ export class Game {
       const ax = nearest ? nearest.cx - h.cx : this.facing.x, ay = nearest ? nearest.cy - h.cy : this.facing.y;
       const n = Math.hypot(ax, ay) || 1;
       const sneakNow = this.effectiveStance === 'stealth' ? new Set(this.unaware) : new Set<Creature>();
-      this.projectiles.push(makeProjectile('arrow', h.cx + (ax / n) * 0.5, h.cy + (ay / n) * 0.5, ax, ay, BOW_RANGE + 1, true, (m) => { if (m) this.heroHitMonster(m, sneakNow.has(m)); }));
+      const kind: ProjKind = staff ? 'bolt' : 'arrow';
+      const color = staff ? STAFF_COLOR[staffElement(this.inventory.equipped.weapon ?? 0)] : 0xffffff;
+      this.projectiles.push(makeProjectile(kind, h.cx + (ax / n) * 0.5, h.cy + (ay / n) * 0.5, ax, ay, BOW_RANGE + 1, true, (m) => { if (m) this.heroHitMonster(m, sneakNow.has(m)); }, color));
     }
     if (!bow) for (const m of this.monsters) {
       if (!m.alive || m.dormant) continue;
@@ -701,7 +826,7 @@ export class Game {
         return;
       }
     }
-    const died = h.hurt(Math.max(1, lo + Math.floor(this.rnd() * (hi - lo + 1)) - h.stats.armor));
+    const died = h.hurt(hitReceived(lo + Math.floor(this.rnd() * (hi - lo + 1)), h.stats.armor));
     const sb = CLASSES[this.classId].sound;
     this.snd(died ? sb : this.pick(sb + 1, 2)); // <class>_morir / _recibir
     if (died) this.die();
@@ -781,6 +906,8 @@ export class Game {
     this.tickResources(dt);
     this.pickups();
     this.checkGoal();
+    this.checkTriggers();
+    this.tickClock(dt);
     for (const [m, t] of this.slowed) { if (t - dt <= 0 || !m.alive) this.slowed.delete(m); else this.slowed.set(m, t - dt); }
     for (const m of this.monsters) this.updateMonster(m, dt);
     for (const n of this.npcs) n.creature.update(dt);
@@ -796,8 +923,8 @@ export class Game {
     const w = this.inventory.worn();
     return { strength: this.attrs.strength + w.strength, skill: this.attrs.skill + w.skill, resistance: this.attrs.resistance + w.resistance, magic: this.attrs.magic + w.magic };
   }
-  get maxStamina(): number { return Math.max(1, this.eff.resistance * STAMINA_PER_RESISTANCE); }
-  get maxMana(): number { return Math.max(0, this.eff.magic * MANA_PER_POWER); }
+  get maxStamina(): number { return Math.max(1, maxStamina(this.classId as ClassKey, this.level, this.eff.resistance)); }
+  get maxMana(): number { return maxMana(this.level, this.eff.magic); }
 
   /** What the hero still lacks to use an item (empty = usable, otherwise the item shows a red border). */
   missing(def: ItemDef): string[] { return missingReqs(def, this.attrs, this.level); }
@@ -837,26 +964,36 @@ export class Game {
   /** Spends one level-up point on an attribute. Life follows Resistance (and the hero is healed by the gain). */
   spend(attr: Attr): boolean {
     if (this.points <= 0 || !this.hero.alive) return false;
+    if (this.attrs[attr] >= ATTR_CAPS[this.classId as ClassKey][attr]) return false; // each class tops out per attribute
     this.points--;
     this.attrs[attr]++;
-    if (attr === 'resistance') { this.hero.stats.hp += HP_PER_RESISTANCE; this.hero.hp += HP_PER_RESISTANCE; }
+    this.syncLife();
     this.version++;
     return true;
   }
 
   private tickResources(dt: number): void {
     if (!this.hero.alive) return;
-    if (this.moving) this.stamina = Math.max(0, this.stamina - STAMINA_DRAIN[this.effectiveStance] * dt);
-    else this.stamina = Math.min(this.maxStamina, this.stamina + STAMINA_REGEN * dt);
-    this.mana = Math.min(this.maxMana, this.mana + MANA_REGEN * dt);
+    // per-frame values the class routines add to the stamina and mana pools (see rules.ts)
+    const t = STAMINA_TICK[this.classId as ClassKey];
+    const run = this.moving && this.effectiveStance === 'run';
+    let tick = t.rest;
+    if (run) tick = this.inventory.equipped.armor ? t.runArmor : t.run;
+    else if (this.blocking || this.holding) tick = t.guard;
+    else if (this.moving && this.effectiveStance === 'stealth') tick = t.sneak;
+    this.stamina = Math.max(0, Math.min(this.maxStamina, this.stamina + perSecond(tick) * dt));
+    this.mana = Math.min(this.maxMana, this.mana + perSecond(manaRegenTick(this.eff.strength, this.level)) * dt);
   }
 
   private checkLevel(): void {
-    while (this.xp >= xpForLevel(this.level + 1)) {
+    while (this.level < MAX_LEVEL && this.xp >= xpForLevel(this.level + 1)) {
       this.level++;
+      this.syncLife(); // maximum life grows with the level
       const st = this.hero.stats;
       this.points += POINTS_PER_LEVEL; // manual: "+4" points to distribute on the character specifications window
       this.hero.hp = st.hp;
+      this.stamina = this.maxStamina; // the original refills life, stamina and mana
+      this.mana = this.maxMana;
       this.snd(CLASSES[this.classId].sound + 3); // <class>_nivel
       this.fx.push(...levelUpFx(this.hero.cx, this.hero.cy));
       this.say(`${st.name} reached level ${this.level}`);

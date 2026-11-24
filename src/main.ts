@@ -8,7 +8,9 @@ import { EffectsView } from './game/effectsview.ts';
 import { World } from './game/world.ts';
 import { Sfx } from './audio/sfx.ts';
 import { surfaceLookup, type TileTable } from './game/surface.ts';
-import { CLASSES, MERCHANTS, type ClassId, Game, type GameData, type HeroSave } from './game/game.ts';
+import { DialogueWindow } from './ui/dialogue.ts';
+import { parseDialogue, speechFor } from './game/dialogue.ts';
+import { CLASSES, LEVEL_MSG, MERCHANTS, type ClassId, Game, type GameData, type HeroSave } from './game/game.ts';
 import type { AnimData } from './game/anims.ts';
 import { buildItems } from './game/items.ts';
 import { InventoryPanel } from './ui/inventory.ts';
@@ -123,10 +125,12 @@ async function boot() {
   const animData = (await (await fetch(`${BASE}data/anims.json`)).json()) as AnimData;
   const actorsIni = (await (await fetch(`${BASE}data/actors.json`)).json()) as GameData['actors'];
   const names: Record<string, string> = {};
+  const speech: Record<string, string> = {};
   const itemNames: Record<string, string> = {};
   for (const [k, v] of Object.entries((await (await fetch(`${BASE}text/idioma.json`)).json()) as Record<string, string>)) {
     const m = /^(ACTORS|ITEMS)\\ID-(\d+)$/.exec(k);
     if (m) (m[1] === 'ACTORS' ? names : itemNames)[m[2]!] = v;
+    else if (k.startsWith('ACTORS\\')) speech[k] = v; // NPC speeches: ACTORS\ID-27*, ID-63** ...
   }
   const items = buildItems((await (await fetch(`${BASE}data/items.json`)).json()) as Parameters<typeof buildItems>[0], itemNames);
   const icons = await Atlas.load(BASE, 'atlas/system/ilistdata.json');
@@ -155,7 +159,17 @@ async function boot() {
   const panel = new InventoryPanel(game, icons, BASE, skin);
   const shop = new ShopWindow(game, icons, BASE, skin);
   const charPanel = new CharacterPanel(game, skin);
-  game.onTalk = (npc) => { if (MERCHANTS.has(npc.id)) shop.open(npc.name); };
+  const talkWin = new DialogueWindow(skin);
+  const visits = new Map<string, number>();
+  game.onTalk = (npc) => {
+    const n = visits.get(npc.id) ?? 0;
+    visits.set(npc.id, n + 1);
+    const raw = speechFor(speech, npc.id, n);
+    if (raw === null) { if (MERCHANTS.has(npc.id)) shop.open(npc.name); return; }
+    const d = parseDialogue(raw);
+    // the merchant's first two answers lead to the shop window ($0 buy, $1 sell); every other answer ends the talk
+    talkWin.open(npc.name, d, (i) => { if (MERCHANTS.has(npc.id) && i < 2) shop.open(npc.name); });
+  };
   scene.add(game.group);
   const fxView = await EffectsView.load(BASE);
   scene.add(fxView.group);
@@ -194,7 +208,7 @@ async function boot() {
   window.addEventListener('keydown', (e) => {
     readMods(e);
     keys.add(e.key.toLowerCase());
-    if (e.key === 'Escape') { if (shop.isOpen) shop.close(); else menu.toggle(); }
+    if (e.key === 'Escape') { if (talkWin.isOpen) talkWin.close(); else if (shop.isOpen) shop.close(); else menu.toggle(); }
     if (e.key === ' ') { if (!shop.isOpen && !menu.isOpen) game.swing(); e.preventDefault(); }
     if (e.key >= '1' && e.key <= '4' && !shop.isOpen) game.useQuick(Number(e.key));
     if (e.key.toLowerCase() === 'i') panel.toggle();
@@ -267,8 +281,8 @@ async function boot() {
     camera.position.y += (w.y - camera.position.y) * Math.min(1, dt * 6);
     gui.update();
     const left = game.monsters.filter((m) => m.alive).length;
-    banner.style.display = !hero.alive || left === 0 ? 'block' : 'none';
-    banner.textContent = !hero.alive ? 'You have fallen — press R to try again (items and one point of each ability are lost)' : (custom ? 'The area is clear!' : 'The camp is clear!');
+    banner.style.display = !hero.alive || left === 0 || game.status === 'failed' ? 'block' : 'none';
+    banner.textContent = game.status === 'failed' ? `${LEVEL_MSG.failed} — press Esc for the menu` : !hero.alive ? 'You have fallen — press R to try again (items and one point of each ability are lost)' : (custom ? 'The area is clear!' : 'The camp is clear!');
     if (game.goalReached && !won) {
       won = true;
       const done = custom || career!.done.includes(mission.id) ? career!.done : [...career!.done, mission.id];
