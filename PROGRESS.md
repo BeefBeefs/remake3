@@ -297,4 +297,5 @@ map exercises them, so none is implemented; nothing has been seen in a browser.
 - **Shop**: no dedicated art found, so it is assembled from the stone panel (Overlay 66), Heavy/Light buttons
   (Inventory 10–13), Accept/Cancel (Overlay 57/58) and the bitmap font.
 - Preview pages: `gui.html?screen=inventory|character|shop`. 86 tests green, CI green.
+- **Fortuity / Knowledge potions** (ids 111/112) now do something (guesses, flagged in RULES.md): +1 attribute point; two random items drop at the hero's feet. 87 tests.
 - Still guesses: all numbers noted earlier. Next up: spell visual effects, stance icons, remaining monsters.

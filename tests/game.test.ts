@@ -753,3 +753,16 @@ test('difficulty scales monster life and damage: Apprentice softer, Hero tougher
   assert.equal(easy.hit, easy.hp, 'monsters start at full life');
   assert.equal(normal.hp, 12, 'goblin life in the data');
 });
+
+test('knowledge potion gives an attribute point, fortuity potion drops two items', () => {
+  const g = makeGame();
+  g.inventory.add(112); g.inventory.add(111);
+  const pts = g.points;
+  g.useSlot(g.inventory.slots.indexOf(112));
+  assert.equal(g.points, pts + 1);
+  assert.ok(!g.inventory.slots.includes(112));
+  const before = g.ground.length;
+  g.useSlot(g.inventory.slots.indexOf(111));
+  assert.ok(!g.inventory.slots.includes(111));
+  assert.equal(g.ground.length, before + 2);
+});

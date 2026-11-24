@@ -84,6 +84,9 @@ export const xpForLevel = (level: number): number => 25 * (level - 1) * level;
 const STEP_EVERY = 0.58;
 export const POINTS_PER_LEVEL = 4;
 export type Attr = 'strength' | 'skill' | 'resistance' | 'magic';
+/** Potions of Fortuity (azar) and Knowledge (conocimiento): effects are guesses. */
+const POTION_FORTUITY = 111, POTION_KNOWLEDGE = 112;
+
 /** Hit points per point of Resistance (the manual only says life is tied to Resistance; 2 is a guess). */
 export const HP_PER_RESISTANCE = 2;
 /** Stamina follows Resistance and mana follows Power (manual); the per-point ratios and all rates below are guesses. */
@@ -503,7 +506,21 @@ export class Game {
       return;
     }
     if (def.kind === 'potion') {
-      if (def.data & 7) {
+      if (def.id === POTION_FORTUITY || def.id === POTION_KNOWLEDGE) {
+        // The manual lists both but never says what they do; guesses: knowledge = one more attribute point to
+        // spend, fortuity (Spanish "azar", chance) = two random items turn up at the hero's feet.
+        this.inventory.take(index);
+        this.snd(9);
+        if (def.id === POTION_KNOWLEDGE) { this.points++; this.say(`You drink the ${def.name}: +1 attribute point`); }
+        else {
+          const usable = (d: ItemDef) => this.inventory.canUse(d) && !(d.tipo & 4096);
+          const found: number[] = [];
+          for (let n = 0; n < 2; n++) { const it = rollByMask(this.inventory.itemDefs, 0xffff & ~(2048 | 4096 | 1024), this.level + 1, this.rnd, usable); if (it) found.push(it); }
+          found.forEach((it, n) => this.spawnGround(it, this.hero.cx + (n ? 0.7 : -0.7), this.hero.cy + 0.5));
+          this.say(`You drink the ${def.name}: ${found.length ? 'fortune smiles on you' : 'nothing happens'}`);
+        }
+        this.version++;
+      } else if (def.data & 7) {
         // Data is a bit mask: 1 life, 2 stamina, 4 magic (the Vitality potion, 7, does all three and can hurt: -35..75)
         const [lo, hi] = def.power;
         const parts: string[] = [];
