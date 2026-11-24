@@ -343,3 +343,24 @@ map exercises them, so none is implemented; nothing has been seen in a browser.
   without errors (which caught a lost water material). Not done: the other tilesets' chests, multiplayer rules, map
   scripts, and real names for the campaign missions.
 - 107 tests.
+
+## Turn 15 — real numbers, map scripts, dialogue, map editor
+
+- **Numbers from `Nightstone.exe`** (read with objdump; `src/game/rules.ts`, `docs/RULES.md` "From the executable"): the
+  experience curve (195·n²+200, level 50 max), start attributes and attribute caps per class, maximum life / stamina / mana
+  formulas, the hero's damage formula (class term + weapon roll with family bonus; 0–2 becomes 1–3), damage taken
+  (`max(1, d − armour − 1)`), stamina and mana per frame, block cost, and the mana of each staff shot. The Sorceress now shoots
+  bolts from her staff for mana. 8 tests that encoded old guesses were rewritten; 4 new ones. Still guessed: how monsters take
+  damage, the state → stamina mapping, special-item damage.
+- **Map scripts run.** The interpreter was decoded (`docs/FORMATS.md` "Scripts"): teleports (`Bdt Entrar` / `Bdt Salir`), exit
+  conditions (no enemies of a race left, key item held), end level, raise monster, remove gate, play sound, add time. Chests of the
+  Cave and Dungeon packs work too (they carry loot scripts). Scripts that sit on cells are walk-on triggers — the activation type
+  is not in the record (the 32 bytes that should hold it are zero everywhere), so that is a decision, not a finding. A script
+  name made of a control byte used to put phantom goals on the minimap; fixed. All 35 campaign maps run every script in a test.
+- **NPC dialogue.** Speeches from the language file (`ACTORS\ID-n*`, answers `$0 $1 …`) open in a stone-panel window; the
+  Innkeeper's first two answers open the shop; the Princess alternates her two speeches.
+- **Map editor** (`editor.html`, linked from the game): paint ground (1–5 brush), scenery from the three packs, monsters / NPCs,
+  hero starts, erase, pick, undo, grid, zoom, load any of the 41 maps / a file / a blank Outside, Cave or Dungeon map, save a
+  `.map`, and Play it in the game. `mapwriter.ts` writes maps back; unedited maps are byte-identical (all 35 tested). Not
+  editable: scripts and patrol routes (shown read-only).
+- 127 tests.

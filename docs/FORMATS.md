@@ -336,3 +336,11 @@ Spell effect textures live in `GDI/3D/*.bmp` and are drawn additively (`src/game
 - Engine speed: 35 frames per second (`SETFPS`, default 0x23). The cheat console words (VIDA, MAGIA, RESISTENCIA, DESTREZA,
   FUERZA, MRFURIOSO…) are plain strings in the data section.
 - The numbers are in `src/game/rules.ts`; `docs/RULES.md` ("From the executable") lists them.
+
+### Writing maps (`src/formats/mapwriter.ts`)
+`writeMapBody(map, base)` is the inverse of `parseMap`: it patches the ground (low 16 bits of each terrain u32 — the upper half
+holds flag bits on some maps and is left alone), the object layer and the pack-0 markers into `base` (the body the map came from,
+or `blankMapBody(tileset, tile)`), keeps the header, decor layer, scripts and the zone records of markers that are still in place, and
+clears the zone record of a marker that was removed. Unedited, all 35 campaign maps come back byte for byte (tested). Maps are
+gzip (`gzip()` uses `CompressionStream`). The editor (`editor.html`) edits ground, scenery, monster / NPC markers and hero starts,
+shows scripts and patrol routes read-only, saves a `.map`, and **Play** passes it to `index.html?edited=1` through `sessionStorage`.

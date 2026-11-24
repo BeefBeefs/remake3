@@ -18,3 +18,6 @@ Used to look at the real game when `npm install` is blocked. Needs Chrome (`goog
 `?debug` exposes `window.__nst = { game }` so scripts can drive the game. WebGL comes from SwiftShader (software), so it
 is slow but it renders. The three.js checkout is newer than the version in package.json (0.170); for screenshots that
 does not matter.
+
+`edflow.mjs` drives the map editor (`editor.html`): new Cave map, paints a start, ground and two monsters, presses Play and checks the game
+loaded the map (`node edflow.mjs`, screenshots in /tmp).

@@ -66,6 +66,12 @@ async function boot() {
   // a map played on its own (Select map, or ?map=nhs/12): it never touches the career's missions
   let custom = findMap(takeSession<string>('nst-map') ?? new URLSearchParams(location.search).get('map'));
   if (custom?.id === 'lost_forrest') custom = undefined;
+  // ?edited=1: the map made in editor.html (kept gzipped and base64 in sessionStorage); played on its own like any selected map
+  let editedMap: Uint8Array | null = null;
+  if (new URLSearchParams(location.search).has('edited')) {
+    try { const raw = sessionStorage.getItem('nst-editmap'); if (raw) editedMap = Uint8Array.from(atob(raw), (c) => c.charCodeAt(0)); } catch { /* falls back to the normal game */ }
+    if (editedMap) custom = { id: 'edited', name: 'Your map', group: 'Solo', file: '' };
+  }
   hud.textContent = 'Loading…';
   const skin = await Skin.load(BASE);
   const adv = (await (await fetch(`${BASE}data/adventure.json`)).json()) as { mission_text: string; final: string; heroes: { strength: number; skill: number; resistance: number; magic: number }[] };
@@ -110,7 +116,7 @@ async function boot() {
   const played: MapEntry = custom ?? { id: mission.id, name: mission.name, group: 'Solo', file: `maps/${mission.map}` };
   if (!glRenderer) { hud.textContent = 'This browser cannot create a WebGL context, which the game needs to draw the world.'; return; }
   hud.textContent = 'Loading original map and sprite data…';
-  const map = parseMap(await fetch(`${BASE}${played.file}`).then((r) => r.arrayBuffer()).then(gunzip));
+  const map = parseMap(editedMap ? await gunzip(editedMap) : await fetch(`${BASE}${played.file}`).then((r) => r.arrayBuffer()).then(gunzip));
   const ts = tilesetDir(map);
   const [tiles, packCell, pack1, pack2, pack3] = await Promise.all([
     Atlas.load(BASE, `atlas/scenary/${ts}/vtiles.json`),

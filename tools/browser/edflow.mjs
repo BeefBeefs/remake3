@@ -1,0 +1,37 @@
+import { createRequire } from 'node:module';
+const puppeteer = createRequire('/opt/npm-tools/node_modules/')('puppeteer-core');
+const b = await puppeteer.launch({ executablePath: '/usr/bin/google-chrome', headless: 'new', args: ['--no-sandbox', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--enable-webgl', '--ignore-gpu-blocklist', '--window-size=1400,800'] });
+const p = await b.newPage();
+await p.setViewport({ width: 1400, height: 800 });
+p.on('pageerror', (e) => console.log('[pageerror]', String(e).slice(0, 300)));
+p.on('console', (m) => { const t = m.text(); if (/error/i.test(t) && !/404/.test(t)) console.log('[console]', t.slice(0, 200)); });
+await p.goto('http://127.0.0.1:8765/editor.html?map=lost_forrest', { waitUntil: 'load' });
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+await sleep(2500);
+// new Cave map
+await p.evaluate(() => { const sel = [...document.querySelectorAll('select')].find((s) => [...s.options].some((o) => o.text === 'Cave')); sel.value = 'Cave'; [...document.querySelectorAll('button')].find((x) => x.textContent === 'New map').click(); });
+await sleep(2500);
+const click = async (label) => p.evaluate((l) => [...document.querySelectorAll('button')].find((x) => x.textContent === l).click(), label);
+const cx = 700, cy = 400;
+await click('Hero start');
+await p.mouse.click(cx, cy);
+await click('Ground');
+await click('5×5');
+await p.mouse.move(cx + 100, cy + 40); await p.mouse.down(); await p.mouse.move(cx + 220, cy + 40, { steps: 6 }); await p.mouse.up();
+await click('Monster / NPC');
+await p.mouse.click(cx + 120, cy + 70);
+await p.mouse.click(cx - 60, cy + 40);
+await click('Scenery');
+await p.mouse.click(cx + 10, cy - 60);
+console.log('info', await p.$eval('#info', (e) => e.textContent));
+await p.screenshot({ path: '/tmp/ed2.png' });
+// Play
+await Promise.all([p.waitForNavigation({ waitUntil: 'load' }), click('Play')]);
+await p.goto(p.url() + '&debug', { waitUntil: 'load' });
+await p.waitForFunction('window.__nst', { timeout: 60000 }).catch(() => {});
+console.log('url', p.url());
+await sleep(4000);
+const st = await p.evaluate(() => { const g = window.__nst?.game; return g ? { hero: [g.hero.cx, g.hero.cy], monsters: g.monsters.length, log: g.log } : 'no debug'; });
+console.log(JSON.stringify(st));
+await p.screenshot({ path: '/tmp/ed3.png' });
+await b.close();
