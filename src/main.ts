@@ -3,6 +3,7 @@ import { Atlas } from './assets/atlas.ts';
 import { MISSIONS, SaveStore, newCareer, parseCareer, type Career } from './game/career.ts';
 import { WorldMap } from './ui/worldmap.ts';
 import { pickSlot } from './ui/saveslots.ts';
+import { ProjectileView } from './game/projectileview.ts';
 import { EffectsView } from './game/effectsview.ts';
 import { World } from './game/world.ts';
 import { Sfx } from './audio/sfx.ts';
@@ -127,8 +128,10 @@ async function boot() {
   const spawns = map.markers.filter((m) => animData.actors[String(m.id)] && m.id < 100).map((m) => ({ id: String(m.id), cx: m.cx, cy: m.cy, route: m.route }));
   // ?npc=27,28 puts those NPCs next to the start (the Lost Forrest has none; the Inn map is not in this install).
   const extraNpcs = (new URLSearchParams(location.search).get('npc') ?? '').split(',').filter((id) => animData.actors[id]?.npc);
+  // ?mob=23,25 also drops those monsters (23 archer, 25 mage, 55 Zelos...) a few cells from the start, for trying them out.
+  const extraMobs = (new URLSearchParams(location.search).get('mob') ?? '').split(',').filter((id) => animData.actors[id] && !animData.actors[id]!.npc);
   const atlases = new Map<string, Atlas>();
-  await Promise.all([String(classId), ...extraNpcs, ...new Set(spawns.map((s) => s.id))].map(async (id) => {
+  await Promise.all([String(classId), ...extraNpcs, ...extraMobs, ...new Set(spawns.map((s) => s.id))].map(async (id) => {
     const pack = animData.actors[id]!.pack;
     if (!atlases.has(pack)) atlases.set(pack, await Atlas.load(BASE, `p16/actors/${pack.toLowerCase()}.json`));
   }));
@@ -136,6 +139,7 @@ async function boot() {
   // The chosen hero's start marker (100 Barbarian, 101 Amazon, 102 Sorceress) of the map; fall back to the old camp guess for maps without one.
   const st = startOf(map, classId);
   const spawn = world.findOpenCell(st?.cx ?? 152, st?.cy ?? 78);
+  extraMobs.forEach((id, i) => { const c = world.findOpenCell(spawn.cx + 6 - i * 3, spawn.cy - 2 + i * 5); spawns.push({ id, cx: c.cx, cy: c.cy, route: undefined }); });
   const tileSurface = surfaceLookup((await (await fetch(`${BASE}data/tiles.json`)).json()) as TileTable, map.tileset);
   const surface = (cx: number, cy: number) => (map.terrain[Math.floor(cy) * map.dim + Math.floor(cx)] !== undefined ? tileSurface(map.terrain[Math.floor(cy) * map.dim + Math.floor(cx)]!) : 'grass');
   const npcSpawns = extraNpcs.map((id, k) => { const c = world.findOpenCell(spawn.cx + 3 + 2 * k, spawn.cy + 2); return { id, cx: c.cx, cy: c.cy }; });
@@ -149,6 +153,8 @@ async function boot() {
   scene.add(game.group);
   const fxView = await EffectsView.load(BASE);
   scene.add(fxView.group);
+  const projView = await ProjectileView.load(BASE);
+  scene.add(projView.group);
   const hero = game.hero;
   world.update(hero.cx, hero.cy);
   const startW = cellToWorld(hero.cx, hero.cy);
@@ -263,6 +269,7 @@ async function boot() {
       showVictory(game, hero.stats.name, { ...career!, hero: game.carry(), done, when: Date.now() }, skin, store);
     }
     fxView.sync(game.fx);
+    projView.sync(game.projectiles);
     // earthquake: shake the picture for a moment
     const sh = Math.min(1, game.shake) * 7, ox = (Math.random() - 0.5) * 2 * sh, oy = (Math.random() - 0.5) * 2 * sh;
     camera.position.x += ox; camera.position.y += oy;

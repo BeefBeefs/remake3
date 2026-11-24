@@ -4,7 +4,8 @@ import { type AnimData } from './anims.ts';
 import { SPELLS, SPELL_RADIUS, blastDamage, manaCost } from './spells.ts';
 import { STEP_SOUND, type Surface } from './surface.ts';
 import { Creature, type Stats } from './creature.ts';
-import { levelUpFx, potionFx, spellFx, stepFx, type Fx } from './effects.ts';
+import { levelUpFx, makeFx, potionFx, spellFx, stepFx, type Fx } from './effects.ts';
+import { lineClear, makeProjectile, type Projectile, type ProjKind } from './projectiles.ts';
 import { Inventory, familyBonus, missingReqs, rollByMask, rollDrop, slotOf, type ItemDef } from './items.ts';
 import { cellToWorld, depthOf } from '../iso.ts';
 import { World } from './world.ts';
@@ -110,8 +111,14 @@ const STEALTH_HEARING = 0.5;
 const SNEAK_MULT = 2;
 /** Barbarian block: stamina spent per blocked blow (a guess). Blows from the front arc are stopped completely while it lasts. */
 const BLOCK_COST = 4;
-/** Bows shoot: the swing hits the nearest monster in front within this many cells (no projectile is drawn yet). */
+/** Bows shoot an arrow that flies this many cells; it is aimed at the nearest monster within ~25 degrees of the aim. */
 const BOW_RANGE = 7;
+/** Monsters that shoot from a distance (INI Tipo_IA 3): what they fire, how far, and the closest they like to stand. */
+const RANGED: Record<string, { kind: ProjKind; range: number; keep: number; color: number }> = {
+  '23': { kind: 'arrow', range: 8, keep: 3.5, color: 0xffffff }, // Arquero
+  '25': { kind: 'bolt', range: 8, keep: 3.5, color: 0x7fb0ff }, // Mago
+  '55': { kind: 'bolt', range: 9, keep: 3, color: 0xff8040 }, // Zelos
+};
 const HERO_SPEED = 3.2; // cells per second
 const MONSTER_SPEED = 1.7;
 const PATROL_SPEED = 0.45; // fraction of chase speed
@@ -158,6 +165,8 @@ export class Game {
   readonly ground: GroundItem[] = [];
   /** Visual effects in progress (spells, level-up, potions); drawn by EffectsView. */
   readonly fx: Fx[] = [];
+  /** arrows and bolts in flight (drawn by ProjectileView) */
+  readonly projectiles: Projectile[] = [];
   /** Screen shake left (seconds), set by the earth parchment; main.ts shakes the camera while it runs. */
   shake = 0;
   /** most recent messages, newest last (for the HUD) */
@@ -622,38 +631,44 @@ export class Game {
     }
   }
 
+  /** Rolls and applies the hero's weapon damage against one monster (melee swing or arrow arrival). */
+  private heroHitMonster(m: Creature, sneak: boolean): void {
+    if (!m.alive) return;
+    const [lo, hi] = this.hero.stats.damage;
+    const mult = this.inventory.weaponVs(m.stats.race ?? 0);
+    const roll = (lo + Math.floor(this.rnd() * (hi - lo + 1))) * (sneak ? SNEAK_MULT : 1);
+    const dmg = mult <= 0 ? Math.round(roll * mult) : Math.max(1, Math.round(roll * mult) - m.stats.armor);
+    if (sneak) this.say('Sneak attack!');
+    const flesh = this.data.actors[this.idOf.get(m) ?? '']?.Sonidos?.Carne !== 0;
+    this.snd(this.pick(flesh ? 59 : 62, 3)); // c_carne / c_nocarne
+    this.damageMonster(m, dmg);
+  }
+
   private heroStrike(): void {
     const h = this.hero;
     let hit = false;
     const bow = this.ranged;
     if (bow) this.snd(this.pick(50, 3)); // c_arco
-    let nearest: Creature | null = null, nd = Infinity;
     if (bow) {
+      let nearest: Creature | null = null, nd = Infinity;
       for (const m of this.monsters) {
         if (!m.alive || m.dormant) continue;
         const dx = m.cx - h.cx, dy = m.cy - h.cy, d = Math.hypot(dx, dy);
         if (d > BOW_RANGE || (d > 0.6 && (dx * this.facing.x + dy * this.facing.y) / d < 0.9)) continue; // within ~25 degrees of the aim
         if (d < nd) { nd = d; nearest = m; }
       }
+      const ax = nearest ? nearest.cx - h.cx : this.facing.x, ay = nearest ? nearest.cy - h.cy : this.facing.y;
+      const n = Math.hypot(ax, ay) || 1;
+      const sneakNow = this.effectiveStance === 'stealth' ? new Set(this.unaware) : new Set<Creature>();
+      this.projectiles.push(makeProjectile('arrow', h.cx + (ax / n) * 0.5, h.cy + (ay / n) * 0.5, ax, ay, BOW_RANGE + 1, true, (m) => { if (m) this.heroHitMonster(m, sneakNow.has(m)); }));
     }
-    for (const m of this.monsters) {
+    if (!bow) for (const m of this.monsters) {
       if (!m.alive || m.dormant) continue;
       const dx = m.cx - h.cx, dy = m.cy - h.cy, d = Math.hypot(dx, dy);
-      if (bow) { if (m !== nearest) continue; }
-      else {
-        if (d > HIT_RANGE) continue;
-        if (d > 0.6 && (dx * this.facing.x + dy * this.facing.y) / d < 0.2) continue; // must be in front
-      }
+      if (d > HIT_RANGE) continue;
+      if (d > 0.6 && (dx * this.facing.x + dy * this.facing.y) / d < 0.2) continue; // must be in front
       hit = true;
-      const [lo, hi] = h.stats.damage;
-      const sneak = this.effectiveStance === 'stealth' && this.unaware.has(m);
-      const mult = this.inventory.weaponVs(m.stats.race ?? 0);
-      const roll = (lo + Math.floor(this.rnd() * (hi - lo + 1))) * (sneak ? SNEAK_MULT : 1);
-      const dmg = mult <= 0 ? Math.round(roll * mult) : Math.max(1, Math.round(roll * mult) - m.stats.armor);
-      if (sneak) this.say('Sneak attack!');
-      const flesh = this.data.actors[this.idOf.get(m) ?? '']?.Sonidos?.Carne !== 0;
-      this.snd(this.pick(flesh ? 59 : 62, 3)); // c_carne / c_nocarne
-      this.damageMonster(m, dmg);
+      this.heroHitMonster(m, this.effectiveStance === 'stealth' && this.unaware.has(m));
     }
     for (const b of [...this.boxes]) {
       if (b.done) continue;
@@ -669,12 +684,17 @@ export class Game {
   private monsterStrike(m: Creature): void {
     const h = this.hero;
     if (!h.alive || Math.hypot(h.cx - m.cx, h.cy - m.cy) > MELEE + 0.5) return;
-    const [lo, hi] = m.stats.damage;
     this.msnd(m, 0);
+    this.hurtHero(m.stats.damage, m.cx - h.cx, m.cy - h.cy);
+  }
+
+  /** Damage dealt to the hero from the direction (fromx, fromy): a raised shield stops blows from the front arc. */
+  private hurtHero([lo, hi]: [number, number], fromx: number, fromy: number): void {
+    const h = this.hero;
+    if (!h.alive) return;
     if (this.blocking && this.stamina >= BLOCK_COST) {
-      // the blow comes from the front arc when the monster is on the side the hero faces
-      const ex = m.cx - h.cx, ey = m.cy - h.cy, ed = Math.hypot(ex, ey) || 1;
-      if ((ex * this.facing.x + ey * this.facing.y) / ed > 0) {
+      const ed = Math.hypot(fromx, fromy) || 1;
+      if ((fromx * this.facing.x + fromy * this.facing.y) / ed > 0) {
         this.stamina -= BLOCK_COST;
         this.snd(this.pick(53, 4)); // c_cubrir
         return;
@@ -684,6 +704,44 @@ export class Game {
     const sb = CLASSES[this.classId].sound;
     this.snd(died ? sb : this.pick(sb + 1, 2)); // <class>_morir / _recibir
     if (died) this.die();
+  }
+
+  /** The ranged monsters' release frame: an arrow or bolt leaves towards where the hero stands now. */
+  private monsterShoot(m: Creature): void {
+    const h = this.hero, r = RANGED[this.idOf.get(m) ?? ''];
+    if (!h.alive || !r) return;
+    const ex = h.cx - m.cx, ey = h.cy - m.cy, d = Math.hypot(ex, ey) || 1;
+    this.msnd(m, 0);
+    const from = { x: m.cx, y: m.cy };
+    this.projectiles.push(makeProjectile(r.kind, m.cx + (ex / d) * 0.6, m.cy + (ey / d) * 0.6, ex, ey, r.range + 2, false, (t) => {
+      if (t === h) this.hurtHero(m.stats.damage, from.x - h.cx, from.y - h.cy);
+    }, r.color));
+  }
+
+  private stepProjectiles(dt: number): void {
+    const h = this.hero;
+    for (const p of this.projectiles) {
+      if (p.done) continue;
+      p.age += dt;
+      p.cx += p.vx * dt;
+      p.cy += p.vy * dt;
+      let target: Creature | null | undefined;
+      if (p.friendly) {
+        for (const m of this.monsters) if (m.alive && !m.dormant && Math.hypot(m.cx - p.cx, m.cy - p.cy) < 0.7) { target = m; break; }
+      } else if (h.alive && Math.hypot(h.cx - p.cx, h.cy - p.cy) < 0.6) target = h;
+      if (target === undefined && !this.world.isWalkable(p.cx, p.cy)) target = null; // stuck in a tree or wall
+      if (target === undefined && p.age >= p.life) target = null; // fell short
+      if (p.kind === 'bolt' && !p.done) {
+        p.trail -= dt;
+        if (p.trail <= 0) { p.trail = 0.05; this.fx.push(makeFx(p.color === 0xff8040 ? 77 : 118, p.cx, p.cy, { lift: 26, size0: 46, size1: 12, life: 0.35, color: p.color })); }
+      }
+      if (target !== undefined) {
+        p.done = true;
+        if (p.kind === 'bolt') this.fx.push(makeFx(118, p.cx, p.cy, { lift: 26, size0: 30, size1: 120, life: 0.35, color: p.color }));
+        p.hit(target);
+      }
+    }
+    for (let i = this.projectiles.length - 1; i >= 0; i--) if (this.projectiles[i]!.done) this.projectiles.splice(i, 1);
   }
 
   /**
@@ -727,6 +785,7 @@ export class Game {
     for (const n of this.npcs) n.creature.update(dt);
     h.update(dt);
     for (const m of this.monsters) m.update(dt);
+    this.stepProjectiles(dt);
     stepFx(this.fx, dt);
     this.shake = Math.max(0, this.shake - dt);
   }
@@ -891,6 +950,29 @@ export class Game {
     if (Math.hypot(m.cx - before.x, m.cy - before.y) < 1e-4) { p.i = (p.i + 1) % p.pts.length; p.wait = 1; } // blocked: next point
   }
 
+  /** Archer / mage behaviour: close in until the hero is in range and in the clear, back away when he gets too close, shoot in between. */
+  private updateShooter(m: Creature, rg: (typeof RANGED)[string], ex: number, ey: number, d: number, dt: number): void {
+    const h = this.hero;
+    const speed = m.stats.speed * (this.slowed.has(m) ? 0.5 : 1);
+    const clear = lineClear((x, y) => this.world.isWalkable(x, y), m.cx, m.cy, h.cx, h.cy);
+    if (d > rg.range || !clear) {
+      m.setState('walk');
+      this.step(m, ex / d, ey / d, speed, dt);
+      return;
+    }
+    if (d < rg.keep) {
+      const x0 = m.cx, y0 = m.cy;
+      this.step(m, -ex / d, -ey / d, speed * 0.8, dt);
+      if (Math.hypot(m.cx - x0, m.cy - y0) > 1e-4) { m.setState('walk'); return; } // else cornered: shoot from here
+    }
+    if (m.cooldown === 0) {
+      m.onStrike = (c) => this.monsterShoot(c);
+      m.setState('attack');
+      const [lo, hi] = m.stats.cooldown;
+      m.cooldown = (lo + this.rnd() * (hi - lo)) * (this.slowed.has(m) ? 2 : 1);
+    } else if (m.state === 'walk') m.setState('idle');
+  }
+
   private updateMonster(m: Creature, dt: number): void {
     if (!m.alive) return;
     const h = this.hero;
@@ -916,6 +998,8 @@ export class Game {
       if (m.has('taunt')) { m.setState('taunt'); return; } // Alarma: a roar before the chase
     }
     m.face(ex, ey);
+    const rg = RANGED[this.idOf.get(m) ?? ''];
+    if (rg && m.has('attack')) { this.updateShooter(m, rg, ex, ey, d, dt); return; }
     if (d > MELEE) {
       m.setState('walk');
       this.step(m, ex / d, ey / d, m.stats.speed * (this.slowed.has(m) ? 0.5 : 1), dt);

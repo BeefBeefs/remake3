@@ -8,7 +8,9 @@ import { QuadBatch } from './batch.ts';
  * P16 hotspots are raw offsets (px) of a bitmap's top-left corner. Measured on the Barbarian walk cycle (feet at
  * x -127.75, y -17) and on the Lost Forrest camp objects, the engine's reference point is offset by (128, 16) px: with a sprite anchored at its cell centre (or an actor's feet):
  *   topLeft = anchor + (hx + 128, hy + 16)   (screen px, y down).
- * Tall multi-slice structures (cliff walls) follow the same rule but look high; this is unverified for them.
+ * The 32 px wall slices of the map border (Pack2 600-625) do NOT follow it: their hotspots put them ~6-7 cells
+ * (about 100 px up and 200 px left) away from the line of cells that carries them, i.e. into the playable area
+ * where they hide the hero. They are therefore drawn standing on their own cell (see `wallRect`).
  */
 export const HOTSPOT_X = 128;
 export const HOTSPOT_Y = 16;
@@ -19,6 +21,18 @@ const LOAD_RADIUS = 3;
 
 /** Sprites at least this tall (px) block movement (trees, walls, barrels...). */
 const BLOCK_HEIGHT = 30;
+
+/** Pack2 border-wall slices (one per cell along the map edge) and the invisible blocker that fills the gaps between them. */
+export const WALL_PACK = 2;
+export const WALL_FIRST = 600;
+export const WALL_LAST = 625;
+export const WALL_BLOCKER = 599;
+export const isWallSlice = (pack: number, id: number): boolean => pack === WALL_PACK && id >= WALL_FIRST && id <= WALL_LAST;
+
+/** Screen rectangle (x of left edge, y of bottom edge, y up) of a wall slice standing on the cell centred at p. */
+export function wallRect(p: { x: number; y: number }, w: number): { x: number; bottom: number } {
+  return { x: p.x - w / 2, bottom: p.y - 12 };
+}
 
 const WATER = new THREE.MeshBasicMaterial({ color: 0x1c3446, side: THREE.DoubleSide });
 
@@ -46,6 +60,7 @@ export class World {
         const atlas = packs[o >> 10];
         const id = o & 1023;
         if (atlas && atlas.has(id) && atlas.rect(id)[3] >= BLOCK_HEIGHT) this.blocked[i] = 1;
+        if (o >> 10 === WALL_PACK && id === WALL_BLOCKER) this.blocked[i] = 1;
       }
     }
   }
@@ -135,14 +150,21 @@ export class World {
           // tiles are 64x31 but the grid steps by 16 px: stretch to 32 to close the seams
           ground.add(t, p.x - 32, p.y - 16, 64, 32, -1000);
         }
-        const o = this.map.objects[i]!;
+        let o = this.map.objects[i]!;
+        // The map's wall line has an empty frame (599) between slices; a plain slice stands in so the wall has no holes.
+        if (o === ((WALL_PACK << 10) | WALL_BLOCKER)) o = (WALL_PACK << 10) | (cx + cy & 1 ? 610 : 600);
         if (o) {
           const atlas = this.packs[o >> 10], id = o & 1023;
           if (atlas && atlas.has(id)) {
             const [, , w, h] = atlas.rect(id);
             const [hx, hy] = atlas.hotspot(id);
-            const top = p.y - (hy + HOTSPOT_Y);
-            scenery[o >> 10]!.add(id, p.x + hx + HOTSPOT_X, top - h, w, h, depthOf(cx, cy));
+            if (isWallSlice(o >> 10, id)) {
+              const r = wallRect(p, w);
+              scenery[o >> 10]!.add(id, r.x, r.bottom, w, h, depthOf(cx, cy), true);
+            } else {
+              const top = p.y - (hy + HOTSPOT_Y);
+              scenery[o >> 10]!.add(id, p.x + hx + HOTSPOT_X, top - h, w, h, depthOf(cx, cy));
+            }
           }
         }
       }

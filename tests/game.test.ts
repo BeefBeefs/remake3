@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { frameId } from '../src/game/anims.ts';
 import { Game, type GameData, type GameOptions, xpForLevel } from '../src/game/game.ts';
-import { World } from '../src/game/world.ts';
+import { World, isWallSlice, wallRect, WALL_BLOCKER } from '../src/game/world.ts';
 import type { Atlas } from '../src/assets/atlas.ts';
 import type { GameMap } from '../src/formats/map.ts';
 import { Mesh } from 'three';
@@ -858,4 +858,72 @@ test('a hero who finishes a mission carries everything into the next one; dying 
   const junk = makeGame({ classId: 100, save: { ...c, inv: { slots: [999999, 86, -3], equipped: { weapon: 424242 } } } });
   assert.deepEqual(junk.inventory.slots.filter((x) => x), [86], 'unknown items in a save are dropped');
   assert.equal(junk.inventory.equipped.weapon, undefined);
+});
+
+test('border wall slices stand on their own cell and the empty wall frame still blocks', () => {
+  assert.ok(isWallSlice(2, 600) && isWallSlice(2, 625));
+  assert.ok(!isWallSlice(2, 599) && !isWallSlice(1, 610) && !isWallSlice(2, 700));
+  const r = wallRect({ x: 100, y: -200 }, 32);
+  assert.equal(r.x, 84); // centred on the cell
+  assert.ok(r.bottom < -200 + 1 && r.bottom > -230); // base at the cell, not ~100 px above it as the hotspot says
+  const dim = 256;
+  const objects = new Uint32Array(dim * dim);
+  objects[10 * dim + 10] = (2 << 10) | WALL_BLOCKER;
+  const map: GameMap = { dim, tileset: 'Outside', terrain: new Uint16Array(dim * dim).fill(340), objects, markers: [], scripts: [], scriptAt: new Int8Array(dim * dim).fill(-1) };
+  const w = new World(map, { ...fakeAtlas, has: (id: number) => id !== WALL_BLOCKER } as unknown as Atlas, [fakeAtlas, fakeAtlas, { ...fakeAtlas, has: (id: number) => id !== WALL_BLOCKER } as unknown as Atlas]);
+  assert.equal(w.blocked[10 * dim + 10], 1);
+});
+
+test('projectile maths: heading, range and line of sight', async () => {
+  const { makeProjectile, projectileAngle, lineClear, ARROW_SPEED } = await import('../src/game/projectiles.ts');
+  const p = makeProjectile('arrow', 10, 10, 1, 0, 8, true, () => {});
+  assert.ok(Math.abs(Math.hypot(p.vx, p.vy) - ARROW_SPEED) < 1e-9);
+  assert.ok(Math.abs(p.life * ARROW_SPEED - 8) < 1e-9);
+  assert.ok(Math.abs(projectileAngle(p) - Math.atan2(-16, 32)) < 1e-9); // +cx runs to the lower right on screen
+  assert.ok(lineClear(() => true, 0, 0, 6, 0));
+  assert.ok(!lineClear((x) => x < 3, 0, 0, 6, 0));
+});
+
+test('the Amazon\'s arrow flies and hurts what it reaches', () => {
+  const g = makeGame({ classId: 101, attrs: { strength: 20, skill: 27, resistance: 22, magic: 15 }, spawns: [{ id: '1', cx: 133, cy: 128 }] });
+  const m = g.monsters[0]!;
+  const hp0 = m.hp;
+  g.click(m.cx, m.cy);
+  let sawArrow = false;
+  for (let t = 0; t < 4 && m.hp === hp0 && m.alive; t += 1 / 60) { g.update(1 / 60, null); if (g.projectiles.some((p) => p.kind === 'arrow' && p.friendly)) sawArrow = true; }
+  assert.ok(sawArrow, 'an arrow was in the air');
+  assert.ok(m.hp < hp0 || !m.alive, 'and it landed');
+});
+
+test('archers and mages keep their distance and shoot the hero', () => {
+  for (const id of ['23', '25']) {
+    const g = makeGame({ spawns: [{ id, cx: 134, cy: 128 }] });
+    const m = g.monsters[0]!;
+    m.dormant = false;
+    const hp0 = g.hero.hp;
+    let shots = 0, closest = Infinity;
+    const seen = new Set<unknown>();
+    for (let t = 0; t < 12; t += 1 / 60) {
+      g.update(1 / 60, null);
+      for (const p of g.projectiles) if (!p.friendly && !seen.has(p)) { seen.add(p); shots++; }
+      closest = Math.min(closest, Math.hypot(g.hero.cx - m.cx, g.hero.cy - m.cy));
+    }
+    assert.ok(shots >= 1, `${id} fired`);
+    assert.ok(g.hero.hp < hp0 || shots > 0);
+    assert.ok(closest > 2.5, `${id} did not walk up to melee (closest ${closest.toFixed(1)})`);
+  }
+});
+
+test('a raised shield stops an arrow from the front', () => {
+  const g = makeGame({ spawns: [{ id: '23', cx: 134, cy: 128 }] });
+  g.monsters[0]!.dormant = false;
+  g.stamina = 20;
+  g.blocking = true;
+  (g as unknown as { facing: { x: number; y: number } }).facing = { x: 1, y: 0 }; // towards the archer
+  const hp0 = g.hero.hp;
+  const seen = new Set<unknown>();
+  for (let t = 0; t < 3; t += 1 / 60) { g.update(1 / 60, null); for (const p of g.projectiles) seen.add(p); }
+  const shots = seen.size;
+  assert.ok(shots >= 1);
+  assert.equal(g.hero.hp, hp0);
 });
