@@ -51,3 +51,5 @@ public/assets converted assets (atlases, textures, Ogg audio, maps, strings)
 ```
 
 The original game files are copyrighted by their owners; this project is a private reverse-engineering effort.
+
+https://beefbeefs.github.io/remake3/
