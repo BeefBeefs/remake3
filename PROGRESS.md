@@ -321,5 +321,5 @@ map exercises them, so none is implemented; nothing has been seen in a browser.
   from a GitHub checkout). Used to look at the effects and to play the whole menu → map → mission → save → load flow.
   `?debug` exposes `window.__nst.game`.
 - **Seen while doing that, not fixed:** the forest "wall slices" (Pack2 611-616) draw as tall dark panels that can
-  hide the hero; see Open items.
-- 107 tests.
+  hide the hero (looked at with the headless browser; not investigated further).
+- 100 tests; CI green.
