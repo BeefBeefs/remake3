@@ -489,3 +489,9 @@ Read the use-item routine for type-512 items in `Nightstone.exe` (all 18 cases).
   `Espera` percent chance for 20–54 ticks (not modelled: how long a path segment runs is unknown). `Tm_Busqueda` is a per-tick
   counter on the monster's target record, cleared only when it is hit, that clears the target when it passes the value; the
   hearing check just re-acquires the hero, so there is nothing to show. 152 tests.
+- **Noticing and recovery traced, not modelled.** Monsters are alerted by the hero's field-of-view scan (`0x41fca0`, called per
+  visible cell by `0x420010`/`0x41fe70`): a visible monster cell writes the hero's id into the monster's target record. The scan's
+  radius and cone depend on view modes 1/2/3 and the hero's `+0x2118` (3 or 4), so the remake's `Oido + 3` circle stays a stand-in.
+  Hero blows set a 20-tick counter (`+0xc0`, ticked down while standing, walking or running) that I could not find a reader for.
+  The XP awards 159 and 525 belong to message types 57 and 59 of the event queue (`0x426bd8`, `0x426c2d`); what posts them is
+  not mapped. Docs updated; no code change.
