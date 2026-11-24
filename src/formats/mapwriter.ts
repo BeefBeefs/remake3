@@ -1,5 +1,5 @@
 import {
-  type GameMap, MAP_DIM, MAP_HEADER_SIZE, OBJECTS_OFFSET, SCRIPTS_OFFSET, SCRIPT_SIZE, TERRAIN_OFFSET, ZONES_OFFSET, ZONE_SIZE,
+  type GameMap, DECOR_OFFSET, parseMap, MAP_DIM, MAP_HEADER_SIZE, OBJECTS_OFFSET, SCRIPTS_OFFSET, SCRIPT_SIZE, TERRAIN_OFFSET, ZONES_OFFSET, ZONE_SIZE,
 } from './map.ts';
 
 /** Size of a whole map body (the decompressed `.map`): 1,655,172 bytes. */
@@ -46,7 +46,40 @@ export function writeMapBody(map: GameMap, base: Uint8Array): Uint8Array {
     const key = dv.getUint32(o, true);
     if (key && was.has(key) && !at.has(key)) out.fill(0, o, o + ZONE_SIZE);
   }
+  writeScripts(map, base, out, dv);
   return out;
+}
+
+/**
+ * The script table and the cells that carry scripts. Records are kept as they are (their unknown bytes too) unless the map's
+ * script differs; a script missing from `map.scripts` has its record cleared. A cell's decor word (u16 at +4) is only touched
+ * where the map's `scriptAt` differs from what `base` says: bit 0x800 plus `(index+1) << 5` (so indexes 0..62 fit).
+ */
+function writeScripts(map: GameMap, base: Uint8Array, out: Uint8Array, dv: DataView): void {
+  const was = parseMap(base);
+  const same = (a: GameMap['scripts'][number] | undefined, b: GameMap['scripts'][number]) => !!a && a.name === b.name && a.commands.length === b.commands.length
+    && a.commands.every((c, i) => c.id === b.commands[i]!.id && c.args.every((v, j) => v === b.commands[i]!.args[j]));
+  const keep = new Set(map.scripts.map((sc) => sc.index));
+  for (const sc of was.scripts) if (!keep.has(sc.index)) out.fill(0, SCRIPTS_OFFSET + sc.index * SCRIPT_SIZE, SCRIPTS_OFFSET + (sc.index + 1) * SCRIPT_SIZE);
+  for (const sc of map.scripts) {
+    if (sc.index < 0 || sc.index > 62) throw new Error(`script index ${sc.index} cannot be stored (0..62)`);
+    if (same(was.scripts.find((x) => x.index === sc.index), sc)) continue;
+    const o = SCRIPTS_OFFSET + sc.index * SCRIPT_SIZE;
+    out.fill(0, o + 4, o + 0x58); // name, command ids
+    out.fill(0, o + 0x78, o + SCRIPT_SIZE); // arguments
+    dv.setUint32(o, 1, true);
+    for (let i = 0; i < Math.min(sc.name.length, 51); i++) out[o + 4 + i] = sc.name.charCodeAt(i) & 255;
+    sc.commands.slice(0, 8).forEach((c, i) => {
+      dv.setUint32(o + 0x38 + i * 4, c.id, true);
+      c.args.forEach((v, j) => dv.setUint32(o + 0x78 + i * 16 + j * 4, v >>> 0, true));
+    });
+  }
+  for (let i = 0; i < MAP_DIM * MAP_DIM; i++) {
+    if (map.scriptAt[i] === was.scriptAt[i]) continue;
+    const at = DECOR_OFFSET + i * 8 + 4;
+    const v = dv.getUint16(at, true) & 0xf01f;
+    dv.setUint16(at, map.scriptAt[i]! >= 0 ? v | 0x800 | ((map.scriptAt[i]! + 1) << 5) : v & ~0x800, true);
+  }
 }
 
 /** gzip, the container of every `.map` file. */

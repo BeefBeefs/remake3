@@ -1,9 +1,9 @@
-import { MAPS, findMap } from './game/maplist.ts';
+import { MAPS, applyCampaignNames, findMap } from './game/maplist.ts';
 import { gunzip, parseMap, MAP_DIM, WATER_TILE, type GameMap, type Marker, START_IDS } from './formats/map.ts';
 import { blankMapBody, gzip, writeMapBody } from './formats/mapwriter.ts';
 import { isSlabFrame, HOTSPOT_X, HOTSPOT_Y } from './game/world.ts';
 import type { AtlasJson } from './assets/atlas.ts';
-import { applyBrush, type Brush, type Tool } from './editorlogic.ts';
+import { applyBrush, blankCommand, COMMANDS, deleteScript, newScript, type Brush, type Tool } from './editorlogic.ts';
 
 const BASE = `${import.meta.env.BASE_URL}assets/`;
 const side = document.getElementById('side') as HTMLDivElement;
@@ -32,20 +32,21 @@ let mapId = '';
 let tiles: Sheet | undefined;
 let packs: (Sheet | undefined)[] = [];
 let tool: Tool = 'ground';
-const brush: Brush = { size: 1, tile: 340, pack: 1, frame: 0, actor: 1, start: 100 };
+const brush: Brush = { size: 1, tile: 340, pack: 1, frame: 0, actor: 1, start: 100, script: undefined };
 let zoom = 1, showGrid = false;
 const cam = { x: 0, y: 0 };
-let undo: { terrain: Uint16Array; objects: Uint32Array; markers: Marker[] }[] = [];
+let undo: { terrain: Uint16Array; objects: Uint32Array; markers: Marker[]; scripts: GameMap['scripts']; scriptAt: Int8Array }[] = [];
 let dirty = false;
 const names: Record<string, string> = {};
 let actors: { id: number; name: string; npc: boolean }[] = [];
 
-const snapshot = () => ({ terrain: map.terrain.slice(), objects: map.objects.slice(), markers: map.markers.map((m) => ({ ...m })) });
+const snapshot = () => ({ terrain: map.terrain.slice(), objects: map.objects.slice(), markers: map.markers.map((m) => ({ ...m })), scripts: structuredClone(map.scripts), scriptAt: map.scriptAt.slice() });
 function pushUndo(): void { undo.push(snapshot()); if (undo.length > 40) undo.shift(); }
 function doUndo(): void {
   const s = undo.pop();
   if (!s) return;
-  map.terrain = s.terrain; map.objects = s.objects; map.markers = s.markers;
+  map.terrain = s.terrain; map.objects = s.objects; map.markers = s.markers; map.scripts = s.scripts; map.scriptAt = s.scriptAt;
+  buildPanel();
   draw();
 }
 
@@ -154,7 +155,7 @@ function draw(): void {
       if (!inView(cx, cy)) continue;
       const s = map.scriptAt[cy * MAP_DIM + cx]!;
       const x = sx(cx, cy), y = sy(cx, cy);
-      if (s >= 0) { ctx.strokeStyle = '#e8c85a'; diamond(x, y, 6); ctx.stroke(); ctx.fillStyle = '#e8c85a'; ctx.fillText(String(s), x, y + 3); }
+      if (s >= 0) { ctx.strokeStyle = tool === 'script' && s === brush.script ? '#ff7a3a' : '#e8c85a'; diamond(x, y, 6); ctx.stroke(); ctx.fillStyle = '#e8c85a'; ctx.fillText(String(s), x, y + 3); }
       if (showGrid && zoom >= 1) { ctx.strokeStyle = '#ffffff22'; diamond(x, y, 8); ctx.stroke(); }
     }
   }
@@ -218,6 +219,7 @@ function apply(cx: number, cy: number): void {
 function pick(cx: number, cy: number): void {
   const i = cy * MAP_DIM + cx, o = map.objects[i]!;
   const m = map.markers.find((k) => k.cx === cx && k.cy === cy);
+  if (map.scriptAt[i]! >= 0 && !m && !o) { brush.script = map.scriptAt[i]; setTool('script'); return; }
   if (m) { if (m.id >= 100) { brush.start = m.id; setTool('start'); } else { brush.actor = m.id; setTool('actor'); } }
   else if (o) { brush.pack = o >> 10; brush.frame = o & 1023; setTool('scenery'); }
   else { brush.tile = map.terrain[i]!; setTool('ground'); }
@@ -236,7 +238,7 @@ window.addEventListener('resize', resize);
 window.addEventListener('beforeunload', (e) => { if (dirty) e.preventDefault(); });
 
 // --- side panel ---------------------------------------------------------------------------------------------------
-const TOOLS: [Tool, string][] = [['ground', 'Ground'], ['scenery', 'Scenery'], ['actor', 'Monster / NPC'], ['start', 'Hero start'], ['erase', 'Erase'], ['pick', 'Pick']];
+const TOOLS: [Tool, string][] = [['ground', 'Ground'], ['scenery', 'Scenery'], ['actor', 'Monster / NPC'], ['start', 'Hero start'], ['script', 'Script'], ['erase', 'Erase'], ['pick', 'Pick']];
 function setTool(t: Tool): void { tool = t; buildPanel(); draw(); }
 
 const mk = <K extends keyof HTMLElementTagNameMap>(tag: K, text = '', on?: () => void): HTMLElementTagNameMap[K] => {
@@ -349,8 +351,9 @@ function buildPanel(): void {
     r = row();
     for (const [id, n] of Object.entries(START_IDS)) { const b = mk('button', n, () => { brush.start = Number(id); buildPanel(); }); if (Number(id) === brush.start) b.className = 'on'; r.append(b); }
   }
+  if (tool === 'script') scriptPanel(h, row);
   h('About');
-  side.appendChild(mk('small', 'Scripts (yellow numbers) are carried over from the loaded map but cannot be edited yet. Save downloads a .map the game reads (Select map on the title menu plays the shipped ones; Play here tries yours).'));
+  side.appendChild(mk('small', 'Scripts are the yellow numbers (the selected one orange); patrol routes are shown but not editable. Save downloads a .map the game reads (Select map on the title menu plays the shipped ones; Play here tries yours).'));
   side.appendChild(document.createElement('br'));
   const back = mk('a', '← game'); back.href = './index.html';
   side.appendChild(back);
@@ -378,6 +381,7 @@ async function play(cls: string): Promise<void> {
 // --- start ---------------------------------------------------------------------------------------------------
 void (async () => {
   const idioma = (await (await fetch(`${BASE}text/idioma.json`)).json()) as Record<string, string>;
+  applyCampaignNames(idioma);
   for (const [k, v] of Object.entries(idioma)) { const m = /^ACTORS\\ID-(\d+)$/.exec(k); if (m) names[m[1]!] = v; }
   const anims = (await (await fetch(`${BASE}data/anims.json`)).json()) as { actors: Record<string, { npc?: boolean }> };
   actors = Object.keys(anims.actors).map(Number).filter((n) => n < 100).sort((a, b) => a - b).map((id) => ({ id, name: names[id] ?? `Actor ${id}`, npc: !!anims.actors[id]?.npc }));
@@ -387,3 +391,44 @@ void (async () => {
   if (m) await openUrl(m.file, m.id.replace(/\W+/g, '_'), m.id);
   else await open(map, body, mapName);
 })();
+
+// --- scripts ---------------------------------------------------------------------------------------------------
+/** The Script tool: pick or create a script, edit its name and commands, then click cells to put it there (Erase takes it off). */
+function scriptPanel(h: (t: string) => unknown, row: () => HTMLElement): void {
+  h('Scripts');
+  if (!map.scripts.some((x) => x.index === brush.script) && map.scripts.length) brush.script = map.scripts[0]!.index;
+  const sc = map.scripts.find((x) => x.index === brush.script);
+  let r = row();
+  const sel = mk('select');
+  for (const x of map.scripts) sel.add(new Option(`${x.index}: ${x.name.replace(/[^\x20-\x7e]/g, '') || x.commands.map((c) => COMMANDS.find((k) => k.id === c.id)?.label ?? `#${c.id}`).join(', ')}`, String(x.index)));
+  if (sc) sel.value = String(sc.index);
+  sel.style.maxWidth = '170px';
+  sel.addEventListener('change', () => { brush.script = Number(sel.value); buildPanel(); draw(); });
+  r.append(sel, mk('button', 'New', () => { pushUndo(); const n = newScript(map); if (n) brush.script = n.index; dirty = true; buildPanel(); draw(); }));
+  if (!sc) { side.appendChild(mk('small', 'No scripts yet. New adds one.')); return; }
+  r.append(mk('button', 'Delete', () => { pushUndo(); deleteScript(map, sc.index); brush.script = undefined; dirty = true; buildPanel(); draw(); }));
+  r = row();
+  const name = mk('input'); name.value = sc.name; name.placeholder = 'name (optional)'; name.maxLength = 50; name.style.width = '200px';
+  name.addEventListener('change', () => { pushUndo(); sc.name = name.value; dirty = true; buildPanel(); });
+  r.append(name);
+  sc.commands.forEach((c, ci) => {
+    const box = row();
+    box.style.cssText += ';border:1px solid #333;padding:3px';
+    const kind = mk('select');
+    for (const k of COMMANDS) kind.add(new Option(`${k.id} ${k.label}`, String(k.id)));
+    if (!COMMANDS.some((k) => k.id === c.id)) kind.add(new Option(`${c.id} (unknown)`, String(c.id)));
+    kind.value = String(c.id);
+    kind.style.maxWidth = '200px';
+    kind.addEventListener('change', () => { pushUndo(); sc.commands[ci] = blankCommand(Number(kind.value)); dirty = true; buildPanel(); });
+    box.append(kind, mk('button', '×', () => { pushUndo(); sc.commands.splice(ci, 1); dirty = true; buildPanel(); }));
+    const def = COMMANDS.find((k) => k.id === c.id);
+    (def ? def.args : ['a0', 'a1', 'a2', 'a3']).forEach((label, ai) => {
+      const inp = mk('input'); inp.type = 'number'; inp.value = String(c.args[ai]); inp.style.width = '64px'; inp.title = label; inp.placeholder = label;
+      inp.addEventListener('change', () => { pushUndo(); c.args[ai] = Math.max(0, Math.floor(Number(inp.value) || 0)); dirty = true; });
+      box.append(mk('small', label), inp);
+    });
+  });
+  r = row();
+  if (sc.commands.length < 8) r.append(mk('button', '+ command', () => { pushUndo(); sc.commands.push(blankCommand(12)); dirty = true; buildPanel(); }));
+  side.appendChild(mk('small', 'Click cells to put this script there. Chests and barrels use "Roll loot" / "Drop item"; other scripts run when the hero walks onto the cell.'));
+}

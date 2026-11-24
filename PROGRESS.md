@@ -372,3 +372,6 @@ map exercises them, so none is implemented; nothing has been seen in a browser.
   map lists "16. The Inn of the White Goddess" etc.; a campaign map opens with its briefing in the speech window (**Q** or the HUD
   quest button shows it again) and ends with its own final text.
 - So the **Inn exists** in this install and its shop works there. 129 tests.
+- **Editor scripts.** The editor's Script tool lists a map's scripts, creates / deletes them, edits the name and each command (with
+  labelled arguments) and puts them on cells; `mapwriter.ts` writes the script table and the cell references back (unchanged scripts
+  keep their bytes). Patrol routes are still read-only. 131 tests.
