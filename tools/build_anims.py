@@ -48,6 +48,22 @@ def layouts4(an, total):
     return found
 
 
+def layouts_ini4(an, total):
+    """All INI animations in INI order, Morir stored for 4 directions only: 8 * sum(others) + 4 * Morir == total."""
+    if an.get('Morir', [0, 0])[1] <= 0 or any(an[k][1] <= 0 for k in an):
+        return []
+    return [list(an)] if 8 * sum(v[1] for k, v in an.items() if k != 'Morir') + 4 * an['Morir'][1] == total else []
+
+
+def build_ini4(an):
+    out, pos = {}, 1
+    for k, (speed, n) in an.items():
+        d = 4 if k == 'Morir' else 8
+        out[k] = {'start': pos, 'frames': n, 'speed': speed, **({'dirs': 4} if d == 4 else {})}
+        pos += d * n
+    return out
+
+
 def with_morir4(an, names):
     out = build(an, names)
     out['Morir'] = {'start': 1 + 8 * sum(an[k][1] for k in names), 'frames': an['Morir'][1], 'speed': an['Morir'][0], 'dirs': 4}
@@ -95,6 +111,14 @@ if __name__ == '__main__':
         p16 = P16(os.path.join(game, 'Actors', pack))
         total = len(p16.ids())
         c = layouts(an, total)
+        m4 = layouts_ini4(an, total)
+        if not c and m4:
+            # Same rule as the heroes' packs: every INI animation in INI order, 8 directions each, except Morir
+            # (4 directions). Unique and checked on contact sheets (zombie, troll, amazon, groak... all end lying down).
+            stats['ini4'] = stats.get('ini4', 0) + 1
+            res[aid] = {'title': a.get('title'), 'pack': pack[:-4], 'frames': total, 'verified': True, 'anims': build_ini4(an)}
+            res[aid]['foot'] = foot(p16, res[aid]['anims'])
+            continue
         if not c:
             # Only the first three blocks (Andar, Respirar, Atacar) are guaranteed to come first in a pack.
             stats['none'] += 1

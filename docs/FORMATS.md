@@ -109,7 +109,7 @@ Alarma = taunt, Extra/Atacar2/Vigilar/Aburrido/Aparecer = misc). A pack only con
 `tools/build_anims.py` finds the subset whose frame total matches the pack: goblin `1E` = 8·(8+8+8+3+10+13) = 400 ✓
 (Cubrir and Recibir2 absent). 3 monsters match uniquely, 13 are ambiguous (Recibir vs Recibir2 – same size – and a
 few others, resolved by a preference rule), 20 do not match any subset and only get Andar/Respirar/Atacar
-(`partial`). Direction blocks (confirmed in-game): **E, NE, N, NW, W, SW, S, SE** (counter-clockwise from east; an earlier by-eye reading had E and W swapped).
+(these 20 are solved by the 4-direction-Morir rule below). Direction blocks (confirmed in-game): **E, NE, N, NW, W, SW, S, SE** (counter-clockwise from east; an earlier by-eye reading had E and W swapped).
 Frame time is `speed × tick`; the tick length is a guess (1/60 s looks right).
 
 **Player characters are layered pre-rendered sets.** `Actors/<a><b><c>-<Class>.P16` are complete figures with identical
@@ -121,9 +121,15 @@ Extra, Atacar2, Vigilar; Amazon Andar, Respirar, Atacar, Recibir, Recibir2, Extr
 and then **Morir stored for only 4 directions, at the very end** (11/11/10 frames each; every sequence ends with the
 hero lying down). That is why the pack sizes (564, 516, 536) are not multiples of 8:
 `8·Σ(blocks) + 4·Morir = pack size` has exactly one solution per class. Death direction `d` (0..7) uses block `d >> 1`
-(which pair of screen directions each block really serves is not checked). Monsters whose size also fits this rule
-did *not* show death poses, so the rule is applied to the heroes only; 20 monsters remain unmapped beyond
-Andar/Respirar/Atacar.
+(which pair of screen directions each block really serves is not checked). **Monsters use the same rule** (found in Turn 13): all the INI animations in INI order — Andar, Respirar, Atacar, Cubrir,
+Recibir, Morir, Recibir2, Extra, Atacar2, Alarma, Vigilar, Aburrido, Aparecer, whichever the actor lists — 8 directions
+each, except **Morir, again stored for only 4 directions** in its INI position (not last, as for the heroes).
+`8·Σ(others) + 4·Morir = pack size` matches uniquely for the 20 monsters that the plain 8-direction rule could not
+place (orc captain/master/general, skeletons, groak, lehcim, opahc, zombie, troll, demons, amazons, archer, knights,
+mage, lords). Contact sheets confirm them: zombie, troll and amazon fall over, the skeleton collapses into bones, the
+infernal demon burns out. Two animations the old ORDER list lacked: `Aparecer` (skeletons rise from a bone pile, the
+infernal demon forms out of flame) and `Aburrido` (orc fidget). `build_anims.py` falls back to this rule only when the
+8-direction search finds nothing, so the 36 earlier layouts are unchanged. No actor is `partial` any more.
 
 **Feet anchor.** Hotspot origins differ per pack (hero bottoms ≈ −12, goblins ≈ −52, troll ≈ +24), so each actor's
 `foot` point = median bottom-centre of its idle frames (`anims.json`). Scenery uses the fixed (128, 16) rule above.

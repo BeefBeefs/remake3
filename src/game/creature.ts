@@ -4,7 +4,7 @@ import { ActorSprite } from './actor.ts';
 import { screenDir } from '../iso.ts';
 import { type ActorAnims, type AnimDef, TICK, frameId } from './anims.ts';
 
-export type State = 'idle' | 'walk' | 'attack' | 'hit' | 'dead' | 'block';
+export type State = 'idle' | 'walk' | 'attack' | 'hit' | 'dead' | 'block' | 'appear' | 'taunt' | 'bored';
 
 export interface Stats {
   name: string;
@@ -23,10 +23,13 @@ export interface Stats {
   race?: number;
 }
 
-const ONE_SHOT = new Set<State>(['attack', 'hit', 'dead']);
+const ONE_SHOT = new Set<State>(['attack', 'hit', 'dead', 'appear', 'taunt', 'bored']);
 /** Plays once, then holds its last frame until the state changes. */
 const HOLD = new Set<State>(['block']);
-const ANIM_OF: Record<State, string> = { idle: 'Respirar', walk: 'Andar', attack: 'Atacar', hit: 'Recibir', dead: 'Morir', block: 'Cubrir' };
+const ANIM_OF: Record<State, string> = {
+  idle: 'Respirar', walk: 'Andar', attack: 'Atacar', hit: 'Recibir', dead: 'Morir', block: 'Cubrir',
+  appear: 'Aparecer', taunt: 'Alarma', bored: 'Aburrido',
+};
 
 /** A hero or monster: position in cell space, facing, animation state and hit points. */
 export class Creature {
@@ -66,8 +69,19 @@ export class Creature {
     this.dir = screenDir((vx - vy) * 32, -(vx + vy) * 16);
   }
 
+  /** Dormant creatures (skeletons, infernal demons) lie as a pile / flame until the hero comes close, then `appear`. */
+  dormant = false;
+  /** Use the second attack animation (Atacar2: demons) for the current / next swing. */
+  secondAttack = false;
+  /** seconds spent standing still (drives the fidget animations) */
+  idleFor = 0;
+
   private anim(state: State): AnimDef | undefined {
-    return this.def.anims[ANIM_OF[state]];
+    const an = this.def.anims;
+    if (state === 'attack' && this.secondAttack && an.Atacar2) return an.Atacar2;
+    if (state === 'bored') return an.Aburrido ?? an.Vigilar;
+    if (state === 'hit') return an.Recibir ?? an.Recibir2;
+    return an[ANIM_OF[state]];
   }
 
   /** Whether `state` has a real animation for this actor. */
@@ -88,6 +102,7 @@ export class Creature {
     this.t += dt;
     this.cooldown = Math.max(0, this.cooldown - dt);
     const a = this.anim(this.state);
+    this.idleFor = this.state === 'idle' ? this.idleFor + dt : 0;
     if (this.state === 'dead') this.deadFor += dt;
     if (a && ONE_SHOT.has(this.state) && this.state !== 'dead') {
       // the blow lands at about 55% of the swing
@@ -102,7 +117,9 @@ export class Creature {
 
   private apply(): void {
     const a = this.anim(this.state) ?? this.anim('idle') ?? this.anim('walk');
-    if (a) {
+    if (this.dormant && this.def.anims.Aparecer) {
+      this.sprite.setFrame(frameId(this.def.anims.Aparecer, this.dir, 0));
+    } else if (a) {
       let step = Math.floor(this.t / (a.speed * TICK));
       if (ONE_SHOT.has(this.state) || HOLD.has(this.state)) step = Math.min(step, a.frames - 1);
       this.sprite.setFrame(frameId(a, this.dir, step));

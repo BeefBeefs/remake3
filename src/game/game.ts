@@ -256,6 +256,7 @@ export class Game {
       }
       this.idOf.set(m, sp.id);
       m.dir = Math.floor(this.rnd() * 8);
+      m.dormant = !!def.anims.Aparecer; // skeletons and infernal demons rise when the hero comes close
       this.monsters.push(m);
       this.group.add(m.sprite);
       if (sp.route?.length) this.patrols.set(m, { pts: [{ cx: sp.cx, cy: sp.cy }, ...sp.route], i: 0, wait: this.rnd() * 3 });
@@ -346,7 +347,7 @@ export class Game {
     const box = this.boxAt(cx, cy, 0.8);
     let best: Creature | null = null, bd = 1.3;
     for (const m of this.monsters) {
-      if (!m.alive) continue;
+      if (!m.alive || m.dormant) continue;
       const d = Math.hypot(m.cx - cx, m.cy - cy);
       if (d < bd) { bd = d; best = m; }
     }
@@ -422,7 +423,7 @@ export class Game {
     const cost = manaCost(spell, def.level);
     if (this.mana < cost) { this.say(`Not enough mana (${cost} needed)`); return false; }
     const h = this.hero;
-    const near = this.monsters.filter((m) => m.alive && Math.hypot(m.cx - h.cx, m.cy - h.cy) <= SPELL_RADIUS);
+    const near = this.monsters.filter((m) => m.alive && !m.dormant && Math.hypot(m.cx - h.cx, m.cy - h.cy) <= SPELL_RADIUS);
     switch (spell.kind) {
       case 'blast': {
         const dmg = blastDamage(spell, this.eff.magic);
@@ -606,14 +607,14 @@ export class Game {
     let nearest: Creature | null = null, nd = Infinity;
     if (bow) {
       for (const m of this.monsters) {
-        if (!m.alive) continue;
+        if (!m.alive || m.dormant) continue;
         const dx = m.cx - h.cx, dy = m.cy - h.cy, d = Math.hypot(dx, dy);
         if (d > BOW_RANGE || (d > 0.6 && (dx * this.facing.x + dy * this.facing.y) / d < 0.9)) continue; // within ~25 degrees of the aim
         if (d < nd) { nd = d; nearest = m; }
       }
     }
     for (const m of this.monsters) {
-      if (!m.alive) continue;
+      if (!m.alive || m.dormant) continue;
       const dx = m.cx - h.cx, dy = m.cy - h.cy, d = Math.hypot(dx, dy);
       if (bow) { if (m !== nearest) continue; }
       else {
@@ -839,6 +840,11 @@ export class Game {
     } else { this.stepClock = 0; if (h.state === 'walk') h.setState('idle'); }
   }
 
+  /** Unaware monsters standing around now and then play their bored / look-around animation (Aburrido, Vigilar). */
+  private fidget(m: Creature): void {
+    if (m.state === 'idle' && m.idleFor > 4 && this.rnd() < 0.01 && m.has('bored')) m.setState('bored');
+  }
+
   /** Unaware monsters stroll between their route points, pausing at each. */
   private patrol(m: Creature, dt: number): void {
     const p = this.patrols.get(m);
@@ -857,11 +863,27 @@ export class Game {
   private updateMonster(m: Creature, dt: number): void {
     if (!m.alive) return;
     const h = this.hero;
-    if (m.state === 'attack' || m.state === 'hit') return;
+    if (m.state === 'attack' || m.state === 'hit' || m.state === 'appear' || m.state === 'taunt' || m.state === 'bored') return;
     const ex = h.cx - m.cx, ey = h.cy - m.cy, d = Math.hypot(ex, ey);
     const aggro = (m.stats.hearing + 3) * (this.alerted.has(m) || this.effectiveStance !== 'stealth' ? 1 : STEALTH_HEARING);
-    if (!h.alive || d > aggro) { this.patrol(m, dt); return; }
-    if (!this.alerted.has(m)) { this.alerted.add(m); this.msnd(m, 1); }
+    if (m.dormant) {
+      // lies still until the hero is within hearing range, then rises (Aparecer) and is alert
+      if (h.alive && d <= aggro) {
+        m.dormant = false;
+        this.alerted.add(m);
+        m.face(ex, ey);
+        m.setState('appear');
+        this.msnd(m, 1);
+      }
+      return;
+    }
+    if (!h.alive || d > aggro) { this.patrol(m, dt); this.fidget(m); return; }
+    if (!this.alerted.has(m)) {
+      this.alerted.add(m);
+      this.msnd(m, 1);
+      m.face(ex, ey);
+      if (m.has('taunt')) { m.setState('taunt'); return; } // Alarma: a roar before the chase
+    }
     m.face(ex, ey);
     if (d > MELEE) {
       m.setState('walk');
@@ -874,6 +896,7 @@ export class Game {
       }
     } else if (m.cooldown === 0) {
       m.onStrike = (c) => this.monsterStrike(c);
+      m.secondAttack = !!m.def.anims.Atacar2 && this.rnd() < 0.5;
       m.setState('attack');
       const [lo, hi] = m.stats.cooldown;
       m.cooldown = (lo + this.rnd() * (hi - lo)) * (this.slowed.has(m) ? 2 : 1);

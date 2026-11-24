@@ -293,8 +293,7 @@
    "title": "ORCO CAPITAN",
    "pack": "8E",
    "frames": 568,
-   "verified": false,
-   "partial": true,
+   "verified": true,
    "anims": {
     "Andar": {
      "start": 1,
@@ -310,6 +309,42 @@
      "start": 145,
      "frames": 9,
      "speed": 3
+    },
+    "Cubrir": {
+     "start": 217,
+     "frames": 2,
+     "speed": 1
+    },
+    "Recibir": {
+     "start": 233,
+     "frames": 3,
+     "speed": 7
+    },
+    "Morir": {
+     "start": 257,
+     "frames": 10,
+     "speed": 6,
+     "dirs": 4
+    },
+    "Recibir2": {
+     "start": 297,
+     "frames": 3,
+     "speed": 8
+    },
+    "Alarma": {
+     "start": 321,
+     "frames": 14,
+     "speed": 3
+    },
+    "Aburrido": {
+     "start": 433,
+     "frames": 11,
+     "speed": 7
+    },
+    "Vigilar": {
+     "start": 521,
+     "frames": 6,
+     "speed": 10
     }
    },
    "foot": [
@@ -321,8 +356,7 @@
    "title": "ESQUELETO COM\u00daN",
    "pack": "9E",
    "frames": 552,
-   "verified": false,
-   "partial": true,
+   "verified": true,
    "anims": {
     "Andar": {
      "start": 1,
@@ -338,6 +372,42 @@
      "start": 129,
      "frames": 8,
      "speed": 3
+    },
+    "Cubrir": {
+     "start": 193,
+     "frames": 2,
+     "speed": 1
+    },
+    "Recibir": {
+     "start": 209,
+     "frames": 3,
+     "speed": 7
+    },
+    "Morir": {
+     "start": 233,
+     "frames": 10,
+     "speed": 6,
+     "dirs": 4
+    },
+    "Recibir2": {
+     "start": 273,
+     "frames": 3,
+     "speed": 7
+    },
+    "Alarma": {
+     "start": 297,
+     "frames": 11,
+     "speed": 5
+    },
+    "Vigilar": {
+     "start": 385,
+     "frames": 6,
+     "speed": 7
+    },
+    "Aparecer": {
+     "start": 433,
+     "frames": 15,
+     "speed": 5
     }
    },
    "foot": [
@@ -349,8 +419,7 @@
    "title": "ESQUELETO INFERNAL",
    "pack": "10E",
    "frames": 552,
-   "verified": false,
-   "partial": true,
+   "verified": true,
    "anims": {
     "Andar": {
      "start": 1,
@@ -366,6 +435,42 @@
      "start": 129,
      "frames": 8,
      "speed": 3
+    },
+    "Cubrir": {
+     "start": 193,
+     "frames": 2,
+     "speed": 1
+    },
+    "Recibir": {
+     "start": 209,
+     "frames": 3,
+     "speed": 7
+    },
+    "Morir": {
+     "start": 233,
+     "frames": 10,
+     "speed": 6,
+     "dirs": 4
+    },
+    "Recibir2": {
+     "start": 273,
+     "frames": 3,
+     "speed": 7
+    },
+    "Alarma": {
+     "start": 297,
+     "frames": 11,
+     "speed": 5
+    },
+    "Vigilar": {
+     "start": 385,
+     "frames": 6,
+     "speed": 7
+    },
+    "Aparecer": {
+     "start": 433,
+     "frames": 15,
+     "speed": 5
     }
    },
    "foot": [
@@ -471,8 +576,7 @@
    "title": "GROAK",
    "pack": "13E",
    "frames": 280,
-   "verified": false,
-   "partial": true,
+   "verified": true,
    "anims": {
     "Andar": {
      "start": 1,
@@ -488,6 +592,22 @@
      "start": 129,
      "frames": 8,
      "speed": 3
+    },
+    "Recibir": {
+     "start": 193,
+     "frames": 3,
+     "speed": 4
+    },
+    "Morir": {
+     "start": 217,
+     "frames": 10,
+     "speed": 2,
+     "dirs": 4
+    },
+    "Recibir2": {
+     "start": 257,
+     "frames": 3,
+     "speed": 4
     }
    },
    "foot": [
@@ -499,8 +619,7 @@
    "title": "LEHCIM",
    "pack": "14E",
    "frames": 284,
-   "verified": false,
-   "partial": true,
+   "verified": true,
    "anims": {
     "Andar": {
      "start": 1,
@@ -516,6 +635,12 @@
      "start": 161,
      "frames": 8,
      "speed": 3
+    },
+    "Morir": {
+     "start": 225,
+     "frames": 15,
+     "speed": 4,
+     "dirs": 4
     }
    },
    "foot": [
@@ -527,8 +652,7 @@
    "title": "OPAHC",
    "pack": "15E",
    "frames": 280,
-   "verified": false,
-   "partial": true,
+   "verified": true,
    "anims": {
     "Andar": {
      "start": 1,
@@ -544,6 +668,12 @@
      "start": 161,
      "frames": 9,
      "speed": 3
+    },
+    "Morir": {
+     "start": 233,
+     "frames": 12,
+     "speed": 4,
+     "dirs": 4
     }
    },
    "foot": [
@@ -555,8 +685,7 @@
    "title": "ZOMBIE",
    "pack": "16E",
    "frames": 320,
-   "verified": false,
-   "partial": true,
+   "verified": true,
    "anims": {
     "Andar": {
      "start": 1,
@@ -572,6 +701,22 @@
      "start": 161,
      "frames": 9,
      "speed": 6
+    },
+    "Recibir": {
+     "start": 233,
+     "frames": 3,
+     "speed": 7
+    },
+    "Morir": {
+     "start": 257,
+     "frames": 10,
+     "speed": 6,
+     "dirs": 4
+    },
+    "Recibir2": {
+     "start": 297,
+     "frames": 3,
+     "speed": 7
     }
    },
    "foot": [
@@ -583,8 +728,7 @@
    "title": "TROLL COM\u00daN",
    "pack": "17E",
    "frames": 400,
-   "verified": false,
-   "partial": true,
+   "verified": true,
    "anims": {
     "Andar": {
      "start": 1,
@@ -599,6 +743,27 @@
     "Atacar": {
      "start": 145,
      "frames": 9,
+     "speed": 6
+    },
+    "Recibir": {
+     "start": 217,
+     "frames": 3,
+     "speed": 9
+    },
+    "Morir": {
+     "start": 241,
+     "frames": 8,
+     "speed": 9,
+     "dirs": 4
+    },
+    "Recibir2": {
+     "start": 273,
+     "frames": 3,
+     "speed": 8
+    },
+    "Alarma": {
+     "start": 297,
+     "frames": 13,
      "speed": 6
     }
    },
@@ -653,8 +818,7 @@
    "title": "DEMONIO",
    "pack": "19E",
    "frames": 480,
-   "verified": false,
-   "partial": true,
+   "verified": true,
    "anims": {
     "Andar": {
      "start": 1,
@@ -670,6 +834,32 @@
      "start": 161,
      "frames": 10,
      "speed": 3
+    },
+    "Recibir": {
+     "start": 241,
+     "frames": 3,
+     "speed": 3
+    },
+    "Morir": {
+     "start": 265,
+     "frames": 10,
+     "speed": 5,
+     "dirs": 4
+    },
+    "Recibir2": {
+     "start": 305,
+     "frames": 3,
+     "speed": 3
+    },
+    "Atacar2": {
+     "start": 329,
+     "frames": 9,
+     "speed": 3
+    },
+    "Alarma": {
+     "start": 401,
+     "frames": 10,
+     "speed": 4
     }
    },
    "foot": [
@@ -681,8 +871,7 @@
    "title": "DEMONIO INFERNAL",
    "pack": "20E",
    "frames": 536,
-   "verified": false,
-   "partial": true,
+   "verified": true,
    "anims": {
     "Andar": {
      "start": 1,
@@ -698,6 +887,27 @@
      "start": 161,
      "frames": 10,
      "speed": 3
+    },
+    "Morir": {
+     "start": 241,
+     "frames": 12,
+     "speed": 5,
+     "dirs": 4
+    },
+    "Atacar2": {
+     "start": 289,
+     "frames": 10,
+     "speed": 3
+    },
+    "Alarma": {
+     "start": 369,
+     "frames": 10,
+     "speed": 4
+    },
+    "Aparecer": {
+     "start": 449,
+     "frames": 11,
+     "speed": 4
     }
    },
    "foot": [
@@ -709,8 +919,7 @@
    "title": "AMAZONA",
    "pack": "21E",
    "frames": 484,
-   "verified": false,
-   "partial": true,
+   "verified": true,
    "anims": {
     "Andar": {
      "start": 1,
@@ -726,6 +935,37 @@
      "start": 153,
      "frames": 10,
      "speed": 3
+    },
+    "Cubrir": {
+     "start": 233,
+     "frames": 2,
+     "speed": 2
+    },
+    "Recibir": {
+     "start": 249,
+     "frames": 5,
+     "speed": 7
+    },
+    "Morir": {
+     "start": 289,
+     "frames": 11,
+     "speed": 6,
+     "dirs": 4
+    },
+    "Recibir2": {
+     "start": 333,
+     "frames": 3,
+     "speed": 7
+    },
+    "Alarma": {
+     "start": 357,
+     "frames": 10,
+     "speed": 3
+    },
+    "Vigilar": {
+     "start": 437,
+     "frames": 6,
+     "speed": 4
     }
    },
    "foot": [
@@ -737,8 +977,7 @@
    "title": "AMAZONA DIABOLICA",
    "pack": "22E",
    "frames": 484,
-   "verified": false,
-   "partial": true,
+   "verified": true,
    "anims": {
     "Andar": {
      "start": 1,
@@ -754,6 +993,37 @@
      "start": 153,
      "frames": 10,
      "speed": 3
+    },
+    "Cubrir": {
+     "start": 233,
+     "frames": 2,
+     "speed": 2
+    },
+    "Recibir": {
+     "start": 249,
+     "frames": 5,
+     "speed": 7
+    },
+    "Morir": {
+     "start": 289,
+     "frames": 11,
+     "speed": 6,
+     "dirs": 4
+    },
+    "Recibir2": {
+     "start": 333,
+     "frames": 3,
+     "speed": 7
+    },
+    "Alarma": {
+     "start": 357,
+     "frames": 10,
+     "speed": 3
+    },
+    "Vigilar": {
+     "start": 437,
+     "frames": 6,
+     "speed": 4
     }
    },
    "foot": [
@@ -765,8 +1035,7 @@
    "title": "ARQUERO",
    "pack": "23E",
    "frames": 348,
-   "verified": false,
-   "partial": true,
+   "verified": true,
    "anims": {
     "Andar": {
      "start": 1,
@@ -782,6 +1051,22 @@
      "start": 145,
      "frames": 14,
      "speed": 3
+    },
+    "Recibir": {
+     "start": 257,
+     "frames": 3,
+     "speed": 7
+    },
+    "Morir": {
+     "start": 281,
+     "frames": 11,
+     "speed": 6,
+     "dirs": 4
+    },
+    "Recibir2": {
+     "start": 325,
+     "frames": 3,
+     "speed": 8
     }
    },
    "foot": [
@@ -793,8 +1078,7 @@
    "title": "CABALLERO",
    "pack": "24E",
    "frames": 464,
-   "verified": false,
-   "partial": true,
+   "verified": true,
    "anims": {
     "Andar": {
      "start": 1,
@@ -810,6 +1094,37 @@
      "start": 129,
      "frames": 10,
      "speed": 4
+    },
+    "Cubrir": {
+     "start": 209,
+     "frames": 3,
+     "speed": 1
+    },
+    "Recibir": {
+     "start": 233,
+     "frames": 3,
+     "speed": 7
+    },
+    "Morir": {
+     "start": 257,
+     "frames": 10,
+     "speed": 6,
+     "dirs": 4
+    },
+    "Recibir2": {
+     "start": 297,
+     "frames": 3,
+     "speed": 8
+    },
+    "Alarma": {
+     "start": 321,
+     "frames": 12,
+     "speed": 3
+    },
+    "Vigilar": {
+     "start": 417,
+     "frames": 6,
+     "speed": 10
     }
    },
    "foot": [
@@ -821,8 +1136,7 @@
    "title": "MAGO",
    "pack": "25E",
    "frames": 364,
-   "verified": false,
-   "partial": true,
+   "verified": true,
    "anims": {
     "Andar": {
      "start": 1,
@@ -838,6 +1152,27 @@
      "start": 145,
      "frames": 10,
      "speed": 4
+    },
+    "Cubrir": {
+     "start": 225,
+     "frames": 7,
+     "speed": 1
+    },
+    "Recibir": {
+     "start": 281,
+     "frames": 3,
+     "speed": 7
+    },
+    "Morir": {
+     "start": 305,
+     "frames": 9,
+     "speed": 6,
+     "dirs": 4
+    },
+    "Recibir2": {
+     "start": 341,
+     "frames": 3,
+     "speed": 8
     }
    },
    "foot": [
@@ -891,8 +1226,7 @@
    "title": "SE\u00d1OR DE FEARM",
    "pack": "40E",
    "frames": 464,
-   "verified": false,
-   "partial": true,
+   "verified": true,
    "anims": {
     "Andar": {
      "start": 1,
@@ -908,6 +1242,37 @@
      "start": 129,
      "frames": 10,
      "speed": 4
+    },
+    "Cubrir": {
+     "start": 209,
+     "frames": 3,
+     "speed": 1
+    },
+    "Recibir": {
+     "start": 233,
+     "frames": 3,
+     "speed": 7
+    },
+    "Morir": {
+     "start": 257,
+     "frames": 10,
+     "speed": 6,
+     "dirs": 4
+    },
+    "Recibir2": {
+     "start": 297,
+     "frames": 3,
+     "speed": 8
+    },
+    "Alarma": {
+     "start": 321,
+     "frames": 12,
+     "speed": 3
+    },
+    "Vigilar": {
+     "start": 417,
+     "frames": 6,
+     "speed": 10
     }
    },
    "foot": [
@@ -1040,8 +1405,7 @@
    "title": "SE\u00d1OR DE AILM",
    "pack": "51E",
    "frames": 464,
-   "verified": false,
-   "partial": true,
+   "verified": true,
    "anims": {
     "Andar": {
      "start": 1,
@@ -1057,6 +1421,37 @@
      "start": 129,
      "frames": 10,
      "speed": 4
+    },
+    "Cubrir": {
+     "start": 209,
+     "frames": 3,
+     "speed": 1
+    },
+    "Recibir": {
+     "start": 233,
+     "frames": 3,
+     "speed": 7
+    },
+    "Morir": {
+     "start": 257,
+     "frames": 10,
+     "speed": 6,
+     "dirs": 4
+    },
+    "Recibir2": {
+     "start": 297,
+     "frames": 3,
+     "speed": 8
+    },
+    "Alarma": {
+     "start": 321,
+     "frames": 12,
+     "speed": 3
+    },
+    "Vigilar": {
+     "start": 417,
+     "frames": 6,
+     "speed": 10
     }
    },
    "foot": [
@@ -1068,8 +1463,7 @@
    "title": "ORCO MASTER (ORCO CAPITAN MEJORADO) FASE 18",
    "pack": "52E",
    "frames": 568,
-   "verified": false,
-   "partial": true,
+   "verified": true,
    "anims": {
     "Andar": {
      "start": 1,
@@ -1085,6 +1479,42 @@
      "start": 145,
      "frames": 9,
      "speed": 3
+    },
+    "Cubrir": {
+     "start": 217,
+     "frames": 2,
+     "speed": 1
+    },
+    "Recibir": {
+     "start": 233,
+     "frames": 3,
+     "speed": 7
+    },
+    "Morir": {
+     "start": 257,
+     "frames": 10,
+     "speed": 6,
+     "dirs": 4
+    },
+    "Recibir2": {
+     "start": 297,
+     "frames": 3,
+     "speed": 8
+    },
+    "Alarma": {
+     "start": 321,
+     "frames": 14,
+     "speed": 3
+    },
+    "Aburrido": {
+     "start": 433,
+     "frames": 11,
+     "speed": 7
+    },
+    "Vigilar": {
+     "start": 521,
+     "frames": 6,
+     "speed": 10
     }
    },
    "foot": [
@@ -1096,8 +1526,7 @@
    "title": "ZELOS",
    "pack": "55E",
    "frames": 364,
-   "verified": false,
-   "partial": true,
+   "verified": true,
    "anims": {
     "Andar": {
      "start": 1,
@@ -1113,6 +1542,27 @@
      "start": 145,
      "frames": 10,
      "speed": 4
+    },
+    "Cubrir": {
+     "start": 225,
+     "frames": 7,
+     "speed": 1
+    },
+    "Recibir": {
+     "start": 281,
+     "frames": 3,
+     "speed": 7
+    },
+    "Morir": {
+     "start": 305,
+     "frames": 9,
+     "speed": 6,
+     "dirs": 4
+    },
+    "Recibir2": {
+     "start": 341,
+     "frames": 3,
+     "speed": 8
     }
    },
    "foot": [
@@ -1161,8 +1611,7 @@
    "title": "ORCO GENERAL DE TODOS LOS EJERCITOS",
    "pack": "61E",
    "frames": 568,
-   "verified": false,
-   "partial": true,
+   "verified": true,
    "anims": {
     "Andar": {
      "start": 1,
@@ -1178,6 +1627,42 @@
      "start": 145,
      "frames": 9,
      "speed": 3
+    },
+    "Cubrir": {
+     "start": 217,
+     "frames": 2,
+     "speed": 1
+    },
+    "Recibir": {
+     "start": 233,
+     "frames": 3,
+     "speed": 7
+    },
+    "Morir": {
+     "start": 257,
+     "frames": 10,
+     "speed": 6,
+     "dirs": 4
+    },
+    "Recibir2": {
+     "start": 297,
+     "frames": 3,
+     "speed": 8
+    },
+    "Alarma": {
+     "start": 321,
+     "frames": 14,
+     "speed": 3
+    },
+    "Aburrido": {
+     "start": 433,
+     "frames": 11,
+     "speed": 7
+    },
+    "Vigilar": {
+     "start": 521,
+     "frames": 6,
+     "speed": 10
     }
    },
    "foot": [

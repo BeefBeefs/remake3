@@ -41,3 +41,15 @@ test('goblin layout matches the pack (Andar, Respirar, Atacar, Recibir, Morir, A
   assert.equal(g.frames, 400);
   assert.equal(g.anims.Morir!.start, 217);
 });
+
+test('every monster now has a full layout: Morir for 4 directions, all INI animations, nothing left over', () => {
+  for (const id of ['8', '9', '13', '16', '17', '19', '20', '21', '24', '25', '61']) {
+    const a = data.actors[id]!;
+    assert.ok(!a.partial && a.verified, `actor ${id}`);
+    assert.equal(a.anims.Morir!.dirs, 4, `actor ${id}`);
+    assert.ok(a.anims.Recibir || a.anims.Recibir2 || id === '14' || id === '15' || id === '20', `actor ${id} can be hurt`);
+  }
+  assert.ok(data.actors['9']!.anims.Aparecer, 'skeletons rise');
+  assert.ok(data.actors['8']!.anims.Aburrido, 'orcs fidget');
+  assert.equal(Object.values(data.actors).filter((a) => a.partial).length, 0);
+});

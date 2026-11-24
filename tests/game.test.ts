@@ -385,7 +385,7 @@ test('stealth hides you from monsters at half range and the first blow on an una
   const mk = (stealth: boolean, gx: number) => { const g = makeGame({ spawns: [{ id: '1', cx: gx, cy: 128 }] }); g.setStance(false, stealth); return g; };
   // a goblin 7 cells away: a walking hero is heard (hearing + 3 > 7?) only if inside range; stealth halves it
   const range = (stealth: boolean) => {
-    for (let d = 14; d >= 2; d--) { const g = mk(stealth, 128 + d); run(g, 0.3); if (g.monsters[0]!.state !== 'idle' && g.monsters[0]!.cx < 128 + d - 0.05) return d; }
+    for (let d = 14; d >= 2; d--) { const g = mk(stealth, 128 + d); run(g, 0.3); if (g.monsters[0]!.state !== 'idle') return d; }
     return 0;
   };
   const walkRange = range(false), sneakRange = range(true);
@@ -556,6 +556,7 @@ test('ice slows monsters: they cover half the distance', () => {
     const g = withScroll(88, { classId: 102, attrs: { strength: 19, skill: 23, resistance: 21, magic: 30 }, spawns: [{ id: '1', cx: 133, cy: 128 }] });
     if (frozen) read(g, 88);
     const m = g.monsters[0]!;
+    (g as unknown as { alerted: Set<unknown> }).alerted.add(m); // already roared: measure the chase only
     const x0 = m.cx;
     run(g, 0.8);
     return x0 - m.cx;
@@ -765,4 +766,41 @@ test('knowledge potion gives an attribute point, fortuity potion drops two items
   g.useSlot(g.inventory.slots.indexOf(111));
   assert.ok(!g.inventory.slots.includes(111));
   assert.equal(g.ground.length, before + 2);
+});
+
+test('a skeleton lies dormant until the hero is close, then rises and fights', () => {
+  const g = makeGame({ spawns: [{ id: '9', cx: 140, cy: 128 }] });
+  const sk = g.monsters[0]!;
+  assert.ok(sk.dormant);
+  run(g, 1);
+  assert.ok(sk.dormant, 'too far to hear the hero');
+  g.click(sk.cx, sk.cy); // dormant monsters cannot be targeted
+  assert.equal(g.target, null);
+  sk.cx = g.hero.cx + 3; sk.cy = g.hero.cy;
+  run(g, 0.1);
+  assert.equal(sk.dormant, false);
+  assert.equal(sk.state, 'appear');
+  run(g, 4);
+  assert.notEqual(sk.state, 'appear');
+  assert.ok(sk.alive);
+});
+
+test('monsters with an Alarma animation roar before they chase', () => {
+  const g = makeGame({ spawns: [{ id: '1', cx: 132, cy: 128 }] });
+  const m = g.monsters[0]!;
+  run(g, 0.1);
+  assert.equal(m.state, 'taunt');
+  const x0 = m.cx;
+  run(g, 0.2);
+  assert.equal(m.cx, x0, 'does not move while roaring');
+  run(g, 3);
+  assert.notEqual(m.state, 'taunt');
+});
+
+test('demons pick their second attack about half the time', () => {
+  const g = makeGame({ spawns: [{ id: '19', cx: 129, cy: 128 }] });
+  const m = g.monsters[0]!;
+  const seen = new Set<boolean>();
+  for (let i = 0; i < 400 && seen.size < 2; i++) { g.update(1 / 20, null); if (m.state === 'attack') seen.add(m.secondAttack); }
+  assert.equal(seen.size, 2);
 });
