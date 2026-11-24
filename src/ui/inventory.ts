@@ -49,7 +49,7 @@ export class InventoryPanel {
     if (def.kind === 'weapon') parts.push(`damage ${def.power[0]}-${def.power[1]}`);
     if (def.kind === 'shield') parts.push(`protection ${def.power[0]}`);
     if (def.kind === 'armor') parts.push(`armour level ${def.level}`);
-    if (def.kind === 'potion' && def.data === 1) parts.push(`heals ${def.power[0]}-${def.power[1]}`);
+    if (def.kind === 'potion' && def.data & 7) parts.push(`${def.power[0]} to ${def.power[1]}% of max ${['life', 'stamina', 'life and stamina', 'mana', 'life and mana', 'stamina and mana', 'life, stamina and mana'][(def.data & 7) - 1]}`);
     const b = def.bonus;
     const bonus = [['Strength', b.strength], ['Skill', b.skill], ['Resistance', b.resistance], ['Power', b.magic], ['armour', b.armor]].filter(([, v]) => v).map(([k, v]) => `${Number(v) > 0 ? '+' : ''}${v} ${k}`);
     if (bonus.length) parts.push(bonus.join(', '));

@@ -433,3 +433,17 @@ Read the use-item routine for type-512 items in `Nightstone.exe` (all 18 cases).
   for actors 48 (troll warrior master), 51 (Lord of Ailm), 52 and 58 (orc masters) and 2 for 61 (orc general), after the difficulty
   scaling. Implemented (`MASTER_ARMOR`). Actor 63 (Naya, the Princess) takes no damage from heroes; she is an NPC here, so nothing to
   change. `SangreFX` is not read by that routine. 148 tests.
+
+## Turn 20 — more of the executable (experience, potions, death)
+
+- **Experience table was one level off.** The start-up loop fills `table[L] = 195·L² + 200` (L = 1, 2, …) and the level-up test compares
+  the experience with `table[current level]`, so level 2 needs **395** (not 980) and level n needs `195·(n−1)² + 200`; max level 50.
+  Level-up refills life, stamina and mana (confirmed in the same routine). Multiplayer kills of another hero give 500 × level
+  difference (min 400); two scripted events give a fixed 159 and 525 XP, not yet attached to any mission.
+- **Potions.** The `Potencia` range is a *percentage of the maximum* (`0x42b890`), clamped to 0..max: a small life potion is 30–45 %
+  of your life, Vitality −35..75 % of life, stamina and mana (it can kill). Chance (111) refills one of life / stamina / mana at random;
+  Knowledge (112) adds one Power point up to the class cap (not an unspent point). The inventory tooltip shows the percentage.
+- **Death.** Worn legendary weapons (14, 48, 61) and item 129 survive and come back with the next attempt; abilities lose a point
+  with a floor of 0 (the setter's clamp). The exe drops worn gear on the ground rather than destroying it, and does not touch the
+  backpack in that routine; the remake still loses the backpack (manual) because the map restarts anyway.
+- 149 tests.

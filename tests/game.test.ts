@@ -96,7 +96,7 @@ test('a life potion heals up to the maximum and is used up; equipping changes da
   g.hero.hp = 10;
   const slot = g.inventory.slots.indexOf(104);
   g.useSlot(slot);
-  assert.ok(g.hero.hp > 10 && g.hero.hp <= g.hero.stats.hp);
+  assert.ok(g.hero.hp >= 10 + Math.trunc(g.hero.stats.hp * 0.3) && g.hero.hp <= 10 + Math.trunc(g.hero.stats.hp * 0.45) + 1, 'a small life potion gives 30-45 % of the maximum');
   assert.equal(g.inventory.slots.filter((i) => i === 104).length, 1);
   g.inventory.add(2); // no requirements (sword #4 needs Strength 43)
   g.useSlot(g.inventory.slots.indexOf(2));
@@ -399,13 +399,13 @@ test('stamina, mana and the vitality potion: mask bits restore each pool; vitali
   g.inventory.add(106); // small stamina potion 40-60
   g.inventory.add(108); // small magic potion 20-40
   g.useSlot(g.inventory.slots.indexOf(106));
-  assert.ok(g.stamina >= 40 && g.stamina <= Math.min(60, g.maxStamina));
+  assert.ok(g.stamina >= Math.trunc(g.maxStamina * 0.4) && g.stamina <= Math.trunc(g.maxStamina * 0.6), 'Potencia is a percentage of the maximum');
   g.useSlot(g.inventory.slots.indexOf(108));
-  assert.ok(g.mana >= 20 && g.mana <= Math.min(40, g.maxMana));
+  assert.ok(g.mana >= Math.trunc(g.maxMana * 0.2) && g.mana <= Math.trunc(g.maxMana * 0.4));
   g.inventory.add(110);
   const hp = g.hero.hp;
   g.useSlot(g.inventory.slots.indexOf(110));
-  assert.ok(g.hero.hp >= 1 && g.hero.hp !== hp + 100);
+  assert.ok(g.hero.hp >= 0 && g.hero.hp !== hp + 100);
   assert.equal(g.inventory.slots.includes(110), false, 'consumed');
 });
 
@@ -672,10 +672,22 @@ test('dying loses every item and one point of each ability, but keeps gold, leve
   assert.equal(g.hero.hp <= 0, true, 'a dead hero is not revived by stat refreshes');
 });
 
-test('a hero never loses an ability below 1', () => {
+test('an ability loses its point but never goes below 0 (the executable clamps at zero)', () => {
   const g = makeGame({ classId: 100, attrs: { strength: 1, skill: 5, resistance: 1, magic: 2 }, spawns: [{ id: '1', cx: 129, cy: 128 }] });
   killHero(g);
-  assert.deepEqual(g.attrs, { strength: 1, skill: 4, resistance: 1, magic: 1 });
+  assert.deepEqual(g.attrs, { strength: 0, skill: 4, resistance: 0, magic: 1 });
+});
+
+test('a worn legendary weapon survives death (the executable keeps ids 14, 48, 61); other worn gear is lost', () => {
+  const g = makeGame({ classId: 100, attrs: { strength: 80, skill: 60, resistance: 60, magic: 12 }, spawns: [{ id: '1', cx: 129, cy: 128 }] });
+  g.inventory.add(14); g.useSlot(g.inventory.slots.indexOf(14));
+  assert.equal(g.inventory.equipped.weapon, 14);
+  killHero(g);
+  assert.equal(g.inventory.slots.includes(14), true, 'back in the pack');
+  assert.equal(g.inventory.equipped.weapon, undefined);
+  assert.equal(g.inventory.slots.filter(Boolean).length, 1, 'nothing else survives');
+  const next = makeGame({ classId: 100, save: g.save() });
+  assert.ok(next.inventory.slots.includes(14), 'the next attempt starts with it as well');
 });
 
 test('a new attempt continues with the saved hero: attributes, level, experience, points, gold and the starting kit', () => {
@@ -798,17 +810,25 @@ test('a monster covers frontal melee blows by its Rnd_Bloqueo percent and shrugs
   assert.equal(m.state, 'hit');
 });
 
-test('knowledge potion gives an attribute point, fortuity potion drops two items', () => {
-  const g = makeGame();
-  g.inventory.add(112); g.inventory.add(111);
-  const pts = g.points;
+test('knowledge potion adds a point of Power (to the class cap), chance potion refills one of life, stamina or mana', () => {
+  const g = makeGame({ classId: 102, attrs: { strength: 19, skill: 23, resistance: 21, magic: 30 } });
+  g.inventory.add(112);
   g.useSlot(g.inventory.slots.indexOf(112));
-  assert.equal(g.points, pts + 1);
+  assert.equal(g.attrs.magic, 31);
   assert.ok(!g.inventory.slots.includes(112));
-  const before = g.ground.length;
-  g.useSlot(g.inventory.slots.indexOf(111));
-  assert.ok(!g.inventory.slots.includes(111));
-  assert.equal(g.ground.length, before + 2);
+  const capped = makeGame({ classId: 102, attrs: { strength: 19, skill: 23, resistance: 21, magic: 90 } });
+  capped.inventory.add(112); capped.useSlot(capped.inventory.slots.indexOf(112));
+  assert.equal(capped.attrs.magic, 90, 'Sorceress Power stops at 90');
+  const seen = new Set<string>();
+  const c = makeGame({ classId: 102, attrs: { strength: 19, skill: 23, resistance: 21, magic: 30 } });
+  for (let n = 0; n < 40; n++) {
+    c.hero.hp = 1; c.stamina = 0; c.mana = 0;
+    c.inventory.add(111); c.useSlot(c.inventory.slots.indexOf(111));
+    const full = [c.hero.hp === c.hero.stats.hp, c.stamina === c.maxStamina, c.mana === c.maxMana];
+    assert.equal(full.filter(Boolean).length, 1, 'exactly one pool is refilled');
+    seen.add(full.indexOf(true).toString());
+  }
+  assert.equal(seen.size, 3, 'all three can come up');
 });
 
 test('a skeleton lies dormant until the hero is close, then rises and fights', () => {
@@ -1005,12 +1025,12 @@ test('the map list resolves ids, files exist and start cells fall back for multi
 
 // ---- numbers read out of Nightstone.exe (src/game/rules.ts) ----
 
-test('experience curve: 195 n^2 + 200, level 50 at most, and the class tables of the executable', async () => {
+test('experience curve: 195 (n-1)^2 + 200, level 50 at most, and the class tables of the executable', async () => {
   const r = await import('../src/game/rules.ts');
   assert.equal(r.xpForLevel(1), 0);
-  assert.equal(r.xpForLevel(2), 980);
-  assert.equal(r.xpForLevel(10), 19700);
-  assert.equal(r.xpForLevel(50), 487700);
+  assert.equal(r.xpForLevel(2), 395);
+  assert.equal(r.xpForLevel(10), 15995);
+  assert.equal(r.xpForLevel(50), 468395);
   assert.equal(r.MAX_LEVEL, 50);
   assert.deepEqual(r.START_ATTRS[100], { strength: 32, skill: 24, resistance: 30, magic: 11 });
   assert.deepEqual(r.START_ATTRS[102], { strength: 19, skill: 23, resistance: 21, magic: 30 });

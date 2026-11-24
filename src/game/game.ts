@@ -64,6 +64,8 @@ export const DIFFICULTY = [{ armor: 0.5, delay: 1.5 }, { armor: 1, delay: 1 }, {
 export interface HeroSave {
   attrs: { strength: number; skill: number; resistance: number; magic: number };
   level: number; xp: number; points: number; gold: number;
+  /** items that survived a death (the legendary weapons): they come back in the next attempt's backpack */
+  kept?: { id: number; left: number }[];
   /** backpack and worn gear: present when the hero moves on to another mission or is saved (not after dying) */
   inv?: { slots: number[]; equipped: Partial<Record<'weapon' | 'shield' | 'armor' | 'ring' | 'amulet', number>>; /** durability left per slot and per worn item (0 / missing = as new) */ left?: number[]; equippedLeft?: Partial<Record<'weapon' | 'shield' | 'armor' | 'ring' | 'amulet', number>> };
 }
@@ -116,6 +118,9 @@ const STEALTH_HEARING = 0.5;
 const BLOCK_COST = 2;
 /** Bows shoot an arrow that flies this many cells; it is aimed at the nearest monster within ~25 degrees of the aim. */
 const BOW_RANGE = 7;
+/** Worn items that survive death: the three legendary weapons (sword 14, bow 48, staff 61) and item 129. */
+const KEEPS_ON_DEATH = new Set([14, 48, 61, 129]);
+
 /** The executable adds armour to the troll warrior master (48), Lord of Ailm (51), the two orc masters (52, 58) and the orc general (61, +2). */
 const MASTER_ARMOR: Record<string, number> = { '48': 1, '51': 1, '52': 1, '58': 1, '61': 2 };
 
@@ -160,7 +165,7 @@ export class Game {
   readonly group = new THREE.Group();
   kills = 0;
   xp = 0;
-  /** Hero level (guess: the real XP table is not decoded; level n+1 needs `xpForLevel(n+1)` total points). */
+  /** Hero level (the executable's curve; level n needs `xpForLevel(n)` total points). */
   level = 1;
   /** Unspent attribute points (4 per level, see `spend`). */
   points = 0;
@@ -238,6 +243,7 @@ export class Game {
     this.inventory.add(cls.weapon); this.inventory.equip(0);
     this.inventory.add(104); this.inventory.add(104);
     if (opts.save) this.inventory.gold = opts.save.gold;
+    for (const k of opts.save?.kept ?? []) if (data.items.has(k.id)) this.inventory.add(k.id, k.left);
     if (opts.save?.inv) {
       // a hero who moves on keeps his things: replace the starting kit with what he carried (unknown ids are dropped)
       const known = (id: number) => id > 0 && data.items.has(id);
@@ -671,27 +677,32 @@ export class Game {
     }
     if (def.kind === 'potion') {
       if (def.id === POTION_FORTUITY || def.id === POTION_KNOWLEDGE) {
-        // The manual lists both but never says what they do; guesses: knowledge = one more attribute point to
-        // spend, fortuity (Spanish "azar", chance) = two random items turn up at the hero's feet.
+        // The executable (use-item routine, 0x44de66): the Potion of Chance (azar) refills one of life, stamina or mana
+        // (picked by a die roll of three); the Potion of Knowledge adds one point of Power, up to the class cap.
         this.inventory.take(index);
         this.snd(9);
-        if (def.id === POTION_KNOWLEDGE) { this.points++; this.say(`You drink the ${def.name}: +1 attribute point`); }
-        else {
-          const usable = (d: ItemDef) => this.inventory.canUse(d) && !(d.tipo & 4096);
-          const found: number[] = [];
-          for (let n = 0; n < 2; n++) { const it = rollByMask(this.inventory.itemDefs, 0xffff & ~(2048 | 4096 | 1024), this.level + 1, this.rnd, usable); if (it) found.push(it); }
-          found.forEach((it, n) => this.spawnGround(it, this.hero.cx + (n ? 0.7 : -0.7), this.hero.cy + 0.5));
-          this.say(`You drink the ${def.name}: ${found.length ? 'fortune smiles on you' : 'nothing happens'}`);
+        if (def.id === POTION_KNOWLEDGE) {
+          const cap = ATTR_CAPS[this.classId as ClassKey].magic;
+          if (this.attrs.magic < cap) this.attrs.magic++;
+          this.syncLife();
+          this.say(`You drink the ${def.name}: +1 Power`);
+        } else {
+          const pick = Math.floor(this.rnd() * 3);
+          if (pick === 0) { this.hero.hp = this.hero.stats.hp; this.say(`You drink the ${def.name}: life restored`); }
+          else if (pick === 1) { this.stamina = this.maxStamina; this.say(`You drink the ${def.name}: stamina restored`); }
+          else { this.mana = this.maxMana; this.say(`You drink the ${def.name}: mana restored`); }
         }
         this.version++;
       } else if (def.data & 7) {
-        // Data is a bit mask: 1 life, 2 stamina, 4 magic (the Vitality potion, 7, does all three and can hurt: -35..75)
+        // Data is a bit mask: 1 life, 2 stamina, 4 magic (the Vitality potion, 7, does all three and can hurt). The Potencia
+        // range is a PERCENTAGE of the maximum (0x42b890: current += maximum * roll / 100, truncated, kept within 0..maximum).
         const [lo, hi] = def.power;
         const parts: string[] = [];
         const roll = () => lo + Math.floor(this.rnd() * (hi - lo + 1));
-        if (def.data & 1) { const v = roll(); this.hero.hp = Math.max(1, Math.min(this.hero.stats.hp, this.hero.hp + v)); parts.push(`${v >= 0 ? '+' : ''}${v} HP`); }
-        if (def.data & 2) { const v = roll(); this.stamina = Math.max(0, Math.min(this.maxStamina, this.stamina + v)); parts.push(`${v >= 0 ? '+' : ''}${v} stamina`); }
-        if (def.data & 4) { const v = roll(); this.mana = Math.max(0, Math.min(this.maxMana, this.mana + v)); parts.push(`${v >= 0 ? '+' : ''}${v} mana`); }
+        const pct = (max: number) => { const r = roll(); return { r, v: Math.trunc((max * r) / 100) }; };
+        if (def.data & 1) { const { r, v } = pct(this.hero.stats.hp); const left = Math.min(this.hero.stats.hp, this.hero.hp + v); parts.push(`${r >= 0 ? '+' : ''}${r}% life`); if (left <= 0) { this.hero.hurt(this.hero.hp); this.snd(CLASSES[this.classId].sound); this.die(); } else this.hero.hp = left; }
+        if (def.data & 2) { const { r, v } = pct(this.maxStamina); this.stamina = Math.max(0, Math.min(this.maxStamina, this.stamina + v)); parts.push(`${r >= 0 ? '+' : ''}${r}% stamina`); }
+        if (def.data & 4) { const { r, v } = pct(this.maxMana); this.mana = Math.max(0, Math.min(this.maxMana, this.mana + v)); parts.push(`${r >= 0 ? '+' : ''}${r}% mana`); }
         this.inventory.take(index);
         this.snd(9);
         this.fx.push(...potionFx(this.hero.cx, this.hero.cy, def.data));
@@ -946,11 +957,21 @@ export class Game {
    * gold is kept, an ability never drops below 1, level and unspent points are kept.
    */
   private die(): void {
-    const lost = this.inventory.slots.filter(Boolean).length + Object.keys(this.inventory.equipped).length;
-    this.inventory.slots.fill(0);
-    for (const k of Object.keys(this.inventory.equipped) as (keyof typeof this.inventory.equipped)[]) delete this.inventory.equipped[k];
-    this.inventory.repairAll();
-    for (const k of ['strength', 'skill', 'resistance', 'magic'] as const) this.attrs[k] = Math.max(1, this.attrs[k] - 1);
+    // The executable's death routine (0x429e40): worn gear is dropped except the legendary weapons (ids 14, 48, 61) and item
+    // 129, which stay with the hero; a worn legendary weapon goes into the first free quick slot. Each ability loses one point
+    // (the setter clamps at 0).
+    const inv = this.inventory;
+    const keep: { id: number; left: number }[] = [];
+    for (const k of Object.keys(inv.equipped) as (keyof typeof inv.equipped)[]) {
+      const id = inv.equipped[k]!;
+      if (KEEPS_ON_DEATH.has(id)) keep.push({ id, left: inv.equippedLeft[k] ?? 0 });
+    }
+    const lost = inv.slots.filter(Boolean).length + Object.keys(inv.equipped).length - keep.length;
+    inv.slots.fill(0);
+    for (const k of Object.keys(inv.equipped) as (keyof typeof inv.equipped)[]) delete inv.equipped[k];
+    inv.repairAll();
+    for (const kept of keep) inv.add(kept.id, kept.left);
+    for (const k of ['strength', 'skill', 'resistance', 'magic'] as const) this.attrs[k] = Math.max(0, this.attrs[k] - 1);
     this.dead = true;
     this.version++;
     this.say(`You have died: ${lost} item${lost === 1 ? '' : 's'} lost and one point from each ability`);
@@ -961,7 +982,8 @@ export class Game {
 
   /** The hero as the next attempt starts with it. */
   save(): HeroSave {
-    return { attrs: { ...this.attrs }, level: this.level, xp: this.xp, points: this.points, gold: this.inventory.gold };
+    const kept = this.dead ? this.inventory.slots.flatMap((id, i) => (id ? [{ id, left: this.inventory.slotLeft[i] ?? 0 }] : [])) : [];
+    return { attrs: { ...this.attrs }, level: this.level, xp: this.xp, points: this.points, gold: this.inventory.gold, ...(kept.length ? { kept } : {}) };
   }
 
   /** The hero as he walks out of a mission: everything he has, at full strength (saving happens between missions only). */

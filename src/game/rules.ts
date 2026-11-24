@@ -15,8 +15,11 @@ export const TICK = 1 / GAME_FPS;
 
 /** The level table stops at 50 (the level-up test is skipped from level 50 on). */
 export const MAX_LEVEL = 50;
-/** Total experience needed to reach `level`: 195 n^2 + 200 for n >= 2 (the table the executable fills at start-up). */
-export const xpForLevel = (level: number): number => (level <= 1 ? 0 : 195 * level * level + 200);
+/**
+ * Total experience needed to reach `level`: 195 (n-1)^2 + 200 for n >= 2. The executable fills table[L] = 195 L^2 + 200 at start-up
+ * (0x46f787) and the level-up test (0x42bace) compares the experience with table[current level]: level 1 -> 2 needs 395.
+ */
+export const xpForLevel = (level: number): number => (level <= 1 ? 0 : 195 * (level - 1) * (level - 1) + 200);
 /** Attribute points granted by a level-up. */
 export const POINTS_PER_LEVEL = 4;
 
