@@ -804,3 +804,35 @@ test('demons pick their second attack about half the time', () => {
   for (let i = 0; i < 400 && seen.size < 2; i++) { g.update(1 / 20, null); if (m.state === 'attack') seen.add(m.secondAttack); }
   assert.equal(seen.size, 2);
 });
+
+test('spells create effects: rings from the caster and something on every enemy hit; they expire', () => {
+  const g = withScroll(90, { classId: 102, attrs: { strength: 19, skill: 23, resistance: 21, magic: 30 }, spawns: [{ id: '1', cx: 133, cy: 128 }, { id: '1', cx: 134, cy: 129 }] });
+  assert.equal(g.fx.length, 0);
+  read(g, 90);
+  const rings = g.fx.filter((f) => f.flat && !f.follow);
+  const onEnemies = g.fx.filter((f) => f.follow);
+  assert.equal(rings.length, 2, 'incineration sends two rings');
+  assert.ok(onEnemies.length >= 10, `flames on both enemies (${onEnemies.length})`);
+  run(g, 4);
+  assert.equal(g.fx.length, 0, 'effects clean themselves up');
+});
+
+test('earth shakes the screen; level-up and potions glow', () => {
+  const g = withScroll(91, { classId: 102, attrs: { strength: 19, skill: 23, resistance: 21, magic: 30 } });
+  read(g, 91);
+  assert.ok(g.shake > 0.5);
+  run(g, 1);
+  assert.equal(g.shake, 0);
+  g.inventory.add(104);
+  const n = g.fx.length;
+  g.useSlot(g.inventory.slots.indexOf(104));
+  assert.ok(g.fx.length > n, 'potion glow');
+  const lv = withScroll(90, { classId: 102, spawns: [{ id: '1', cx: 129, cy: 128 }] });
+  lv.xp = xpForLevel(2) - 1;
+  const gob = lv.monsters[0]!;
+  gob.hp = 1;
+  lv.click(gob.cx, gob.cy);
+  for (let t = 0; t < 600 && lv.level < 2; t++) lv.update(1 / 60, null);
+  assert.equal(lv.level, 2);
+  assert.ok(lv.fx.some((f) => f.tex === 119), 'level-up flare');
+});

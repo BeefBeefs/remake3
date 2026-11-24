@@ -297,4 +297,4 @@ order (code `c` at column `c & 15`, row `c >> 4`, white on black); `System/Fnt.d
 `BigFont.dat`, `SmallFnt.dat` are 256 bytes of per-character advances in pixels (`data/fonts.json`). The big menu words and
 buttons carry a black backdrop and look right when added to the picture (`mix-blend-mode: screen`).
 
-Spell effect textures live in `GDI/3D/*.bmp` (64-72 torches, 100-104 rings, 118/119 flares, 120-133 smoke), not used yet.
+Spell effect textures live in `GDI/3D/*.bmp` and are drawn additively (`src/game/effects.ts`, `effectsview.ts`): 64-72 flame frames, 75/76 red / green puffs, 77 orange glow, 100 orange ring, 101 blue-white ring, 102 white ring, 103 green glow, 104 small ring, 118/119 blue / warm flares, 120-133 an ice spirit that forms and fades (not smoke, as first guessed). Which texture belongs to which spell is a guess from how they look.

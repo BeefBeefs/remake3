@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { Atlas } from './assets/atlas.ts';
+import { EffectsView } from './game/effectsview.ts';
 import { World } from './game/world.ts';
 import { Sfx } from './audio/sfx.ts';
 import { surfaceLookup, type TileTable } from './game/surface.ts';
@@ -117,11 +118,14 @@ async function boot() {
   const npcSpawns = extraNpcs.map((id, k) => { const c = world.findOpenCell(spawn.cx + 3 + 2 * k, spawn.cy + 2); return { id, cx: c.cx, cy: c.cy }; });
   const game = new Game(world, { anims: animData, actors: actorsIni, names, atlases, items, icons }, spawn, { spawns: [...spawns, ...npcSpawns], surface, attrs: adv.heroes[classId - 100], classId, save: carried?.save, difficulty, finalText: adv.final.startsWith('Enter the final text') ? 'You have found the Tomb of Donmir!' : adv.final });
   game.say(adv.mission_text);
+  if (new URLSearchParams(location.search).has('debug')) (window as unknown as { __nst: unknown }).__nst = { game }; // for scripted browser checks
   const panel = new InventoryPanel(game, icons, BASE, skin);
   const shop = new ShopWindow(game, icons, BASE, skin);
   const charPanel = new CharacterPanel(game, skin);
   game.onTalk = (npc) => { if (MERCHANTS.has(npc.id)) shop.open(npc.name); };
   scene.add(game.group);
+  const fxView = await EffectsView.load(BASE);
+  scene.add(fxView.group);
   const hero = game.hero;
   world.update(hero.cx, hero.cy);
   const startW = cellToWorld(hero.cx, hero.cy);
@@ -231,7 +235,12 @@ async function boot() {
     banner.style.display = !hero.alive || left === 0 ? 'block' : 'none';
     banner.textContent = !hero.alive ? 'You have fallen — press R to try again (items and one point of each ability are lost)' : 'The camp is clear!';
     if (game.goalReached && !won) { won = true; showVictory(game, hero.stats.name); }
+    fxView.sync(game.fx);
+    // earthquake: shake the picture for a moment
+    const sh = Math.min(1, game.shake) * 7, ox = (Math.random() - 0.5) * 2 * sh, oy = (Math.random() - 0.5) * 2 * sh;
+    camera.position.x += ox; camera.position.y += oy;
     renderer.render(scene, camera);
+    camera.position.x -= ox; camera.position.y -= oy;
     requestAnimationFrame(frame);
   }
   hud.textContent = 'click to walk or fight · WASD · Space swing · Ctrl run · Shift stealth · right button block / hold · I inventory · C character · Esc menu';

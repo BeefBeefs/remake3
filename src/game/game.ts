@@ -4,6 +4,7 @@ import { type AnimData } from './anims.ts';
 import { SPELLS, SPELL_RADIUS, blastDamage, manaCost } from './spells.ts';
 import { STEP_SOUND, type Surface } from './surface.ts';
 import { Creature, type Stats } from './creature.ts';
+import { levelUpFx, potionFx, spellFx, stepFx, type Fx } from './effects.ts';
 import { Inventory, familyBonus, missingReqs, rollByMask, rollDrop, slotOf, type ItemDef } from './items.ts';
 import { cellToWorld, depthOf } from '../iso.ts';
 import { World } from './world.ts';
@@ -150,6 +151,10 @@ export class Game {
   holding = false;
   readonly inventory: Inventory;
   readonly ground: GroundItem[] = [];
+  /** Visual effects in progress (spells, level-up, potions); drawn by EffectsView. */
+  readonly fx: Fx[] = [];
+  /** Screen shake left (seconds), set by the earth parchment; main.ts shakes the camera while it runs. */
+  shake = 0;
   /** most recent messages, newest last (for the HUD) */
   readonly log: string[] = [];
   /** bumps whenever the inventory/equipment changed (so the UI knows to redraw) */
@@ -424,6 +429,10 @@ export class Game {
     if (this.mana < cost) { this.say(`Not enough mana (${cost} needed)`); return false; }
     const h = this.hero;
     const near = this.monsters.filter((m) => m.alive && !m.dormant && Math.hypot(m.cx - h.cx, m.cy - h.cy) <= SPELL_RADIUS);
+    if (spell.kind !== 'allies') {
+      this.fx.push(...spellFx(def.id, h.cx, h.cy, SPELL_RADIUS, spell.kind === 'blast' || spell.kind === 'freeze' ? near : []));
+      if (def.id === 91) this.shake = 0.7;
+    }
     switch (spell.kind) {
       case 'blast': {
         const dmg = blastDamage(spell, this.eff.magic);
@@ -531,6 +540,7 @@ export class Game {
         if (def.data & 4) { const v = roll(); this.mana = Math.max(0, Math.min(this.maxMana, this.mana + v)); parts.push(`${v >= 0 ? '+' : ''}${v} mana`); }
         this.inventory.take(index);
         this.snd(9);
+        this.fx.push(...potionFx(this.hero.cx, this.hero.cy, def.data));
         this.say(`You drink the ${def.name}: ${parts.join(', ')}`);
       } else this.say(`${def.name}: its magic is not understood yet`);
     } else if (slotOf(def) && this.inventory.canUse(def) && this.missing(def).length) {
@@ -699,6 +709,8 @@ export class Game {
     for (const n of this.npcs) n.creature.update(dt);
     h.update(dt);
     for (const m of this.monsters) m.update(dt);
+    stepFx(this.fx, dt);
+    this.shake = Math.max(0, this.shake - dt);
   }
 
   /** Attributes with worn-item bonuses; requirements use the plain `attrs`, everything derived (life, stamina, mana, spells) uses these. */
@@ -768,6 +780,7 @@ export class Game {
       this.points += POINTS_PER_LEVEL; // manual: "+4" points to distribute on the character specifications window
       this.hero.hp = st.hp;
       this.snd(CLASSES[this.classId].sound + 3); // <class>_nivel
+      this.fx.push(...levelUpFx(this.hero.cx, this.hero.cy));
       this.say(`${st.name} reached level ${this.level}`);
       this.version++;
     }
