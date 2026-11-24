@@ -1283,3 +1283,19 @@ test('stamina by hero state (executable): standing regains, walking regains less
   assert.ok(still > walk && walk > 0, `rest ${still}, walk ${walk}`);
   assert.ok(stealth < 0 && runn < stealth, `stealth ${stealth}, run ${runn}`);
 });
+
+test('a monster that reaches the hero waits half an attack delay before its first blow (executable 0x434326)', () => {
+  const g = makeGame({ spawns: [{ id: '8', cx: 140, cy: 128 }] });
+  for (const m of g.monsters) if (m !== g.monsters[0]) { m.cx = 5; m.cy = 5; }
+  const m = g.monsters[0]!;
+  g.hero.cx = 130; g.hero.cy = 128; m.cx = 133; m.cy = 128;
+  let arrived = -1, struck = -1, t = 0;
+  while (t < 15 && struck < 0) {
+    g.update(1 / 60, null); t += 1 / 60;
+    const d = Math.hypot(g.hero.cx - m.cx, g.hero.cy - m.cy);
+    if (arrived < 0 && d <= 1.36) arrived = t;
+    if (m.state === 'attack') struck = t;
+  }
+  assert.ok(arrived > 0 && struck > arrived, `arrived ${arrived}, struck ${struck}`);
+  assert.ok(struck - arrived >= m.stats.cooldown[0] * 0.5 * 0.9, `first blow ${struck - arrived} s after arriving`);
+});

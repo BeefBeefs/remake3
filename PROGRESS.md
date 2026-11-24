@@ -483,3 +483,9 @@ Read the use-item routine for type-512 items in `Nightstone.exe` (all 18 cases).
   along the longer screen axis, flies 60 ticks at most (then lingers a few ticks), and hits the first actor within 16 pixels that is
   not its shooter (the shooter's own hit routine is called); walls stop it too. The old 16 / 9 cells per second, 7-cell reach
   and 0.6-0.7-cell hit radius were guesses. Still guessed: when shooters decide to fire, the aim cone, bow reach for the hero.
+- **Monster AI read.** The chase handler (`0x434260`): when the monster is next to the hero it waits **half** a `Vel_Ataque` roll
+  (easy ×2 of that, hard ×⅔) before the first blow; afterwards each blow waits the whole roll (×1.5 / ×1 / ×⅔, already modelled).
+  Now modelled; the old code struck the moment it arrived. While chasing, each time a path is issued the monster pauses with
+  `Espera` percent chance for 20–54 ticks (not modelled: how long a path segment runs is unknown). `Tm_Busqueda` is a per-tick
+  counter on the monster's target record, cleared only when it is hit, that clears the target when it passes the value; the
+  hearing check just re-acquires the hero, so there is nothing to show. 152 tests.

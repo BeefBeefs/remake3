@@ -58,6 +58,8 @@ export interface GameOptions {
  * What the difficulty level changes, read from the executable: monster armour (halved / as is / doubled) and the delay between
  * a monster's attacks (x1.5 / as is / x2/3). Monster life and damage do not depend on it.
  */
+/** First blow after reaching the hero, as a share of the (difficulty-scaled) attack delay: raw/2 x (2, 1, 2/3) against raw x (1.5, 1, 2/3). */
+const FIRST_BLOW = [2 / 3, 1 / 2, 1 / 2] as const;
 export const DIFFICULTY = [{ armor: 0.5, delay: 1.5 }, { armor: 1, delay: 1 }, { armor: 2, delay: 2 / 3 }] as const;
 
 /** What survives from one attempt to the next: the hero's growth (manual: dying costs the items and one point of each ability). */
@@ -1275,6 +1277,12 @@ export class Game {
         const ox = m.cx - o.cx, oy = m.cy - o.cy, od = Math.hypot(ox, oy);
         if (od < 0.7 && od > 1e-3) this.step(m, ox / od, oy / od, 1.2, dt);
       }
+    } else if ((m.state as string) === 'walk') {
+      // arriving: the executable (0x434326) waits before the first blow, half an attack delay (two thirds of one at the
+      // easy level's x1.5), and only then strikes; later blows wait the whole delay
+      const [lo, hi] = m.stats.cooldown;
+      m.cooldown = (lo + this.rnd() * (hi - lo)) * FIRST_BLOW[this.difficulty] * (this.slowed.has(m) ? 2 : 1);
+      m.setState('idle');
     } else if (m.cooldown === 0) {
       m.onStrike = (c) => this.monsterStrike(c);
       m.secondAttack = !!m.def.anims.Atacar2 && this.rnd() < 0.5;
