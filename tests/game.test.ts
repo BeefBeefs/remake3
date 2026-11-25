@@ -1,3 +1,4 @@
+import { runCommand } from '../src/game/console.ts';
 import { spellPower } from '../src/game/spells.ts';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -1467,4 +1468,29 @@ test('a ground bolt (stone 70, effect slot type 6) is harmless for 70 ticks, the
   assert.ok(on.late < on.hp0);
   assert.equal(on.left, 0);
   assert.equal(off.late, off.hp0);
+});
+
+test("the F1 console's words do what the executable's handlers do", () => {
+  const anims = json('data/anims.json');
+  const atlases = new Map<string, Atlas>();
+  for (const a of Object.values(anims.actors) as { pack: string }[]) atlases.set(a.pack, fakeAtlas);
+  const data: GameData = { anims, actors: json('data/actors.json'), names: { '100': 'Terak' }, atlases, items: buildItems(json('data/items.json'), {}), icons: fakeAtlas };
+  const g = new Game(flatWorld(), data, { cx: 128, cy: 128 }, { spawns: [], mapNumber: 12 });
+  const gold0 = g.inventory.gold;
+  assert.ok(runCommand(g, 'getmoney 250').ok);
+  assert.equal(g.inventory.gold, gold0 + 250);
+  runCommand(g, 'QUITMONEY 100000');
+  assert.equal(g.inventory.gold, 0);
+  runCommand(g, 'FUERZA 40');
+  assert.equal(g.attrs.strength, 40);
+  g.hero.hp = 1;
+  runCommand(g, 'VIDA');
+  assert.equal(g.hero.hp, g.hero.stats.hp);
+  assert.equal(runCommand(g, 'MRFURIOSO').text, 'God mode on');
+  (g as any).hurtHero([50, 50], 0, 0);
+  assert.equal(g.hero.hp, g.hero.stats.hp, 'god mode: no damage');
+  assert.ok(!runCommand(g, 'NOPE').ok);
+  assert.ok(!runCommand(g, 'ITEM x').ok);
+  assert.ok(runCommand(g, 'VAMONOS').ok);
+  assert.equal(g.status, 'complete');
 });

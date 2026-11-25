@@ -847,6 +847,14 @@ export class Game {
     this.fx.push(makeFx(75, c.cx, c.cy, { follow: c, lift: 26, size0: 24, size1: 70, life: 0.35, alpha0: 0.9, alpha1: 0 }));
   }
 
+  /** F1 console (`console.ts`): god mode makes the hero ignore every blow. */
+  godMode = false;
+  cheatHeal(): void { const h = this.hero; if (!h.alive) return; h.hp = h.stats.hp; this.stamina = this.maxStamina; this.mana = this.maxMana; }
+  cheatAbility(k: Attr, n: number): void { this.attrs[k] = Math.max(1, Math.min(255, Math.round(n))); this.syncLife(); this.stamina = Math.min(this.stamina, this.maxStamina); }
+  cheatItem(id: number): boolean { return this.data.items.has(id) && this.inventory.add(id); }
+  cheatGold(delta: number): void { this.inventory.gold = Math.max(0, this.inventory.gold + Math.round(delta)); }
+  cheatSkipLevel(): void { this.completeLevel(); }
+
   private tickBolts(dt: number): void {
     for (const b of this.bolts) {
       b.acc += dt * 30;
@@ -1009,7 +1017,7 @@ export class Game {
   /** Damage dealt to the hero from the direction (fromx, fromy): a raised shield stops blows from the front arc. */
   private hurtHero([lo, hi]: [number, number], fromx: number, fromy: number, attacker?: Creature, melee = false): void {
     const h = this.hero;
-    if (!h.alive) return;
+    if (!h.alive || this.godMode) return;
     const raw = lo + Math.floor(this.rnd() * (hi - lo + 1));
     // shield of the double edge: "-1 l.p. from the combatants" (the monster that strikes in melee loses a point)
     if (melee && attacker?.alive && this.inventory.wearing(SPECIAL.doubleEdge)) this.damageMonster(attacker, 1, false);

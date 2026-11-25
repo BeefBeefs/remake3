@@ -1,3 +1,4 @@
+import { runCommand } from './game/console.ts';
 import * as THREE from 'three';
 import { Atlas } from './assets/atlas.ts';
 import { MISSIONS, SaveStore, newCareer, parseCareer, type Career } from './game/career.ts';
@@ -247,7 +248,25 @@ async function boot() {
 
   // Keyboard: arrows/WASD move along the screen axes (up = towards the top of the screen); space swings.
   const keys = new Set<string>();
+  // F1: the executable's debug console (see game/console.ts)
+  const con = document.createElement('input');
+  con.type = 'text'; con.spellcheck = false; con.autocomplete = 'off';
+  con.style.cssText = 'position:fixed;left:8px;bottom:8px;width:320px;display:none;z-index:50;background:#000c;color:#f1e3b0;border:1px solid #8a6;font:13px monospace;padding:3px 6px';
+  document.body.appendChild(con);
+  con.addEventListener('keydown', (e) => {
+    e.stopPropagation();
+    if (e.key === 'F1' || e.key === 'Escape') { con.style.display = 'none'; con.blur(); e.preventDefault(); return; }
+    if (e.key === 'Enter') { const r = runCommand(game, con.value); if (r.text) game.say(r.text); con.value = ''; }
+  });
+  con.addEventListener('keyup', (e) => e.stopPropagation());
   window.addEventListener('keydown', (e) => {
+    if (e.key !== 'F1') return;
+    e.preventDefault();
+    con.style.display = con.style.display === 'none' ? 'block' : 'none';
+    if (con.style.display === 'block') con.focus(); else con.blur();
+  });
+  window.addEventListener('keydown', (e) => {
+    if (document.activeElement === con) return;
     readMods(e);
     keys.add(e.key.toLowerCase());
     down.add(keyInput(e.key));
