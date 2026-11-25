@@ -1437,6 +1437,7 @@ test('Naya cannot be hurt; when the last Dark Stone falls she dies a moment late
   (g as any).damageMonster(naya, 50);
   assert.equal(naya.hp, naya.stats.hp, 'untouchable');
   (g as any).hitStone(stone, 99999);
+  (g as any).bolts.length = 0; // stone 70's own thunder is not under test here
   assert.ok(!stone.alive);
   assert.ok(!skel.alive, 'the blast kills the other monsters');
   assert.ok(naya.alive && g.status === 'playing', 'the blast takes a moment');
@@ -1445,4 +1446,25 @@ test('Naya cannot be hurt; when the last Dark Stone falls she dies a moment late
   assert.equal(g.status, 'playing');
   for (let i = 0; i < 40; i++) g.update(0.1, null);
   assert.equal(g.status, 'complete');
+});
+
+test('a ground bolt (stone 70, effect slot type 6) is harmless for 70 ticks, then can hurt whoever stays on it; moving away is safe', () => {
+  const anims = json('data/anims.json');
+  const atlases = new Map<string, Atlas>();
+  for (const a of Object.values(anims.actors) as { pack: string }[]) atlases.set(a.pack, fakeAtlas);
+  const data: GameData = { anims, actors: json('data/actors.json'), names: { '100': 'Terak' }, atlases, items: buildItems(json('data/items.json'), {}), icons: fakeAtlas };
+  const run = (dx: number) => {
+    const g = new Game(flatWorld(), data, { cx: 128, cy: 128 }, { spawns: [], mapNumber: 12 });
+    const hp0 = g.hero.hp;
+    (g as any).bolts.push({ cx: 128 + dx, cy: 128, ticks: 105, acc: 0 });
+    for (let i = 0; i < 60; i++) g.update(1 / 30, null);
+    const early = g.hero.hp;
+    for (let i = 0; i < 60; i++) g.update(1 / 30, null);
+    return { hp0, early, late: g.hero.hp, left: (g as any).bolts.length };
+  };
+  const on = run(0), off = run(4);
+  assert.equal(on.early, on.hp0);
+  assert.ok(on.late < on.hp0);
+  assert.equal(on.left, 0);
+  assert.equal(off.late, off.hp0);
 });

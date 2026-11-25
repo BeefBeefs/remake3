@@ -126,6 +126,8 @@ const KEEPS_ON_DEATH = new Set([14, 48, 61, 129]);
 
 /** The executable adds armour to the troll warrior master (48), Lord of Ailm (51), the two orc masters (52, 58) and the orc general (61, +2). */
 /** Seconds between the last stone falling and Naya's death (35 ticks of the executable's 30 per second countdown). */
+/** Cells within which a stone's ground bolt hurts (the routine looks for actors within 16 units of its cell). */
+const BOLT_RADIUS = 1;
 const NAYA_DELAY = 35 / 30;
 const MASTER_ARMOR: Record<string, number> = { '48': 1, '51': 1, '52': 1, '58': 1, '61': 2 };
 
@@ -208,6 +210,8 @@ export class Game {
   /** Dark Stones / Cauldron parts (actors 70-82): objective objects kept in `monsters` so the hero can hit and see them, but they never act */
   private readonly stones = new Set<Creature>();
   /** After the last Dark Stone falls Naya dies a moment later (routine 0x433730: 105-tick countdown, she goes at tick 70, i.e. 35 ticks in) and the level ends once her body is down. */
+  /** Ground bolts left by stone 70 (effect slot type 6): 105 ticks of 1/30 s, dangerous in the last 35. */
+  private bolts: { cx: number; cy: number; ticks: number; acc: number }[] = [];
   private finale: { naya: Creature; t: number } | null = null;
   private mapNumber = 0;
   /** the monster the hero struck last and when (game seconds), for the target plate */
@@ -340,8 +344,13 @@ export class Game {
     const killed = m.hurt(stoneDamage(blow, this.mapNumber), false);
     this.snd(this.pick(62, 3));
     const final = this.mapNumber === 35, cauldron = m.actorId === 80;
-    // stone 70 answers a blow with effect slot type 6 (0x4247a0), whose sound is 77 `trueno`; the picture of that effect was not decoded
-    if (m.actorId === 70 && this.rnd() * 100 < (final ? 80 : 50)) this.snd(77);
+    // stone 70 answers a blow with effect slot type 6 (0x4247a0(2, 6, 105) at the hero, draw/update 0x4249f0 case 6): thunder (sound 77) at once, a
+    // 105-tick mark on the ground, and in its last 35 ticks each tick has a 40 % chance (20 % in mission 35) to hurt whoever stands on it for 4 (20 in mission 35)
+    if (m.actorId === 70 && this.rnd() * 100 < (final ? 80 : 50)) {
+      this.snd(77);
+      this.bolts.push({ cx: this.hero.cx, cy: this.hero.cy, ticks: 105, acc: 0 });
+      this.fx.push(makeFx(100, this.hero.cx, this.hero.cy, { flat: true, size0: 0.9, size1: 0.9, life: 70 / 30, alpha0: 0.35, alpha1: 0.9, color: 0x8090ff }));
+    }
     if (this.monsters.length < 200 && this.rnd() * 100 < (final ? 60 : cauldron ? 34 : 27)) {
       for (let i = 0; i < (cauldron ? 2 : 1); i++) {
         let kind = final ? 10 : 9;
@@ -838,6 +847,23 @@ export class Game {
     this.fx.push(makeFx(75, c.cx, c.cy, { follow: c, lift: 26, size0: 24, size1: 70, life: 0.35, alpha0: 0.9, alpha1: 0 }));
   }
 
+  private tickBolts(dt: number): void {
+    for (const b of this.bolts) {
+      b.acc += dt * 30;
+      while (b.acc >= 1 && b.ticks > 0) {
+        b.acc -= 1; b.ticks--;
+        if (b.ticks >= 35 || !this.hero.alive) continue;
+        const final = this.mapNumber === 35;
+        if (this.rnd() * 100 < (final ? 20 : 40) && Math.hypot(this.hero.cx - b.cx, this.hero.cy - b.cy) < BOLT_RADIUS) {
+          const dmg = final ? 20 : 4;
+          this.fx.push(makeFx(118, b.cx, b.cy, { lift: 26, size0: 30, size1: 120, life: 0.3 }));
+          this.hurtHero([dmg, dmg], 0, 0);
+        }
+      }
+    }
+    this.bolts = this.bolts.filter((b) => b.ticks > 0);
+  }
+
   private tickFinale(dt: number): void {
     const f = this.finale;
     if (!f) return;
@@ -1096,6 +1122,7 @@ export class Game {
     const h = this.hero;
     this.clockT += dt;
     this.tickFinale(dt);
+    this.tickBolts(dt);
     this.moving = false;
     this.updateHero(dt, move);
     this.tickResources(dt);
