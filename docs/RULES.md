@@ -73,3 +73,8 @@ Modelled since the web check (GameSpot's preview: enemies have a vision triangle
 ### The F1 console (decoded, implemented in `src/game/console.ts`)
 
 `0x43edb0` registers 20 words with their handlers (`0x4160a0`); the cheats need F4 held on Enter in the original, the remake runs them on Enter (F1 opens and closes the line). VIDA: life +999, two more resources +200,824 (`0x42b700` on attributes 1, 3, 2); MRFURIOSO toggles god mode (`0x572aa8`); FUERZA / RESISTENCIA / DESTREZA / MAGIA n set ability 0xa / 0xb / 0xc / 0xd (`0x42b5e0`); ITEM n gives item n (`0x42a910`); GETMONEY / QUITMONEY n add or remove gold (`0x42acd0` / `0x42aae0`); VAMONOS ends the mission (`0x41da70(1)`, `0x458af0`). GRID, BBOX, DACTORS, FPS, SETFPS, VIDMEM, MCHECK, DROL, CLS and C-DEBUG are engine debug views (not modelled). Fan sites list the same words (`VAMONOS` skip level, `MRFURIOSO` god mode, `VIDA`, `MAGIA`, `ITEM X`).
+
+## Effect slot types, as far as they are read (0x4249f0 jump table)
+- Types 2 and 11: a sprite animation (frames 0x85 downwards, one per 4 ticks) from a bank we have not identified: not drawn.
+- Type 5: 16 blue sparks (0x4b58dc); types 7 and 8: lilac sparks (0xc3a8f0 / 0xc3a8f5); type 6 (stone 70's ground mark): pale green sparks (0x91fa78) plus the damaging mark; type 9 and the Naya sound cues are not drawn.
+- Naya's death (0x433730) sets slot 2 type 7, slot 1 type 2 and a type 9, each for 35 ticks: the remake shows the lilac sparks and a lilac flash, not the type 2 / 9 pictures.

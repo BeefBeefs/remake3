@@ -552,3 +552,6 @@ Read the use-item routine for type-512 items in `Nightstone.exe` (all 18 cases).
 - The buy/sell window is now laid over `Sc_Compra` (five left slots = Buy / Sell / Heavy / Light / Clear, big item picture and stats on the right, Money / Total line). Not looked at in a browser (no WebGL here, but this window is plain DOM; positions come from the picture).
 - Still unused: the portraits (which NPC id uses which `Char-N` is not known yet), `SMap_*`, `Quest`, `In_Book`, menu backgrounds.
 - NPC portraits: `Char-<actor id>` matches the INI actor id (27 innkeeper, 35/36 card players, 42 old wizard, 63 Naya). The speech window shows it beside the text. Merchant 27 being the fat man in the portrait supports the earlier guess that he runs the shop.
+
+## Effect slot colours
+- The effect slot types are mostly spark emitters (0x401a80) with fixed colours, not pictures: Naya's death throws lilac sparks, stone 70's mark green ones (now drawn by `sparkFx`). Types 2/9 (a sprite animation from an unidentified bank) are still not drawn. Not seen in a browser.

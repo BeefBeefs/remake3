@@ -1549,3 +1549,12 @@ test("the F1 console's words do what the executable's handlers do", () => {
   assert.ok(runCommand(g, 'VAMONOS').ok);
   assert.equal(g.status, 'complete');
 });
+
+test('sparkFx throws the requested number of tinted sparks, spread over the given time', async () => {
+  const { sparkFx, SPARK } = await import('../src/game/effects.ts');
+  const s = sparkFx(5, 5, SPARK.green, 16, 3.5);
+  assert.equal(s.length, 16);
+  assert.ok(s.every((f) => f.color === SPARK.green));
+  assert.ok(Math.max(...s.map((f) => f.delay)) < 3.5 && Math.min(...s.map((f) => f.delay)) === 0);
+  assert.ok(s.every((f) => Math.hypot(f.cx - 5, f.cy - 5) < 0.45), 'within a third of a cell');
+});

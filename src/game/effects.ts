@@ -117,6 +117,23 @@ export function spellFx(id: number, cx: number, cy: number, radius: number, hits
 }
 
 /** Level-up: a warm flare and a ring. */
+/**
+ * A burst of coloured sparks (the executable's particle emitter 0x401a80 called by effect slot types 5-8: 16 small particles
+ * of one colour thrown out around the body). Deterministic scatter, so the same call always looks the same.
+ * Colours from the draw routine 0x4249f0: type 5 blue 0x4b58dc, types 7/8 lilac 0xc3a8f0/0xc3a8f5, the ground mark (type 6) green 0x91fa78.
+ */
+export const SPARK = { blue: 0x4b58dc, lilac: 0xc3a8f0, green: 0x91fa78 } as const;
+export function sparkFx(cx: number, cy: number, color: number, n = 16, over = 0.5, follow?: Creature): Fx[] {
+  const out: Fx[] = [];
+  for (let i = 0; i < n; i++) {
+    const a = i * 2.399963, r = 0.12 + 0.28 * ((i * 7) % 10) / 10; // golden-angle scatter, within about a third of a cell
+    out.push(makeFx(118, cx + Math.cos(a) * r, cy + Math.sin(a) * r, {
+      lift: 6 + ((i * 13) % 10) * 3.4, size0: 12, size1: 3, life: 0.45, delay: over * i / n, alpha0: 1, alpha1: 0, color, ...(follow ? { follow } : {}),
+    }));
+  }
+  return out;
+}
+
 export function levelUpFx(cx: number, cy: number): Fx[] {
   return [
     makeFx(119, cx, cy, { lift: 28, size0: 50, size1: 280, life: 0.9 }),

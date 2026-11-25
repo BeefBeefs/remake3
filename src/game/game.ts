@@ -4,7 +4,7 @@ import { type AnimData } from './anims.ts';
 import { INFERNAL, SPELLS, SPELL_RADIUS, inSight, spellPower } from './spells.ts';
 import { STEP_SOUND, type Surface } from './surface.ts';
 import { Creature, type Stats } from './creature.ts';
-import { levelUpFx, makeFx, potionFx, spellFx, stepFx, type Fx } from './effects.ts';
+import { SPARK, levelUpFx, makeFx, potionFx, sparkFx, spellFx, stepFx, type Fx } from './effects.ts';
 import { HIT_PIXELS, PX_HERO_ARROW, PX_HERO_BOLT, PX_MONSTER_SHOT, lineClear, makeProjectile, pixelDistance, type Projectile, type ProjKind } from './projectiles.ts';
 import { Inventory, missingReqs, rollByMask, rollDrop, slotOf, SPECIAL, type ItemDef } from './items.ts';
 import { cellToWorld, depthOf } from '../iso.ts';
@@ -365,6 +365,7 @@ export class Game {
       this.snd(77);
       this.bolts.push({ cx: this.hero.cx, cy: this.hero.cy, ticks: 105, acc: 0 });
       this.fx.push(makeFx(100, this.hero.cx, this.hero.cy, { flat: true, size0: 0.9, size1: 0.9, life: 70 / 30, alpha0: 0.35, alpha1: 0.9, color: 0x8090ff }));
+      this.fx.push(...sparkFx(this.hero.cx, this.hero.cy, SPARK.green, 16, 3.5)); // the mark throws pale green sparks while it lasts
     }
     if (this.monsters.length < 200 && this.rnd() * 100 < (final ? 60 : cauldron ? 34 : 27)) {
       for (let i = 0; i < (cauldron ? 2 : 1); i++) {
@@ -893,7 +894,11 @@ export class Game {
     const f = this.finale;
     if (!f) return;
     f.t -= dt;
-    if (f.naya.alive && f.t <= 0) { f.naya.hurt(f.naya.hp + 1, false); f.t = 2.5; } // no experience, no loot: the routine kills her directly
+    if (f.naya.alive && f.t <= 0) {
+      f.naya.hurt(f.naya.hp + 1, false); f.t = 2.5;
+      this.fx.push(...sparkFx(f.naya.cx, f.naya.cy, SPARK.lilac, 16, 1.2)); // effect slot type 7: lilac sparks for 35 ticks
+      this.fx.push(makeFx(118, f.naya.cx, f.naya.cy, { follow: f.naya, lift: 40, size0: 40, size1: 200, life: 35 / 30, color: SPARK.lilac }));
+    } // no experience, no loot: the routine kills her directly
     else if (!f.naya.alive && f.t <= 0) { this.finale = null; this.completeLevel(); }
   }
 
