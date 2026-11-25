@@ -10,6 +10,7 @@ import { World } from './game/world.ts';
 import { Sfx } from './audio/sfx.ts';
 import { surfaceLookup, type TileTable } from './game/surface.ts';
 import { DialogueWindow } from './ui/dialogue.ts';
+import { QuestWindow } from './ui/quest.ts';
 import { parseDialogue, speechFor } from './game/dialogue.ts';
 import { isStoneId } from './game/stone.ts';
 import { CLASSES, LEVEL_MSG, MERCHANTS, type ClassId, Game, type GameData, type HeroSave } from './game/game.ts';
@@ -186,8 +187,9 @@ async function boot() {
   const shop = new ShopWindow(game, icons, BASE, skin);
   const charPanel = new CharacterPanel(game, skin);
   const talkWin = new DialogueWindow(skin);
+  const questWin = new QuestWindow(skin);
   const showObjective = () => {
-    if (briefing) talkWin.open(briefing.title, { text: briefing.text, replies: ['Close'] }, () => undefined);
+    if (briefing) questWin.open(briefing.title, briefing.text);
     else game.say(adv.mission_text);
   };
   if (briefing) showObjective(); // the mission text greets the hero, as in the original (Q opens it again)
@@ -271,11 +273,11 @@ async function boot() {
     keys.add(e.key.toLowerCase());
     down.add(keyInput(e.key));
     if (keyInput(e.key) === prefs.keys.block && !e.repeat && !menu.isOpen) game.setGuard(true);
-    if (e.key === 'Escape') { if (talkWin.isOpen) talkWin.close(); else if (shop.isOpen) shop.close(); else menu.toggle(); }
+    if (e.key === 'Escape') { if (questWin.isOpen) questWin.close(); else if (talkWin.isOpen) talkWin.close(); else if (shop.isOpen) shop.close(); else menu.toggle(); }
     if (e.key === ' ') { if (!shop.isOpen && !menu.isOpen) game.swing(); e.preventDefault(); }
     if (e.key >= '1' && e.key <= '4' && !shop.isOpen) game.useQuick(Number(e.key));
     if (e.key.toLowerCase() === 'i') panel.toggle();
-    if (e.key.toLowerCase() === 'q' && !talkWin.isOpen && !shop.isOpen) showObjective();
+    if (e.key.toLowerCase() === 'q' && !talkWin.isOpen && !shop.isOpen) { if (questWin.isOpen) questWin.close(); else showObjective(); }
     if (e.key.toLowerCase() === 'c') charPanel.toggle();
     if (e.key.toLowerCase() === 'r' && !game.hero.alive) {
       try { sessionStorage.setItem('nst-save', JSON.stringify({ classId: game.classId, save: game.save(), difficulty, done: career!.done })); if (custom) sessionStorage.setItem('nst-map', JSON.stringify(custom.id)); } catch { /* start fresh */ }

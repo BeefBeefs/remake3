@@ -563,3 +563,5 @@ Read the use-item routine for type-512 items in `Nightstone.exe` (all 18 cases).
 
 ## Select map and Save/Load windows on the original pictures
 - `Mn_SelectMap` (308x352) and `Ov_Save` / `Ov_Load` (400x450) now back the map picker and the save slots; positions were measured from the pictures (list, "Information" box, Accept / Cancel drawn at the bottom). `Ov_Save` has exactly 8 slot rows, matching our 8 slots. Rows now select first (info box shows the slot), then Accept or double-click commits. Not looked at in a browser.
+- The mission text (briefing at the start, Q key) now opens in a `QuestWindow` on the original `Quest` picture (title covers the baked-in "Quest" caption, "Return to game" button; Q or Esc closes). Positions measured from the picture, not seen in a browser.
+- Still unused decoded pictures: `In_Book`, `In_Pergata`, `SMap_49-60` (overview maps, 12 of them; which missions they belong to is unknown), `Mn_*` hero/menu screens, `Loading`, `Creditos`, `TWindow`.
