@@ -11,6 +11,7 @@ import { Sfx } from './audio/sfx.ts';
 import { surfaceLookup, type TileTable } from './game/surface.ts';
 import { DialogueWindow } from './ui/dialogue.ts';
 import { QuestWindow } from './ui/quest.ts';
+import { LoadingScreen } from './ui/loading.ts';
 import { parseDialogue, speechFor } from './game/dialogue.ts';
 import { isStoneId } from './game/stone.ts';
 import { CLASSES, LEVEL_MSG, MERCHANTS, type ClassId, Game, type GameData, type HeroSave } from './game/game.ts';
@@ -132,6 +133,8 @@ async function boot() {
   const played: MapEntry = custom ?? { id: mission.id, name: mission.name, group: 'Solo', file: `maps/${mission.map}` };
   if (!glRenderer) { hud.textContent = 'This browser cannot create a WebGL context, which the game needs to draw the world.'; return; }
   hud.textContent = 'Loading original map and sprite data…';
+  const loading = new LoadingScreen(BASE);
+  loading.progress(0.05);
   const map = parseMap(editedMap ? await gunzip(editedMap) : await fetch(`${BASE}${played.file}`).then((r) => r.arrayBuffer()).then(gunzip));
   const ts = tilesetDir(map);
   const [tiles, packCell, pack1, pack2, pack3] = await Promise.all([
@@ -141,6 +144,7 @@ async function boot() {
     Atlas.load(BASE, `p16/scenary/${ts}/pack2.json`),
     Atlas.load(BASE, `p16/scenary/${ts}/pack3.json`),
   ]);
+  loading.progress(0.35);
   const orient = await fetch(`${BASE}data/tile_orient.json`).then((r) => (r.ok ? r.json() : {})).catch(() => ({})) as Record<string, Record<string, string>>;
   const world = new World(map, tiles, [packCell, pack1, pack2, pack3], orient[ts.toLowerCase()] ?? {});
   scene.add(world.group);
@@ -156,6 +160,7 @@ async function boot() {
     else if (k.startsWith('ACTORS\\')) speech[k] = v; // NPC speeches: ACTORS\ID-27*, ID-63** ...
   }
   const items = buildItems((await (await fetch(`${BASE}data/items.json`)).json()) as Parameters<typeof buildItems>[0], itemNames);
+  loading.progress(0.5);
   const icons = await Atlas.load(BASE, 'atlas/system/ilistdata.json');
   // Hero + every monster kind the map places (pack-0 markers).
   const spawns = map.markers.filter((m) => (animData.actors[String(m.id)] || isStoneId(m.id)) && m.id < 100).map((m) => ({ id: String(m.id), cx: m.cx, cy: m.cy, route: m.route }));
@@ -204,6 +209,7 @@ async function boot() {
     talkWin.open(npc.name, d, (i) => { if (MERCHANTS.has(npc.id) && i < 2) shop.open(npc.name); }, `${BASE}screens/char-${npc.id}.png`);
   };
   scene.add(game.group);
+  loading.progress(0.85);
   const fxView = await EffectsView.load(BASE);
   scene.add(fxView.group);
   const projView = await ProjectileView.load(BASE);
@@ -389,6 +395,7 @@ async function boot() {
   hud.style.cssText += ';bottom:auto;top:6px;transition:opacity 2s;opacity:.8';
   setTimeout(() => { hud.style.opacity = '0'; }, 14000);
   frame();
+  loading.hide();
 }
 
 boot().catch((err) => { hud.textContent = `Failed to start: ${String(err)}`; console.error(err); });
