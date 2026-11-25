@@ -555,3 +555,8 @@ Read the use-item routine for type-512 items in `Nightstone.exe` (all 18 cases).
 
 ## Effect slot colours
 - The effect slot types are mostly spark emitters (0x401a80) with fixed colours, not pictures: Naya's death throws lilac sparks, stone 70's mark green ones (now drawn by `sparkFx`). Types 2/9 (a sprite animation from an unidentified bank) are still not drawn. Not seen in a browser.
+
+## Spare INI keys and unused frames
+- `Espera` (actor 15: 50 ticks "wait between searches") now sets that monster's pause between wanders; `Seguir_Busqueda` (actor 16: 525 ticks) is how long it keeps hunting after losing sight (before, `Tm_Busqueda` 3500 was used for it). Both are the only monsters that carry the keys.
+- Spare frames: packs 29 (40), 33 (2) and 42 (20) hold frames the INI never names (no `Atacar`, `Cubrir`...), so the game never plays them: nothing to build. Spawners were already covered by script command 5 and the pack-0 markers.
+- Still open: the alarm radius (guessed), when archers fire, party of three heroes, tile rotation recheck (needs eyes), shop sell rate / merchant stock, gold stored as money-bag items (the kit's bag word 0xc8 = 200 suggests gold is a bag stack in the pack, up to 250).

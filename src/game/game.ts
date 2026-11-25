@@ -21,7 +21,7 @@ type Range = [number, number];
 interface ActorIni {
   General?: { Vel_Ataque?: Range; Altura?: number; Raza?: number; Rnd_Bloqueo?: number };
   HDP?: { Vida?: number; Fuerza?: Range; Armadura?: number; Aturdirse?: number; Pts_Experiencia?: Range; Velocidad?: number };
-  IA?: { Oido?: number; Radio_Busqueda?: number; Tm_Busqueda?: number };
+  IA?: { Oido?: number; Radio_Busqueda?: number; Tm_Busqueda?: number; Espera?: number; Seguir_Busqueda?: number };
   Items?: { IDItem?: number[]; PItem?: number[] };
   Sonidos?: { SndBase?: number; Carne?: number };
 }
@@ -1344,7 +1344,8 @@ export class Game {
     if (w.wait > 0) w.wait -= dt;
     else {
       w.to = { cx: w.home.cx + Math.floor(this.rnd() * w.r) * 2 - w.r, cy: w.home.cy + Math.floor(this.rnd() * w.r) * 2 - w.r };
-      w.wait = 1 + Math.floor(this.rnd() * 8);
+      const espera = this.data.actors[this.idOf.get(m) ?? '']?.IA?.Espera; // INI "wait between searches", in ticks (only actor 15 has it)
+      w.wait = espera !== undefined ? espera / 35 : 1 + Math.floor(this.rnd() * 8);
     }
     if (!w.to) { if (m.state === 'walk') m.setState('idle'); return; }
     const ex = w.to.cx - m.cx, ey = w.to.cy - m.cy, d = Math.hypot(ex, ey);
@@ -1449,7 +1450,8 @@ export class Game {
       return;
     }
     if (h.alive && this.notices(m, d)) this.noticedAt.set(m, this.clockT);
-    const leash = (this.data.actors[this.idOf.get(m) ?? '']?.IA?.Tm_Busqueda ?? 350) / 35; // a hunter drops its target after this long unnoticed
+    const ia = this.data.actors[this.idOf.get(m) ?? '']?.IA;
+    const leash = (ia?.Seguir_Busqueda ?? ia?.Tm_Busqueda ?? 350) / 35; // `Seguir_Busqueda`: how long a monster that lost sight keeps following (only actor 16) // a hunter drops its target after this long unnoticed
     const hunting = h.alive && this.clockT - (this.noticedAt.get(m) ?? -99) < (this.alerted.has(m) ? leash : 0.001);
     if (!hunting) { this.alerted.delete(m); this.patrol(m, dt); this.fidget(m); return; }
     if (!this.alerted.has(m)) {
