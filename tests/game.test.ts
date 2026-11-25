@@ -1,3 +1,4 @@
+import type { Creature } from '../src/game/creature.ts';
 import { runCommand } from '../src/game/console.ts';
 import { spellPower } from '../src/game/spells.ts';
 import { test } from 'node:test';
@@ -80,9 +81,9 @@ test('sight is a forward fan: a monster looking away does not see the hero, one 
   assert.ok(!notices(d), 'beyond 12 cells');
   d = put(6, 0); m.face(-1, 0);
   const cell = Math.floor(h.cx + 3);
-  g.world.blocked[Math.floor(h.cy) * g.world.dim + cell] = 1;
+  (g as any).world.blocked[Math.floor(h.cy) * (g as any).world.dim + cell] = 1;
   assert.ok(!notices(d), 'a wall in between');
-  g.world.blocked[Math.floor(h.cy) * g.world.dim + cell] = 0;
+  (g as any).world.blocked[Math.floor(h.cy) * (g as any).world.dim + cell] = 0;
   // hearing: a blow just now, within Oido, even from behind
   m.face(1, 0);
   const ear = m.stats.hearing;
