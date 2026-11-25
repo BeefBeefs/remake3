@@ -202,7 +202,14 @@ Ordinary 24-bit BMPs, 16–256 px: Direct3D textures (spell effects, menu/logo a
 
 ### `.g16`, `.vid` 🟡
 `GDI/Graphics/*.vid`, `Close.g16` start with `00 00 01 BA` = MPEG-PS pack header → intro/outro videos (Virgin,
-NightStone, NHS logos, intro). The 76 `Pack/*.g16` files are different/unknown.
+NightStone, NHS logos, intro).
+
+`GDI/Graphics/Pack/*.g16` ✅ (69 of the 76): a gzip file holding `u32 width, u32 height, u32 zlib length, u32 raw length`
+and then a zlib stream of `width × height` RGB565 pixels (0xF81F magenta = transparent). They are whole screens and
+pictures: `Mn_*` menu backgrounds (640×480), `Loading`, `Creditos`, `Ov_Save`/`Ov_Load` (400×450), `In_Book`/`In_Pergata`/`Quest`
+(429×331 windows), `SMap_49`–`SMap_60` (overview maps, 398×238), `Sc_Compra` (the buy/sell window, 422×434), `TWindow`,
+`CMask`, `LoadBar`, and `Char-27` … `Char-64` (128×128 portraits of the NPCs). `0-/1-/2-Entry` and `-Loop` are raw video
+and `Mask` has a different stream; both are skipped by `tools/convert_assets.py`, which writes the rest to `screens/*.png`.
 
 ## 3. Audio ✅
 - `GDI/Audio/**/*.wav` (161 files incl. 13 ambient loops and 12 `Locs/Intro*` voice lines): standard RIFF WAVE.

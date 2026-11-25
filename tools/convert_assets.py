@@ -78,6 +78,19 @@ for root, _, files in os.walk(src):
             name = slug(rel[:-4])
             Image.open(full).convert('RGB').save(ensure(f'{out}/tex/{name}.png'), optimize=True)
             index['textures'].append(f'tex/{name}.png'); stats['bmp'] += 1
+        elif low.endswith('.g16') and '/pack/' in rel.lower():
+            # Pack/*.g16: gzip( u32 w, u32 h, u32 zlen, u32 rawlen, zlib(w*h RGB565, magenta = transparent) ); the 0-/1-/2-Entry/Loop
+            # files are raw video and Mask is something else: those fail the checks and are skipped
+            try:
+                import gzip, zlib
+                dd = gzip.decompress(open(full, 'rb').read()); w, h, zl, _ = struct.unpack_from('<4I', dd, 0)
+                px = np.frombuffer(zlib.decompress(dd[16:16 + zl]), '<u2')
+                if px.size != w * h: raise ValueError('size')
+                name = slug(rel[len('GDI/Graphics/Pack/'):-4])
+                Image.fromarray(rgb565_rgba(px.reshape(h, w))).save(ensure(f'{out}/screens/{name}.png'), optimize=True)
+                index.setdefault('screens', []).append(f'screens/{name}.png'); stats['g16'] = stats.get('g16', 0) + 1
+            except (OSError, ValueError, zlib.error, struct.error):
+                pass
         elif low.endswith('.map'):
             dst = ensure(f'{out}/maps/{slug(rel[len("Maps/"):])}')
             shutil.copyfile(full, dst); index['maps'].append(os.path.relpath(dst, out)); stats['maps'] += 1

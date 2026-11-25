@@ -546,3 +546,8 @@ Read the use-item routine for type-512 items in `Nightstone.exe` (all 18 cases).
 ## Starting kits decoded (default-hero routine 0x448930)
 - The three heroes' starting inventories are built in code, not read from the adventure: Barbarian scimitar (1) + basic shield (25), Amazon short bow (40), Sorceress fire staff (132, not the guessed 56); all carry two small life potions (104) plus a small stamina potion (106; mana 108 for the Sorceress) and a money bag (124, word 0xc8 = 200 gold) on a new game.
 - Not applied: the low byte of the item words (0x32, 0x28, 0x5f, 0x64 on the weapons/shield; 0xff on potions), meaning unknown.
+
+## Pack/*.g16 decoded; shop window uses the original picture
+- 69 of the 76 `Pack/*.g16` files are gzip + zlib RGB565 bitmaps (see FORMATS.md): menu backgrounds, loading and credits screens, the book/quest/map windows, 13 overview maps, 38 NPC portraits and the shop window. Converted to `public/assets/screens/` by `tools/convert_assets.py`.
+- The buy/sell window is now laid over `Sc_Compra` (five left slots = Buy / Sell / Heavy / Light / Clear, big item picture and stats on the right, Money / Total line). Not looked at in a browser (no WebGL here, but this window is plain DOM; positions come from the picture).
+- Still unused: the portraits (which NPC id uses which `Char-N` is not known yet), `SMap_*`, `Quest`, `In_Book`, menu backgrounds.
