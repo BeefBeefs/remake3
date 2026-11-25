@@ -103,9 +103,10 @@ export const LEVEL_MSG = {
 
 /** Playable classes: INI actor id, first weapon, and the base of the class's sound ids (die; +1,+2 hurt). */
 export const CLASSES = {
-  100: { name: 'Barbarian', weapon: 1, sound: 100 },
-  101: { name: 'Amazon', weapon: 40, sound: 120 },
-  102: { name: 'Sorceress', weapon: 56, sound: 140 },
+  // `kit`: what a new campaign hero carries (the default-hero routine 0x448930: item words id << 8 | wear, a small money bag of 200)
+  100: { name: 'Barbarian', weapon: 1, sound: 100, kit: [25, 104, 104, 106] },
+  101: { name: 'Amazon', weapon: 40, sound: 120, kit: [104, 104, 106] },
+  102: { name: 'Sorceress', weapon: 132, sound: 140, kit: [104, 104, 108] },
 } as const;
 export type ClassId = keyof typeof CLASSES;
 /** Seconds of walking between footsteps: the walk cycle (Andar 7 ticks x 10 frames = 2 s) holds two steps. */
@@ -118,6 +119,8 @@ export type Stance = 'walk' | 'run' | 'stealth';
 /** Speed multipliers: run = twice as fast, stealth = half (manual). */
 export const STANCE_SPEED: Record<Stance, number> = { walk: 1, run: 2, stealth: 0.5 };
 /** Stealth: unaware monsters notice you from half as far, and the first blow on one of them does double damage. */
+/** The small money bag (item 124) every new campaign hero starts with: its wear byte is 0xc8. */
+const NEW_HERO_GOLD = 200;
 const STEALTH_HEARING = 0.5;
 /** Sight fan of a monster (scan `0x420010`, mode 1): four facings look 12 cells in a quarter fan, the other four 9 deep and 15 wide. */
 const SIGHT_REACH = { cardinal: 12, diagonal: 9 };
@@ -275,10 +278,11 @@ export class Game {
     this.classId = opts.classId ?? 100;
     const cls = CLASSES[this.classId];
     this.inventory = new Inventory(data.items, this.classId);
-    // starting kit: the class's first weapon in hand and two life potions
+    // starting kit (executable `0x448930`): the class's weapon in hand, the Barbarian's basic shield, two small life potions, a small stamina potion
+    // (a small mana potion for the Sorceress) and a small money bag worth 200
     this.inventory.add(cls.weapon); this.inventory.equip(0);
-    this.inventory.add(104); this.inventory.add(104);
-    if (opts.save) this.inventory.gold = opts.save.gold;
+    for (const id of cls.kit) { this.inventory.add(id); if (id === 25) this.inventory.equip(this.inventory.slots.indexOf(25)); }
+    this.inventory.gold = opts.save ? opts.save.gold : NEW_HERO_GOLD;
     for (const k of opts.save?.kept ?? []) if (data.items.has(k.id)) this.inventory.add(k.id, k.left);
     if (opts.save?.inv) {
       // a hero who moves on keeps his things: replace the starting kit with what he carried (unknown ids are dropped)

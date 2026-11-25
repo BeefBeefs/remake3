@@ -125,6 +125,17 @@ test('the hero starts with a scimitar equipped and two life potions', () => {
   assert.equal(g.inventory.slots.filter((i) => i === 104).length, 2);
 });
 
+test('new heroes carry the kit of the default-hero routine: shield, potions, 200 gold', () => {
+  const b = makeGame();
+  assert.equal(b.inventory.equipped.shield, 25);
+  assert.ok(b.inventory.slots.includes(106));
+  assert.equal(b.inventory.gold, 200);
+  const a = makeGame({ classId: 101 });
+  assert.equal(a.inventory.equipped.weapon, 40);
+  const s = makeGame({ classId: 102, attrs: { strength: 19, skill: 23, resistance: 21, magic: 30 } });
+  assert.ok(s.inventory.slots.includes(108), 'a small mana potion');
+});
+
 test('walking over an item picks it up; gold bags add gold', () => {
   const g = makeGame();
   const potions = () => g.inventory.slots.filter((i) => i === 105).length;
@@ -222,7 +233,7 @@ test('the Amazon starts with a short bow and shoots from a distance', () => {
 
 test('the Sorceress starts with a staff and cannot wear the Barbarian scimitar', () => {
   const g = makeGame({ classId: 102, attrs: { strength: 19, skill: 23, resistance: 21, magic: 30 } });
-  assert.equal(g.inventory.equipped.weapon, 56);
+  assert.equal(g.inventory.equipped.weapon, 132);
   assert.ok(g.ranged, 'a staff shoots');
   assert.equal(g.hero.stats.hp, 67); // Sorceress: 25 + level/4 + 2 x Resistance
   g.inventory.add(1);
