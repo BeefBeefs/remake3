@@ -533,3 +533,6 @@ Read the use-item routine for type-512 items in `Nightstone.exe` (all 18 cases).
 - **Naya's body, stone 70.** Naya's death strip ends on her feet, so her body now vanishes 0.8 s after the strip (`NO_CORPSE` in creature.ts); every other
   corpse stays. Stone 70's reaction (`0x4247a0(2, 6, 0x69)`: a per-actor effect slot, types 5-8 play sound 24 / 77) is modelled as the thunder
   sound at 50 % (80 % in mission 35); the effect's picture is not decoded.
+- **Naya's finale (routine `0x433730`).** Decoded: she waits for the last race-512 actor, fires three effect slots, counts 105 ticks, kills the other
+  team's actors and dies at tick 70. In mission 35 she is now untouchable and, when the last stone falls, dies 1.2 s later; the level ends after her
+  body is down. Her blast's picture and the mass kill (team field `+0x212c`) are not modelled. 162 tests.

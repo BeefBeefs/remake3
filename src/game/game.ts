@@ -125,6 +125,8 @@ const BOW_RANGE = 7;
 const KEEPS_ON_DEATH = new Set([14, 48, 61, 129]);
 
 /** The executable adds armour to the troll warrior master (48), Lord of Ailm (51), the two orc masters (52, 58) and the orc general (61, +2). */
+/** Seconds between the last stone falling and Naya's death (35 ticks of the executable's 30 per second countdown). */
+const NAYA_DELAY = 35 / 30;
 const MASTER_ARMOR: Record<string, number> = { '48': 1, '51': 1, '52': 1, '58': 1, '61': 2 };
 
 /** Monsters that shoot from a distance (INI Tipo_IA 3): what they fire, how far, and the closest they like to stand. */
@@ -205,6 +207,8 @@ export class Game {
   private readonly idOf = new Map<Creature, string>();
   /** Dark Stones / Cauldron parts (actors 70-82): objective objects kept in `monsters` so the hero can hit and see them, but they never act */
   private readonly stones = new Set<Creature>();
+  /** After the last Dark Stone falls Naya dies a moment later (routine 0x433730: 105-tick countdown, she goes at tick 70, i.e. 35 ticks in) and the level ends once her body is down. */
+  private finale: { naya: Creature; t: number } | null = null;
   private mapNumber = 0;
   /** the monster the hero struck last and when (game seconds), for the target plate */
   private struck: Creature | null = null;
@@ -346,7 +350,11 @@ export class Game {
         this.spawnScripted(kind, Math.floor(this.rnd() * 8), c.cx, c.cy);
       }
     }
-    if (killed && ![...this.stones].some((o) => o.alive)) this.completeLevel();
+    if (killed && ![...this.stones].some((o) => o.alive)) {
+      const naya = this.monsters.find((n) => n.alive && this.idOf.get(n) === '63');
+      if (naya) this.finale = { naya, t: NAYA_DELAY }; // the actor-63 routine (0x433730) takes over: a blast, then she dies
+      else this.completeLevel();
+    }
   }
 
   /** Real placement: one monster per pack-0 marker whose actor we have art and animations for. */
@@ -825,6 +833,14 @@ export class Game {
     this.fx.push(makeFx(75, c.cx, c.cy, { follow: c, lift: 26, size0: 24, size1: 70, life: 0.35, alpha0: 0.9, alpha1: 0 }));
   }
 
+  private tickFinale(dt: number): void {
+    const f = this.finale;
+    if (!f) return;
+    f.t -= dt;
+    if (f.naya.alive && f.t <= 0) { f.naya.hurt(f.naya.hp + 1, false); f.t = 2.5; } // no experience, no loot: the routine kills her directly
+    else if (!f.naya.alive && f.t <= 0) { this.finale = null; this.completeLevel(); }
+  }
+
   /** The monster the hero is going for, or the one he struck in the last few seconds: the HUD shows its name and life bar. */
   get focus(): Creature | null {
     if (this.target?.alive && !this.target.dormant) return this.target;
@@ -836,6 +852,7 @@ export class Game {
   private damageMonster(m: Creature, dmg: number, stagger = true): void {
     if (dmg > 0) { this.struck = m; this.struckAt = this.clockT; }
     if (this.stones.has(m)) { if (dmg > 0) this.hitStone(m as StoneObj, dmg); return; }
+    if (this.idOf.get(m) === '63') return; // Naya takes no damage from the hero (receive routine)
     if (dmg < 0) { m.hp = Math.min(m.stats.hp, m.hp - dmg); return; } // a family bonus below -1 heals (fire on demons)
     if (dmg === 0) return;
     const killed = m.hurt(dmg, stagger);
@@ -1073,6 +1090,7 @@ export class Game {
   update(dt: number, move: { x: number; y: number } | null): void {
     const h = this.hero;
     this.clockT += dt;
+    this.tickFinale(dt);
     this.moving = false;
     this.updateHero(dt, move);
     this.tickResources(dt);

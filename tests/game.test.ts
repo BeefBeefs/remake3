@@ -1422,3 +1422,24 @@ test("Naya's body vanishes after her death strip (her pack has no lying frame), 
   assert.ok(!naya.sprite.visible, 'Naya vanishes');
   assert.ok(goblin.sprite.visible, 'the goblin stays');
 });
+
+test('Naya cannot be hurt; when the last Dark Stone falls she dies a moment later and only then the level ends', () => {
+  const anims = json('data/anims.json');
+  const atlases = new Map<string, Atlas>([['stone', fakeAtlas]]);
+  for (const a of Object.values(anims.actors) as { pack: string }[]) atlases.set(a.pack, fakeAtlas);
+  const data: GameData = { anims, actors: json('data/actors.json'), names: { '100': 'Terak' }, atlases, items: buildItems(json('data/items.json'), {}), icons: fakeAtlas };
+  const g = new Game(flatWorld(), data, { cx: 128, cy: 128 }, { spawns: [{ id: '63', cx: 132, cy: 120 }, { id: '70', cx: 120, cy: 120 }], mapNumber: 35 });
+  const naya = g.monsters.find((m) => (m as any).def.pack === '63E')!;
+  const stone = g.monsters.find((m) => (m as any).def.pack !== '63E')!;
+  assert.ok(naya && stone);
+  (g as any).damageMonster(naya, 50);
+  assert.equal(naya.hp, naya.stats.hp, 'untouchable');
+  (g as any).hitStone(stone, 99999);
+  assert.ok(!stone.alive);
+  assert.ok(naya.alive && g.status === 'playing', 'the blast takes a moment');
+  g.update(1.5, null);
+  assert.ok(!naya.alive, 'Naya is dead');
+  assert.equal(g.status, 'playing');
+  for (let i = 0; i < 40; i++) g.update(0.1, null);
+  assert.equal(g.status, 'complete');
+});
