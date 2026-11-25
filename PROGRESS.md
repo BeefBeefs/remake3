@@ -539,3 +539,4 @@ Read the use-item routine for type-512 items in `Nightstone.exe` (all 18 cases).
 - **Naya's blast, stone 70's bolt.** The `+0x212c` team field is the actor's own slot index, so Naya's blast kills every other monster. Effect slot type 6
   (`0x4249f0`) is a ground mark that damages whoever stays on it in its last 35 of 105 ticks; stone 70 drops one at the hero when hit (thunder + ring + 4 damage
   hits, 20 in mission 35). 163 tests.
+- **Noticing decoded** (`docs/RULES.md`, last section): the +0xc0 counter's reader is the monsters' *hearing* (they target an actor that struck within 20 ticks, within `Oido` cells and line of sight); sight is a forward fan of 9-12 cells by facing. Left unmodelled: the fan is much wider than the current circle and what gates it is not known.

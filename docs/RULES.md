@@ -62,3 +62,10 @@ A script sits on map cells (decor layer, see `docs/FORMATS.md`). A cell that hol
 ### NPC speech
 
 `ACTORS\ID-<actor>*` in the language file is the speech: the text, a blank line, then `$0`, `$1`… answer lines (`src/game/dialogue.ts`). Talking to an NPC opens the speech window (`src/ui/dialogue.ts`); the Innkeeper's first two answers open the shop, any other answer closes it. The Princess (63) has a second speech (`**`) that alternates with the first.
+
+### Noticing: the field-of-view scan (decoded, not modelled)
+
+`0x420010` runs per actor with a 32x32 window of cell records (`+0x608cc`); `0x41fe70(dx, dy)` casts one ray to the cell offset (dx, dy) (as many steps as the larger offset, centre 0.9 into the cell) and calls the cell visitor `0x41fca0` on every cell; a cell holding an actor (value 5000..5255 = slot) ends the ray after being handled, a wall cell (`0x2104`) ends it unseen. The visitor has three modes (`+0x60960`):
+- **Mode 2/3, hearing:** radius = the scanner's `+0x2118` (a monster's is its INI `Oido`, copied from the record at `+0x68`; the three hero classes use 3 or 4; mode 3 uses 7 when the scanner's record has `+0xc` > 0). A **monster** that finds an actor with its `+0xc0` counter above 0 (the 20-tick counter every hero blow sets, so *noise*) takes it as its target (slot at record `+0x10`, position at `+0x14`, and a random 0-9 at `+0x2c`). A **hero** that finds a monster marks it as seen (record `+0x10/+0x14`, `+0x2c` = 0).
+- **Mode 1, sight** (only when bit 0 of the scanner's record flag `+0x1c` is set): a monster that finds the hero (kind 2) targets it. The area is a forward fan chosen by the monster's facing (0..7): for four facings a quarter fan of rays to (12 - t/2, t/2), t = 0..24 (radius 12 cells), for the other four rays to (t - 7, +-9), t = 0..14 (9 deep, 15 wide), plus the cells next to the monster.
+Not modelled: the remake's `Oido + 3` circle (x stealth) stands in for both, with no line of sight and no facing. What the flag bit means and whether `Radio_Busqueda` limits a sighting are unknown, and the fan reaches 9-12 cells, so copying it blindly would make monsters much keener than now.
