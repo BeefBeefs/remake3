@@ -352,7 +352,12 @@ export class Game {
     }
     if (killed && ![...this.stones].some((o) => o.alive)) {
       const naya = this.monsters.find((n) => n.alive && this.idOf.get(n) === '63');
-      if (naya) this.finale = { naya, t: NAYA_DELAY }; // the actor-63 routine (0x433730) takes over: a blast, then she dies
+      if (naya) {
+        // the actor-63 routine (0x433730) takes over: a blast that deals 999 to every other monster (the slot index at +0x212c is unique, so
+        // "other team" is everyone but her), then she dies; no experience, no loot
+        for (const o of this.monsters) if (o !== naya && o.alive && !this.stones.has(o)) o.hurt(o.hp + 999, false);
+        this.finale = { naya, t: NAYA_DELAY };
+      }
       else this.completeLevel();
     }
   }

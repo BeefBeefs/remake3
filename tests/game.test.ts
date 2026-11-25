@@ -1428,7 +1428,9 @@ test('Naya cannot be hurt; when the last Dark Stone falls she dies a moment late
   const atlases = new Map<string, Atlas>([['stone', fakeAtlas]]);
   for (const a of Object.values(anims.actors) as { pack: string }[]) atlases.set(a.pack, fakeAtlas);
   const data: GameData = { anims, actors: json('data/actors.json'), names: { '100': 'Terak' }, atlases, items: buildItems(json('data/items.json'), {}), icons: fakeAtlas };
-  const g = new Game(flatWorld(), data, { cx: 128, cy: 128 }, { spawns: [{ id: '63', cx: 132, cy: 120 }, { id: '70', cx: 120, cy: 120 }], mapNumber: 35 });
+  const g = new Game(flatWorld(), data, { cx: 128, cy: 128 }, { spawns: [{ id: '63', cx: 132, cy: 120 }, { id: '70', cx: 120, cy: 120 }, { id: '9', cx: 125, cy: 125 }], mapNumber: 35 });
+  const skel = g.monsters.find((m) => (m as any).def.pack === (anims.actors['9'] as { pack: string }).pack)!;
+  assert.ok(skel.alive);
   const naya = g.monsters.find((m) => (m as any).def.pack === '63E')!;
   const stone = g.monsters.find((m) => (m as any).def.pack !== '63E')!;
   assert.ok(naya && stone);
@@ -1436,6 +1438,7 @@ test('Naya cannot be hurt; when the last Dark Stone falls she dies a moment late
   assert.equal(naya.hp, naya.stats.hp, 'untouchable');
   (g as any).hitStone(stone, 99999);
   assert.ok(!stone.alive);
+  assert.ok(!skel.alive, 'the blast kills the other monsters');
   assert.ok(naya.alive && g.status === 'playing', 'the blast takes a moment');
   g.update(1.5, null);
   assert.ok(!naya.alive, 'Naya is dead');
