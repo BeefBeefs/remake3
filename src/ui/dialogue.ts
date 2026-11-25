@@ -17,7 +17,7 @@ export class DialogueWindow {
   }
 
   /** Shows the speech; `onPick` gets the index of the chosen answer, then the window closes. */
-  open(who: string, d: Dialogue, onPick: (i: number) => void): void {
+  open(who: string, d: Dialogue, onPick: (i: number) => void, portrait?: string): void {
     const sk = this.skin;
     this.isOpen = true;
     this.root.replaceChildren();
@@ -33,10 +33,21 @@ export class DialogueWindow {
     const body = document.createElement('div');
     body.style.cssText = 'position:relative;z-index:1;max-height:270px;overflow-y:auto;scrollbar-width:thin';
     for (const para of d.text.split('\n')) {
-      const lines = para.trim() ? sk.wrap(para, W - 44) : [''];
+      const lines = para.trim() ? sk.wrap(para, portrait ? W - 44 - 138 : W - 44) : [''];
       for (const l of lines) { const row = document.createElement('div'); row.style.cssText = 'height:17px'; if (l) row.appendChild(sk.text(l)); body.appendChild(row); }
     }
-    panel.appendChild(body);
+    if (portrait) {
+      // the speaker's picture (Pack/Char-<actor id>.g16, 128x128) beside the speech; no picture, no gap
+      const row = document.createElement('div');
+      row.style.cssText = 'position:relative;z-index:1;display:flex;gap:10px;align-items:flex-start';
+      const img = document.createElement('img');
+      img.src = portrait;
+      img.style.cssText = `width:128px;height:128px;flex:none;border:1px solid ${BRONZE};box-sizing:content-box`;
+      img.addEventListener('error', () => img.remove());
+      body.style.flex = '1';
+      row.append(img, body);
+      panel.appendChild(row);
+    } else panel.appendChild(body);
     const answers = document.createElement('div');
     answers.style.cssText = 'position:relative;z-index:1;margin-top:10px;display:flex;flex-direction:column;gap:4px';
     d.replies.forEach((r, i) => {

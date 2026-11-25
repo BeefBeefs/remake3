@@ -199,7 +199,7 @@ async function boot() {
     if (raw === null) { if (MERCHANTS.has(npc.id)) shop.open(npc.name); return; }
     const d = parseDialogue(raw);
     // the merchant's first two answers lead to the shop window ($0 buy, $1 sell); every other answer ends the talk
-    talkWin.open(npc.name, d, (i) => { if (MERCHANTS.has(npc.id) && i < 2) shop.open(npc.name); });
+    talkWin.open(npc.name, d, (i) => { if (MERCHANTS.has(npc.id) && i < 2) shop.open(npc.name); }, `${BASE}screens/char-${npc.id}.png`);
   };
   scene.add(game.group);
   const fxView = await EffectsView.load(BASE);
