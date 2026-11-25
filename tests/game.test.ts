@@ -55,13 +55,56 @@ test('the hero fights a monster that is clicked and kills it', () => {
   assert.ok(g.xp > 0);
 });
 
-test('monsters that hear the hero chase and hurt him', () => {
+test('monsters that see the hero chase and hurt him', () => {
   const g = makeGame();
   for (const m of g.monsters) { m.cx = 5; m.cy = 5; }
   const m = g.monsters[0]!;
   m.cx = g.hero.cx + 4; m.cy = g.hero.cy;
+  m.face(-1, 0); // looking at the hero
   run(g, 20);
   assert.ok(g.hero.hp < g.hero.stats.hp, 'hero should have taken damage');
+});
+
+test('sight is a forward fan: a monster looking away does not see the hero, one in front does, a wall blocks it, a blow close by is heard', () => {
+  const g = makeGame();
+  for (const m of g.monsters) { m.cx = 5; m.cy = 5; m.dormant = false; }
+  const m = g.monsters[0]!;
+  const h = g.hero;
+  const notices = (d: number) => (g as any).notices(m, d) as boolean;
+  const put = (dx: number, dy: number) => { m.cx = h.cx + dx; m.cy = h.cy + dy; return Math.hypot(dx, dy); };
+  let d = put(6, 0); m.face(-1, 0);
+  assert.ok(notices(d), 'in front, 6 cells');
+  m.face(1, 0);
+  assert.ok(!notices(d), 'looking away');
+  d = put(14, 0); m.face(-1, 0);
+  assert.ok(!notices(d), 'beyond 12 cells');
+  d = put(6, 0); m.face(-1, 0);
+  const cell = Math.floor(h.cx + 3);
+  g.world.blocked[Math.floor(h.cy) * g.world.dim + cell] = 1;
+  assert.ok(!notices(d), 'a wall in between');
+  g.world.blocked[Math.floor(h.cy) * g.world.dim + cell] = 0;
+  // hearing: a blow just now, within Oido, even from behind
+  m.face(1, 0);
+  const ear = m.stats.hearing;
+  d = put(Math.max(1, ear - 0.5), 0);
+  assert.ok(!notices(d), 'quiet');
+  (g as any).noiseAt = (g as any).clockT;
+  assert.ok(notices(d), 'heard a blow');
+});
+
+test('a monster that has noticed the hero keeps hunting for Tm_Busqueda, then gives up; its cry wakes the monsters nearby', () => {
+  const g = makeGame();
+  for (const m of g.monsters) { m.cx = 5; m.cy = 5; m.dormant = false; }
+  const [a, b] = g.monsters as [Creature, Creature];
+  a.cx = g.hero.cx + 6; a.cy = g.hero.cy; a.face(-1, 0);
+  b.cx = a.cx + 3; b.cy = a.cy; b.face(1, 0);
+  run(g, 0.3);
+  assert.ok((g as any).alerted.has(a), 'a saw the hero');
+  assert.ok((g as any).alerted.has(b), 'a\'s cry woke b, who was looking away');
+  // the hero vanishes from sight: both give up after the leash
+  g.hero.cx = 60; g.hero.cy = 60;
+  run(g, 12);
+  assert.ok(!(g as any).alerted.has(a));
 });
 
 test('a dead hero stops reacting and monsters go idle', () => {

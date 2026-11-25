@@ -21,7 +21,7 @@ type Range = [number, number];
 interface ActorIni {
   General?: { Vel_Ataque?: Range; Altura?: number; Raza?: number; Rnd_Bloqueo?: number };
   HDP?: { Vida?: number; Fuerza?: Range; Armadura?: number; Aturdirse?: number; Pts_Experiencia?: Range; Velocidad?: number };
-  IA?: { Oido?: number; Radio_Busqueda?: number };
+  IA?: { Oido?: number; Radio_Busqueda?: number; Tm_Busqueda?: number };
   Items?: { IDItem?: number[]; PItem?: number[] };
   Sonidos?: { SndBase?: number; Carne?: number };
 }
@@ -119,6 +119,13 @@ export type Stance = 'walk' | 'run' | 'stealth';
 export const STANCE_SPEED: Record<Stance, number> = { walk: 1, run: 2, stealth: 0.5 };
 /** Stealth: unaware monsters notice you from half as far, and the first blow on one of them does double damage. */
 const STEALTH_HEARING = 0.5;
+/** Sight fan of a monster (scan `0x420010`, mode 1): four facings look 12 cells in a quarter fan, the other four 9 deep and 15 wide. */
+const SIGHT_REACH = { cardinal: 12, diagonal: 9 };
+const SIGHT_HALF_ANGLE = { cardinal: Math.PI / 4, diagonal: 0.7 };
+/** A hero blow makes noise for 20 ticks (counter `+0xc0` of the actor): monsters within `Oido` cells and line of sight hear it. */
+const NOISE_TIME = 20 / 35;
+/** Guess: how far an alarm cry carries (the executable's alarm routine was not traced; reviews say monsters "warn each other over long distances"). */
+const ALARM_RADIUS = 8;
 /** Bows shoot an arrow that flies this many cells; it is aimed at the nearest monster within ~25 degrees of the aim. */
 const BOW_RANGE = 7;
 /** Worn items that survive death: the three legendary weapons (sword 14, bow 48, staff 61) and item 129. */
@@ -212,6 +219,10 @@ export class Game {
   /** After the last Dark Stone falls Naya dies a moment later (routine 0x433730: 105-tick countdown, she goes at tick 70, i.e. 35 ticks in) and the level ends once her body is down. */
   /** Ground bolts left by stone 70 (effect slot type 6): 105 ticks of 1/30 s, dangerous in the last 35. */
   private bolts: { cx: number; cy: number; ticks: number; acc: number }[] = [];
+  /** When the hero last struck or shot (the 20-tick noise counter monsters listen for). */
+  private noiseAt = -99;
+  /** When each alerted monster last saw, heard or was hit by the hero (it gives up after `Tm_Busqueda` ticks). */
+  private readonly noticedAt = new Map<Creature, number>();
   private finale: { naya: Creature; t: number } | null = null;
   private mapNumber = 0;
   /** the monster the hero struck last and when (game seconds), for the target plate */
@@ -500,6 +511,7 @@ export class Game {
     this.idOf.set(m, id);
     m.dir = ((dir % 8) + 8) % 8;
     this.alerted.add(m);
+    this.noticedAt.set(m, this.clockT);
     m.setState('appear');
     this.monsters.push(m);
     this.group.add(m.sprite);
@@ -597,6 +609,7 @@ export class Game {
     h.face(this.facing.x, this.facing.y);
     this.unaware = new Set(this.monsters.filter((m) => !this.alerted.has(m)));
     h.secondAttack = !!h.def.anims.Atacar2 && !h.secondAttack; // the Barbarian alternates his two swings
+    this.noiseAt = this.clockT;
     h.setState('attack');
     h.cooldown = 0.35;
     return true;
@@ -889,7 +902,7 @@ export class Game {
 
   /** Applies hero damage to a monster: hurt/die sounds, loot, kill count and experience. */
   private damageMonster(m: Creature, dmg: number, stagger = true): void {
-    if (dmg > 0) { this.struck = m; this.struckAt = this.clockT; }
+    if (dmg > 0) { this.struck = m; this.struckAt = this.clockT; if (!this.stones.has(m)) { this.alerted.add(m); this.noticedAt.set(m, this.clockT); } } // a monster that is hit has its target
     if (this.stones.has(m)) { if (dmg > 0) this.hitStone(m as StoneObj, dmg); return; }
     if (this.idOf.get(m) === '63') return; // Naya takes no damage from the hero (receive routine)
     if (dmg < 0) { m.hp = Math.min(m.stats.hp, m.hp - dmg); return; } // a family bonus below -1 heals (fire on demons)
@@ -1372,6 +1385,42 @@ export class Game {
     } else if (m.state === 'walk') m.setState('idle');
   }
 
+  /** Does this monster see or hear the hero now? Sight: the forward fan of its facing, stealth shortens it, walls block it; hearing: a recent blow within `Oido`. */
+  private notices(m: Creature, d: number): boolean {
+    const h = this.hero;
+    if (this.alerted.has(m) && d < 2.2) return true; // right next to its target
+    const ex = h.cx - m.cx, ey = h.cy - m.cy;
+    const sneak = this.effectiveStance === 'stealth' ? STEALTH_HEARING : 1;
+    const heard = this.clockT - this.noiseAt < NOISE_TIME && d <= m.stats.hearing;
+    let seen = false;
+    const kind = m.dir % 2 === 0 ? 'cardinal' : 'diagonal';
+    if (d <= SIGHT_REACH[kind] * sneak) {
+      const a = (2 - m.dir) * Math.PI / 4, sx = Math.sin(a), sy = Math.cos(a);
+      const fx = (sx / 32 - sy / 16) / 2, fy = (-sy / 16 - sx / 32) / 2, fl = Math.hypot(fx, fy) || 1;
+      const cos = d < 0.5 ? 1 : (fx * ex + fy * ey) / (fl * d);
+      seen = Math.acos(Math.max(-1, Math.min(1, cos))) <= SIGHT_HALF_ANGLE[kind];
+    }
+    return (seen || heard) && this.clearLine(m.cx, m.cy, h.cx, h.cy);
+  }
+
+  /** True when no blocked cell lies between two points (walls end a ray of the scan). */
+  private clearLine(ax: number, ay: number, bx: number, by: number): boolean {
+    const w = this.world, n = Math.max(1, Math.ceil(Math.hypot(bx - ax, by - ay) * 2));
+    for (let i = 1; i < n; i++) {
+      const x = Math.floor(ax + (bx - ax) * i / n), y = Math.floor(ay + (by - ay) * i / n);
+      if (w.inBounds(x, y) && w.blocked[y * w.dim + x]) return false;
+    }
+    return true;
+  }
+
+  /** The first monster to spot the hero cries out and wakes the ones close by (the radius is a guess). */
+  private raiseAlarm(m: Creature): void {
+    for (const o of this.monsters) {
+      if (o === m || !o.alive || o.dormant || this.stones.has(o) || this.alerted.has(o)) continue;
+      if (Math.hypot(o.cx - m.cx, o.cy - m.cy) <= ALARM_RADIUS) { this.alerted.add(o); this.noticedAt.set(o, this.clockT); }
+    }
+  }
+
   private updateMonster(m: Creature, dt: number): void {
     if (!m.alive || this.stones.has(m)) return;
     const h = this.hero;
@@ -1383,17 +1432,22 @@ export class Game {
       if (h.alive && d <= aggro) {
         m.dormant = false;
         this.alerted.add(m);
+        this.noticedAt.set(m, this.clockT);
         m.face(ex, ey);
         m.setState('appear');
         this.msnd(m, 1);
       }
       return;
     }
-    if (!h.alive || d > aggro) { this.patrol(m, dt); this.fidget(m); return; }
+    if (h.alive && this.notices(m, d)) this.noticedAt.set(m, this.clockT);
+    const leash = (this.data.actors[this.idOf.get(m) ?? '']?.IA?.Tm_Busqueda ?? 350) / 35; // a hunter drops its target after this long unnoticed
+    const hunting = h.alive && this.clockT - (this.noticedAt.get(m) ?? -99) < (this.alerted.has(m) ? leash : 0.001);
+    if (!hunting) { this.alerted.delete(m); this.patrol(m, dt); this.fidget(m); return; }
     if (!this.alerted.has(m)) {
       this.alerted.add(m);
       this.msnd(m, 1);
       m.face(ex, ey);
+      this.raiseAlarm(m);
       if (m.has('taunt')) { m.setState('taunt'); return; } // Alarma: a roar before the chase
     }
     m.face(ex, ey);
